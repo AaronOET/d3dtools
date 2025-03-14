@@ -13,39 +13,38 @@ import pyproj
 from datetime import datetime
 
 
-def generate(
-    input_shp_folder='SHP',
-    input_tab_folder='TAB',
-    output_nc_folder='NC',
-    intermediate_ras_folder='RAS_RAIN',
-    intermediate_shp_folder='SHP_RAIN',
-    clean_intermediate=True,
-    raster_resolution=320):
+def generate(input_shp_folder='SHP',
+             input_tab_folder='TAB',
+             output_nc_folder='NC',
+             intermediate_ras_folder='RAS_RAIN',
+             intermediate_shp_folder='SHP_RAIN',
+             clean_intermediate=True,
+             raster_resolution=320):
     """
-    Generate a NetCDF file from rainfall data and thiessen polygon shapefile.
+      Generate a NetCDF file from rainfall data and thiessen polygon shapefile.
 
-    Parameters:
-    -----------
-    input_shp_folder : str
-        Path to the folder containing input shapefiles (default: 'SHP')
-    input_tab_folder : str
-        Path to the folder containing input tabular data (CSV files) (default: 'TAB')
-    output_nc_folder : str
-        Path to the folder where NetCDF output will be saved (default: 'NC')
-    intermediate_ras_folder : str
-        Path to the folder where intermediate raster files will be saved (default: 'RAS_RAIN')
-    intermediate_shp_folder : str
-        Path to the folder where intermediate shapefile files will be saved (default: 'SHP_RAIN')
-    clean_intermediate : bool
-        Whether to clean up intermediate files after processing (default: True)
-    raster_resolution : float
-        Resolution of the raster in meters (default: 320)
+      Parameters:
+      -----------
+      input_shp_folder : str
+          Path to the folder containing input shapefiles (default: 'SHP')
+      input_tab_folder : str
+          Path to the folder containing input tabular data (CSV files) (default: 'TAB')
+      output_nc_folder : str
+          Path to the folder where NetCDF output will be saved (default: 'NC')
+      intermediate_ras_folder : str
+          Path to the folder where intermediate raster files will be saved (default: 'RAS_RAIN')
+      intermediate_shp_folder : str
+          Path to the folder where intermediate shapefile files will be saved (default: 'SHP_RAIN')
+      clean_intermediate : bool
+          Whether to clean up intermediate files after processing (default: True)
+      raster_resolution : float
+          Resolution of the raster in meters (default: 320)
 
-    Returns:
-    --------
-    str
-        Path to the generated NetCDF file
-    """
+      Returns:
+      --------
+      str
+          Path to the generated NetCDF file
+      """
 
     # Create output directories if they don't exist
     if not os.path.exists(intermediate_ras_folder):
@@ -252,15 +251,15 @@ def generate(
         except Exception as e:
             print(f"Warning: Could not clean up intermediate files: {e}")
 
+    print(f"NetCDF file generated at: {nc_file_path}")
     return nc_file_path
 
 
 def main():
     """
-    Command line entry point
-    """
-    output_path = generate()
-    print(f"NetCDF file generated at: {output_path}")
+      Command line entry point
+      """
+    generate()
 
 
 if __name__ == "__main__":

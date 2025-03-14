@@ -25,8 +25,7 @@ This package provides several utilities for converting shapefiles to various for
 from d3dtools import ncrain
 
 # Default usage
-output_path = ncrain.generate()
-print(f"NetCDF file generated at: {output_path}")
+generate()
 
 # With custom parameters
 output_path = ncrain.generate(
