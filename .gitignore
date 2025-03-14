@@ -64,6 +64,10 @@ Thumbs.db
 *.log
 *.out
 
+# QGIS project file
+*.qgs
+*.qgz
+
 # GIS specific files - uncomment if you want to exclude these files from version control
 # Uncomment based on your project needs - by default we track shape files
 # *.shp
