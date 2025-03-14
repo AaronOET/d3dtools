@@ -25,10 +25,10 @@ This package provides several utilities for converting shapefiles to various for
 from d3dtools import ncrain
 
 # Default usage
-generate()
+ncrain.generate()
 
 # With custom parameters
-output_path = ncrain.generate(
+ncrain.generate(
     input_shp_folder='custom/SHP',
     input_tab_folder='custom/TAB',
     output_nc_folder='custom/NC',
