@@ -36,7 +36,7 @@ output_path = ncrain.generate(
     intermediate_ras_folder='custom/RAS_RAIN',
     intermediate_shp_folder='custom/SHP_RAIN',
     clean_intermediate=True,
-    raster_resolution=360
+    raster_resolution=320
 )
 ```
 
