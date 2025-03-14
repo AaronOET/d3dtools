@@ -1,0 +1,19 @@
+name: d3dtoolsenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy>=1.20.0
+  - pandas>=1.3.0
+  - geopandas>=0.10.0
+  - rasterio>=1.2.0
+  - netcdf4>=1.5.0
+  - pyproj>=3.0.0
+  - gdal>=3.0.0
+  - shapely>=1.8.0
+  - matplotlib>=3.4.0
+  - ipython>=7.24.0
+  - pip
+  - pip:
+    - glob2
