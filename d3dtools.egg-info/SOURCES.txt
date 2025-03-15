@@ -1,0 +1,16 @@
+LICENSE
+MANIFEST.in
+README.md
+requirements.txt
+setup.py
+d3dtools/__init__.py
+d3dtools/ncrain.py
+d3dtools/shpbc2pli.py
+d3dtools/shpblock2pol.py
+d3dtools/shpdike2pliz.py
+d3dtools.egg-info/PKG-INFO
+d3dtools.egg-info/SOURCES.txt
+d3dtools.egg-info/dependency_links.txt
+d3dtools.egg-info/entry_points.txt
+d3dtools.egg-info/requires.txt
+d3dtools.egg-info/top_level.txt

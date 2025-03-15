@@ -1,0 +1,5 @@
+[console_scripts]
+ncrain = d3dtools.ncrain:generate
+shpbc2pli = d3dtools.shpbc2pli:convert
+shpblock2pol = d3dtools.shpblock2pol:convert
+shpdike2pliz = d3dtools.shpdike2pliz:convert

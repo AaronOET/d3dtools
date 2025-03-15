@@ -1,3 +1,34 @@
+Metadata-Version: 2.2
+Name: d3dtools
+Version: 0.3.1
+Summary: A collection of tools for working with shapefiles and converting them for Delft3D modeling
+Home-page: https://github.com/AaronOET/d3dtools
+Author: aaronchh
+Author-email: aaronhsu219@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy>=1.20.0
+Requires-Dist: pandas>=1.3.0
+Requires-Dist: geopandas>=0.10.0
+Requires-Dist: rasterio>=1.2.0
+Requires-Dist: netCDF4>=1.5.0
+Requires-Dist: pyproj>=3.0.0
+Requires-Dist: shapely>=1.8.0
+Requires-Dist: matplotlib>=3.4.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
 # D3DTOOLS
 
 A collection of Python tools for working with shapefiles and converting them for Delft3D modeling.
