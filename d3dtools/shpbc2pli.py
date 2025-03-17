@@ -9,7 +9,7 @@ import geopandas as gpd
 def convert(input_folder='SHP_BC', output_folder='PLI_BC'):
     """
     Convert boundary line shapefile to *.pli file
-    Attribute table must contain 'Id' or 'id' field for boundary name
+    Attribute table must contain 'ID', 'Id', 'id', or 'iD' field for boundary name
 
     Parameters:
     -----------
@@ -38,10 +38,20 @@ def convert(input_folder='SHP_BC', output_folder='PLI_BC'):
     # Get boundary names
     bcNames = []
     for i, gdf in enumerate(gdfs):
-        try:
-            bcName = [name for name in gdf['Id'].values]
-        except:
-            bcName = [name for name in gdf['id'].values]
+        # Check for all possible case variations of the ID field
+        possible_id_fields = ['ID', 'Id', 'id', 'iD']
+        found_id_field = None
+
+        for id_field in possible_id_fields:
+            if id_field in gdf.columns:
+                found_id_field = id_field
+                break
+
+        if found_id_field:
+            bcName = [name for name in gdf[found_id_field].values]
+        else:
+            raise KeyError(f"No ID field found in the shapefile. Please ensure your shapefile has one of these fields: {possible_id_fields}")
+
         bcNames.append(bcName)
 
     # Create output folder if not exist

@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.3.1",
+    version="0.4.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description="A collection of tools for working with shapefiles and converting them for Delft3D modeling",
