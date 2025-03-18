@@ -1,5 +1,5 @@
 [console_scripts]
-ncrain = d3dtools.ncrain:generate
-shpbc2pli = d3dtools.shpbc2pli:convert
-shpblock2pol = d3dtools.shpblock2pol:convert
-shpdike2pliz = d3dtools.shpdike2pliz:convert
+ncrain = d3dtools.ncrain:main
+shpbc2pli = d3dtools.shpbc2pli:main
+shpblock2pol = d3dtools.shpblock2pol:main
+shpdike2pliz = d3dtools.shpdike2pliz:main

@@ -4,9 +4,10 @@ Convert boundary line shapefile to *.pli file
 import os
 import glob
 import geopandas as gpd
+import argparse
 
 
-def convert(input_folder='SHP_BC', output_folder='PLI_BC'):
+def convert(input_folder='SHP_BC', output_folder='PLI_BC', id_field=None):
     """
     Convert boundary line shapefile to *.pli file
     Attribute table must contain 'ID', 'Id', 'id', or 'iD' field for boundary name
@@ -17,6 +18,8 @@ def convert(input_folder='SHP_BC', output_folder='PLI_BC'):
         Path to the folder containing shapefiles with MultiLineString geometry (default: 'SHP_BC')
     output_folder : str
         Path to the output folder for PLI files (default: 'PLI_BC')
+    id_field : str, optional
+        Name of the field to use for boundary names. If None, will look for 'ID', 'Id', 'id', or 'iD'
     """
     # Specify file source
     fileList = glob.glob(f'{input_folder}/*.shp')
@@ -38,19 +41,23 @@ def convert(input_folder='SHP_BC', output_folder='PLI_BC'):
     # Get boundary names
     bcNames = []
     for i, gdf in enumerate(gdfs):
-        # Check for all possible case variations of the ID field
-        possible_id_fields = ['ID', 'Id', 'id', 'iD']
-        found_id_field = None
-
-        for id_field in possible_id_fields:
-            if id_field in gdf.columns:
-                found_id_field = id_field
-                break
-
-        if found_id_field:
-            bcName = [name for name in gdf[found_id_field].values]
+        if id_field and id_field in gdf.columns: # Check if user-specified field exists
+            # Use the user-specified field name
+            bcName = [name for name in gdf[id_field].values]
         else:
-            raise KeyError(f"No ID field found in the shapefile. Please ensure your shapefile has one of these fields: {possible_id_fields}")
+            # Check for all possible case variations of the ID field
+            possible_id_fields = ['ID', 'Id', 'id', 'iD']
+            found_id_field = None
+
+            for field in possible_id_fields:
+                if field in gdf.columns:
+                    found_id_field = field
+                    break
+
+            if found_id_field:
+                bcName = [name for name in gdf[found_id_field].values]
+            else:
+                raise KeyError(f"No ID field found in the shapefile. Please ensure your shapefile has one of these fields: {possible_id_fields} or specify the field name using id_field parameter")
 
         bcNames.append(bcName)
 
@@ -86,7 +93,14 @@ def main():
     """
     Command line entry point
     """
-    convert()
+    parser = argparse.ArgumentParser(description='Convert boundary line shapefile to *.pli file')
+    parser.add_argument('-i', '--input', default='SHP_BC', help='Input folder path (default: SHP_BC)')
+    parser.add_argument('-o', '--output', default='PLI_BC', help='Output folder path (default: PLI_BC)')
+    parser.add_argument('--id_field', help='Name of the field to use for boundary names (default: looks for ID/Id/id/iD)')
+
+    args = parser.parse_args()
+
+    convert(input_folder=args.input, output_folder=args.output, id_field=args.id_field)
 
 
 if __name__ == "__main__":

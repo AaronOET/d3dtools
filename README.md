@@ -56,6 +56,13 @@ shpbc2pli.convert(
     input_folder='custom/SHP_BC',
     output_folder='custom/PLI_BC'
 )
+
+# With custom ID field name
+shpbc2pli.convert(
+    input_folder='custom/SHP_BC',
+    output_folder='custom/PLI_BC',
+    id_field='BoundaryName'  # Use 'BoundaryName' column instead of default 'ID'/'Id'/'id'/'iD'
+)
 ```
 
 ### Convert block shapefiles to POL
@@ -87,6 +94,14 @@ shpdike2pliz.convert(
     output_folder='custom/PLIZ_DIKE',
     output_filename='CustomDike'
 )
+
+# With custom ID field name
+shpdike2pliz.convert(
+    input_folder='custom/SHP_DIKE',
+    output_folder='custom/PLIZ_DIKE',
+    output_filename='CustomDike',
+    id_field='DikeName'  # Use 'DikeName' column instead of default 'ID'/'Id'/'id'/'iD'
+)
 ```
 
 ## Command-line Usage
@@ -99,12 +114,21 @@ ncrain
 
 # Convert boundary shapefiles to PLI
 shpbc2pli
+shpbc2pli --id_field BoundaryName  # Specify custom ID field
 
 # Convert block shapefiles to POL
 shpblock2pol
 
 # Convert dike shapefiles to PLIZ
 shpdike2pliz
+shpdike2pliz --id_field DikeName  # Specify custom ID field
+```
+
+For more command-line options:
+
+```bash
+shpbc2pli --help
+shpdike2pliz --help
 ```
 
 ## Requirements
