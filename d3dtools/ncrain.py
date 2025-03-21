@@ -257,9 +257,53 @@ def generate(input_shp_folder='SHP',
 
 def main():
     """
-      Command line entry point
-      """
-    generate()
+    Command line entry point for the ncrain tool.
+
+    Example usage:
+        ncrain --shp-folder SHP --tab-folder TAB --nc-folder NC --resolution 320
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Generate NetCDF files from rainfall data and thiessen polygon shapefiles")
+
+    parser.add_argument('--shp-folder', dest='input_shp_folder', default='SHP',
+                        help='Path to the folder containing input shapefiles (default: SHP)')
+    parser.add_argument('--tab-folder', dest='input_tab_folder', default='TAB',
+                        help='Path to the folder containing input tabular data (CSV files) (default: TAB)')
+    parser.add_argument('--nc-folder', dest='output_nc_folder', default='NC',
+                        help='Path to the folder where NetCDF output will be saved (default: NC)')
+    parser.add_argument('--ras-folder', dest='intermediate_ras_folder', default='RAS_RAIN',
+                        help='Path to the folder where intermediate raster files will be saved (default: RAS_RAIN)')
+    parser.add_argument('--tmp-shp-folder', dest='intermediate_shp_folder', default='SHP_RAIN',
+                        help='Path to the folder where intermediate shapefile files will be saved (default: SHP_RAIN)')
+    parser.add_argument('--no-clean', dest='clean_intermediate', action='store_false',
+                        help='Do not clean up intermediate files after processing')
+    parser.add_argument('--resolution', dest='raster_resolution', type=float, default=320,
+                        help='Resolution of the raster in meters (default: 320)')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='Display additional information during processing')
+
+    args = parser.parse_args()
+
+    # Print arguments if verbose
+    if args.verbose:
+        print("Processing with parameters:")
+        for arg, value in vars(args).items():
+            print(f"  {arg}: {value}")
+
+    # Generate the NetCDF file with the provided arguments
+    result = generate(
+        input_shp_folder=args.input_shp_folder,
+        input_tab_folder=args.input_tab_folder,
+        output_nc_folder=args.output_nc_folder,
+        intermediate_ras_folder=args.intermediate_ras_folder,
+        intermediate_shp_folder=args.intermediate_shp_folder,
+        clean_intermediate=args.clean_intermediate,
+        raster_resolution=args.raster_resolution
+    )
+
+    if args.verbose:
+        print(f"Completed processing: {result}")
 
 
 if __name__ == "__main__":

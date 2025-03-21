@@ -9,6 +9,7 @@ import os
 import shapely.wkt
 import matplotlib.pyplot as plt
 from shapely.geometry import Point, LineString
+import argparse
 
 
 def convert(input_folder='SHP_BLOCK', output_folder='POL_BLOCK'):
@@ -71,7 +72,20 @@ def main():
     """
     Command line entry point
     """
-    convert()
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Convert shapefile blocks to *.pol files')
+    parser.add_argument('-i', '--input', default='SHP_BLOCK',
+                        help='Input folder containing shapefiles (default: SHP_BLOCK)')
+    parser.add_argument('-o', '--output', default='POL_BLOCK',
+                        help='Output folder for .pol files (default: POL_BLOCK)')
+
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Run conversion with provided arguments
+    num_converted = convert(input_folder=args.input, output_folder=args.output)
+
+    print(f"Conversion complete: {num_converted} shapefiles processed")
 
 
 if __name__ == "__main__":

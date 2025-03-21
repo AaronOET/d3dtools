@@ -1,6 +1,6 @@
 Metadata-Version: 2.2
 Name: d3dtools
-Version: 0.5.1
+Version: 0.6.0
 Summary: A collection of tools for working with shapefiles and converting them for Delft3D modeling
 Home-page: https://github.com/AaronOET/d3dtools
 Author: aaronchh

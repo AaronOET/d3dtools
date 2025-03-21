@@ -111,6 +111,9 @@ The package also provides command-line utilities:
 ```bash
 # Generate NetCDF from rainfall data
 ncrain
+ncrain --shp-folder custom/SHP --tab-folder custom/TAB --nc-folder custom/NC --resolution 320
+ncrain --verbose   # Display additional processing information
+ncrain --no-clean  # Keep intermediate files
 
 # Convert boundary shapefiles to PLI
 shpbc2pli
@@ -118,6 +121,7 @@ shpbc2pli --id_field BoundaryName  # Specify custom ID field
 
 # Convert block shapefiles to POL
 shpblock2pol
+shpblock2pol -i custom/SHP_BLOCK -o custom/POL_BLOCK  # Specify input and output folders
 
 # Convert dike shapefiles to PLIZ
 shpdike2pliz
@@ -127,7 +131,9 @@ shpdike2pliz --id_field DikeName  # Specify custom ID field
 For more command-line options:
 
 ```bash
+ncrain --help
 shpbc2pli --help
+shpblock2pol --help
 shpdike2pliz --help
 ```
 
