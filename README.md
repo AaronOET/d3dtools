@@ -17,13 +17,14 @@ pip install d3dtools
 This package provides several utilities for converting shapefiles to various formats used in Delft3D modeling:
 
 - **ncrain**: Generate a NetCDF file from rainfall data and thiessen polygon shapefiles
+- **shp2ldb**: Convert boundary line shapefiles to LDB files
 - **shpbc2pli**: Convert boundary line shapefiles to PLI files
 - **shpblock2pol**: Convert shapefile blocks to POL files
 - **shpdike2pliz**: Convert bankline shapefiles to PLIZ files
 
 ## Usage Examples
 
-### Generate NetCDF from rainfall data
+### Generate NetCDF from rainfall data (with unit of mm/hr)
 
 ```python
 from d3dtools import ncrain
@@ -104,6 +105,28 @@ shpdike2pliz.convert(
 )
 ```
 
+### Convert boundary shapefiles to LDB
+
+```python
+from d3dtools import shp2ldb
+
+# Default usage
+shp2ldb.convert()
+
+# With custom parameters
+shp2ldb.convert(
+    input_folder='custom/SHP_LDB',
+    output_folder='custom/LDB'
+)
+
+# With custom ID field name
+shp2ldb.convert(
+    input_folder='custom/SHP_LDB',
+    output_folder='custom/LDB',
+    id_field='BoundaryName'  # Use 'BoundaryName' column instead of default 'ID'/'Id'/'id'/'iD'
+)
+```
+
 ## Command-line Usage
 
 The package also provides command-line utilities:
@@ -114,6 +137,11 @@ ncrain
 ncrain --shp-folder custom/SHP --tab-folder custom/TAB --nc-folder custom/NC --resolution 320
 ncrain --verbose   # Display additional processing information
 ncrain --no-clean  # Keep intermediate files
+
+# Convert boundary shapefiles to LDB
+shp2ldb
+shp2ldb -i custom/SHP_LDB -o custom/LDB  # Specify input and output folders
+shp2ldb --id_field BoundaryName  # Specify custom ID field
 
 # Convert boundary shapefiles to PLI
 shpbc2pli
@@ -132,6 +160,7 @@ For more command-line options:
 
 ```bash
 ncrain --help
+shp2ldb --help
 shpbc2pli --help
 shpblock2pol --help
 shpdike2pliz --help

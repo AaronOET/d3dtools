@@ -1,5 +1,7 @@
 """
-Convert bankline shapefile to PLIZ file
+Convert dike line shapefile to *.pli file with z values
+
+This module can be executed using either 'shpdike2pliz' or 'shp2pliz' command.
 """
 import os
 import glob

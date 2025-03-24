@@ -1,5 +1,7 @@
 """
-Convert shapefile blocks to *.pol files
+Convert block polygon shapefile to *.pol file
+
+This module can be executed using either 'shpblock2pol' or 'shp2pol' command.
 """
 import numpy as np
 import pandas as pd

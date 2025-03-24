@@ -1,7 +1,5 @@
 """
-Convert boundary line shapefile to *.pli file
-
-This module can be executed using either 'shpbc2pli' or 'shp2pli' command.
+Convert boundary line shapefile to *.ldb file
 """
 import os
 import glob
@@ -9,17 +7,17 @@ import geopandas as gpd
 import argparse
 
 
-def convert(input_folder='SHP_BC', output_folder='PLI_BC', id_field=None):
+def convert(input_folder='SHP_LDB', output_folder='LDB', id_field=None):
     """
-    Convert boundary line shapefile to *.pli file
+    Convert boundary line shapefile to *.ldb file
     Attribute table must contain 'ID', 'Id', 'id', or 'iD' field for boundary name
 
     Parameters:
     -----------
     input_folder : str
-        Path to the folder containing shapefiles with MultiLineString geometry (default: 'SHP_BC')
+        Path to the folder containing shapefiles with MultiLineString geometry (default: 'SHP_LDB')
     output_folder : str
-        Path to the output folder for PLI files (default: 'PLI_BC')
+        Path to the output folder for LDB files (default: 'LDB')
     id_field : str, optional
         Name of the field to use for boundary names. If None, will look for 'ID', 'Id', 'id', or 'iD'
     """
@@ -68,11 +66,11 @@ def convert(input_folder='SHP_BC', output_folder='PLI_BC', id_field=None):
         os.makedirs(output_folder)
         print(f"Created output folder: {output_folder}")
 
-    # For loop gdfs, create a .pli file with id as its name
+    # For loop gdfs, create a .ldb file with id as its name
     file_count = 0
     for i, ref_wkt in enumerate(ref_wkts):
         for j, item in enumerate(ref_wkt):
-            with open(f'{output_folder}/{bcNames[i][j]}.pli', 'w',
+            with open(f'{output_folder}/{bcNames[i][j]}.ldb', 'w',
                     encoding='utf-8') as f:
                 f.write('{}\n'.format(bcNames[i][j]))
                 points = [
@@ -87,7 +85,7 @@ def convert(input_folder='SHP_BC', output_folder='PLI_BC', id_field=None):
                 f.write('\n')
             file_count += 1
 
-    print(f'Done! Generated {file_count} PLI files in {output_folder}')
+    print(f'Done! Generated {file_count} LDB files in {output_folder}')
     return file_count
 
 
@@ -95,9 +93,9 @@ def main():
     """
     Command line entry point
     """
-    parser = argparse.ArgumentParser(description='Convert boundary line shapefile to *.pli file')
-    parser.add_argument('-i', '--input', default='SHP_BC', help='Input folder path (default: SHP_BC)')
-    parser.add_argument('-o', '--output', default='PLI_BC', help='Output folder path (default: PLI_BC)')
+    parser = argparse.ArgumentParser(description='Convert boundary line shapefile to *.ldb file')
+    parser.add_argument('-i', '--input', default='SHP_LDB', help='Input folder path (default: SHP_LDB)')
+    parser.add_argument('-o', '--output', default='LDB', help='Output folder path (default: LDB)')
     parser.add_argument('--id_field', help='Name of the field to use for boundary names (default: looks for ID/Id/id/iD)')
 
     args = parser.parse_args()
