@@ -12,6 +12,7 @@ d3dtools/shp2pol.py
 d3dtools/shpbc2pli.py
 d3dtools/shpblock2pol.py
 d3dtools/shpdike2pliz.py
+d3dtools/utils.py
 d3dtools.egg-info/PKG-INFO
 d3dtools.egg-info/SOURCES.txt
 d3dtools.egg-info/dependency_links.txt
