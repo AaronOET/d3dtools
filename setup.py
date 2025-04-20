@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.8.0",
+    version="0.9.1",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description="A collection of tools for working with shapefiles and converting them for Delft3D modeling",
@@ -33,6 +33,7 @@ setup(
             "shpdike2pliz=d3dtools.shpdike2pliz:main",
             "shp2pliz=d3dtools.shpdike2pliz:main",  # Alias for shpdike2pliz
             "shp2ldb=d3dtools.shp2ldb:main",
+            "shp2xyz=d3dtools.shp2xyz:main",
         ],
     },
 )

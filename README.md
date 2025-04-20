@@ -18,9 +18,10 @@ This package provides several utilities for converting shapefiles to various for
 
 - **ncrain**: Generate a NetCDF file from rainfall data and thiessen polygon shapefiles
 - **shp2ldb**: Convert boundary line shapefiles to LDB files
-- **shpbc2pli**: Convert boundary line shapefiles to PLI files
-- **shpblock2pol**: Convert shapefile blocks to POL files
-- **shpdike2pliz**: Convert bankline shapefiles to PLIZ files
+- **shpbc2pli** (alias: **shp2pli**): Convert boundary line shapefiles to PLI files
+- **shpblock2pol** (alias: **shp2pol**): Convert shapefile blocks to POL files
+- **shpdike2pliz** (alias: **shp2pliz**): Convert bankline shapefiles to PLIZ files
+- **shp2xyz**: Convert point shapefiles to XYZ files
 
 ## Usage Examples
 
@@ -127,6 +128,28 @@ shp2ldb.convert(
 )
 ```
 
+### Convert point shapefiles to XYZ
+
+```python
+from d3dtools import shp2xyz
+
+# Default usage
+shp2xyz.convert()
+
+# With custom parameters
+shp2xyz.convert(
+    input_folder='custom/SHP_SAMPLE',
+    output_folder='custom/XYZ_SAMPLE'
+)
+
+# With custom Z-field name
+shp2xyz.convert(
+    input_folder='custom/SHP_SAMPLE',
+    output_folder='custom/XYZ_SAMPLE',
+    z_field='ELEVATION'  # Use 'ELEVATION' column instead of default Z-field detection
+)
+```
+
 ## Command-line Usage
 
 The package also provides command-line utilities:
@@ -144,16 +167,21 @@ shp2ldb -i custom/SHP_LDB -o custom/LDB  # Specify input and output folders
 shp2ldb --id_field BoundaryName  # Specify custom ID field
 
 # Convert boundary shapefiles to PLI
-shpbc2pli
+shpbc2pli  # or use the alias: shp2pli
 shpbc2pli --id_field BoundaryName  # Specify custom ID field
 
 # Convert block shapefiles to POL
-shpblock2pol
+shpblock2pol  # or use the alias: shp2pol
 shpblock2pol -i custom/SHP_BLOCK -o custom/POL_BLOCK  # Specify input and output folders
 
 # Convert dike shapefiles to PLIZ
-shpdike2pliz
+shpdike2pliz  # or use the alias: shp2pliz
 shpdike2pliz --id_field DikeName  # Specify custom ID field
+
+# Convert point shapefiles to XYZ
+shp2xyz
+shp2xyz -i custom/SHP_SAMPLE -o custom/XYZ_SAMPLE  # Specify input and output folders
+shp2xyz --z_field ELEVATION  # Specify custom Z-field name
 ```
 
 For more command-line options:
@@ -164,6 +192,7 @@ shp2ldb --help
 shpbc2pli --help
 shpblock2pol --help
 shpdike2pliz --help
+shp2xyz --help
 ```
 
 ## Requirements
