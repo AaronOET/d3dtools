@@ -9,7 +9,7 @@ import os
 import argparse
 
 
-def convert(input_file, output_folder='TAB', verbose=False):
+def generate(input_file, output_folder='TAB', verbose=False):
     """
           Process a rainfall CSV file and generate separate time series CSV files for each scenario.
 
@@ -129,7 +129,7 @@ def main():
 
     # Process the file
     try:
-        result_files = convert(input_file=args.input,
+        result_files = generate(input_file=args.input,
                                output_folder=args.output,
                                verbose=args.verbose)
 

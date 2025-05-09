@@ -26,6 +26,19 @@ This package provides several utilities for converting shapefiles to various for
 
 ## Usage Examples
 
+### Process and generate rainfall scenario data
+
+```python
+from d3dtools import snorain
+
+# Process a scenario rainfall CSV file
+snorain.generate(
+    input_file='rainfall_scenarios.csv',
+    output_folder='custom/TAB',
+    verbose=True
+)
+```
+
 ### Generate NetCDF from rainfall data (with unit of mm/hr)
 
 ```python
@@ -141,19 +154,6 @@ shp2ldb.convert(
     input_folder='custom/SHP_LDB',
     output_folder='custom/LDB',
     id_field='BoundaryName'  # Use 'BoundaryName' column instead of default 'ID'/'Id'/'id'/'iD'
-)
-```
-
-### Process rainfall scenario data
-
-```python
-from d3dtools import snorain
-
-# Process a scenario rainfall CSV file
-snorain.convert(
-    input_file='rainfall_scenarios.csv',
-    output_folder='custom/TAB',
-    verbose=True
 )
 ```
 
