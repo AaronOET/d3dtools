@@ -7,10 +7,16 @@ import pandas as pd
 import geopandas as gpd
 import rasterio as rio
 import shutil
-from osgeo import gdal
 from netCDF4 import Dataset
 import pyproj
 from datetime import datetime
+
+# Add GDAL exception handling
+try:
+    from osgeo import gdal
+    gdal.UseExceptions()  # Explicitly enable exceptions
+except ImportError:
+    pass  # Skip if GDAL is not installed
 
 
 def generate(input_shp_folder='SHP',
@@ -19,32 +25,38 @@ def generate(input_shp_folder='SHP',
              intermediate_ras_folder='RAS_RAIN',
              intermediate_shp_folder='SHP_RAIN',
              clean_intermediate=True,
-             raster_resolution=320):
+             raster_resolution=320,
+             rainfall_file=None,
+             verbose=False):
     """
-      Generate a NetCDF file from rainfall data and thiessen polygon shapefile.
+        Generate a NetCDF file from rainfall data and thiessen polygon shapefile.
 
-      Parameters:
-      -----------
-      input_shp_folder : str
-          Path to the folder containing input shapefiles (default: 'SHP')
-      input_tab_folder : str
-          Path to the folder containing input tabular data (CSV files) (default: 'TAB')
-      output_nc_folder : str
-          Path to the folder where NetCDF output will be saved (default: 'NC')
-      intermediate_ras_folder : str
-          Path to the folder where intermediate raster files will be saved (default: 'RAS_RAIN')
-      intermediate_shp_folder : str
-          Path to the folder where intermediate shapefile files will be saved (default: 'SHP_RAIN')
-      clean_intermediate : bool
-          Whether to clean up intermediate files after processing (default: True)
-      raster_resolution : float
-          Resolution of the raster in meters (default: 320)
+        Parameters:
+        -----------
+        input_shp_folder : str
+            Path to the folder containing input shapefiles (default: 'SHP')
+        input_tab_folder : str
+            Path to the folder containing input tabular data (CSV files) (default: 'TAB')
+        output_nc_folder : str
+            Path to the folder where NetCDF output will be saved (default: 'NC')
+        intermediate_ras_folder : str
+            Path to the folder where intermediate raster files will be saved (default: 'RAS_RAIN')
+        intermediate_shp_folder : str
+            Path to the folder where intermediate shapefile files will be saved (default: 'SHP_RAIN')
+        clean_intermediate : bool
+            Whether to clean up intermediate files after processing (default: True)
+        raster_resolution : float
+            Resolution of the raster in meters (default: 320)
+        rainfall_file : str
+            Specific CSV file to process (default: None, which means the first CSV file will be processed)
+        verbose : bool
+            Whether to print detailed information (default: False)
 
-      Returns:
-      --------
-      str
-          Path to the generated NetCDF file
-      """
+        Returns:
+        --------
+        str
+            Path to the generated NetCDF file
+        """
 
     # Create output directories if they don't exist
     if not os.path.exists(intermediate_ras_folder):
@@ -63,13 +75,22 @@ def generate(input_shp_folder='SHP',
     thiessen['rainfall'] = 0.0
 
     # Read the rainfall data
-    # Search folder and get the first file name ending with '.csv', without the extension
-    for file in os.listdir(input_tab_folder):
-        if file.endswith('.csv'):
-            rainfall_ts = file[:-4]
-            break
+    # If a specific file is provided, use that one; otherwise find the first CSV in the folder
+    if rainfall_file:
+        rainfall_ts = os.path.splitext(rainfall_file)[0]
+        if verbose:
+            print(f"Processing file: {rainfall_file}")
+    else:
+        # Find first CSV file in the folder
+        for file in os.listdir(input_tab_folder):
+            if file.endswith('.csv'):
+                rainfall_ts = file[:-4]
+                rainfall_file = file
+                if verbose:
+                    print(f"Processing file: {file}")
+                break
 
-    rainfall = pd.read_csv(f'{input_tab_folder}/{rainfall_ts}.csv')
+    rainfall = pd.read_csv(f'{input_tab_folder}/{rainfall_file}')
 
     # Convert 'time' filed to datetime
     rainfall['time'] = pd.to_datetime(rainfall['time'])
@@ -251,20 +272,83 @@ def generate(input_shp_folder='SHP',
         except Exception as e:
             print(f"Warning: Could not clean up intermediate files: {e}")
 
-    print(f"NetCDF file generated at: {nc_file_path}")
+    if verbose:
+        print(f"NetCDF file generated at: {nc_file_path}")
+
     return nc_file_path
+
+
+def generate_all(input_shp_folder='SHP',
+                 input_tab_folder='TAB',
+                 output_nc_folder='NC',
+                 intermediate_ras_folder='RAS_RAIN',
+                 intermediate_shp_folder='SHP_RAIN',
+                 clean_intermediate=True,
+                 raster_resolution=320,
+                 verbose=False):
+    """
+      Generate NetCDF files from all rainfall data CSV files in the input folder.
+
+      Parameters are the same as the generate() function except the rainfall_file parameter.
+
+      Returns:
+      --------
+      list
+          Paths to all generated NetCDF files
+      """
+    nc_files = []
+
+    # Get all CSV files in the input folder
+    csv_files = [f for f in os.listdir(input_tab_folder) if f.endswith('.csv')]
+
+    if not csv_files:
+        print(f"No CSV files found in {input_tab_folder}")
+        return []
+
+    if verbose:
+        print(f"Found {len(csv_files)} CSV files to process")
+
+    # Process each CSV file
+    for i, csv_file in enumerate(csv_files):
+        if verbose:
+            print(f"Processing file {i+1}/{len(csv_files)}: {csv_file}")
+
+        # Create unique intermediate folders for each CSV to avoid conflicts
+        curr_ras_folder = f"{intermediate_ras_folder}_{i}"
+        curr_shp_folder = f"{intermediate_shp_folder}_{i}"
+
+        # Generate NetCDF file for this CSV
+        nc_file = generate(
+            input_shp_folder=input_shp_folder,
+            input_tab_folder=input_tab_folder,
+            output_nc_folder=output_nc_folder,
+            intermediate_ras_folder=curr_ras_folder,
+            intermediate_shp_folder=curr_shp_folder,
+            clean_intermediate=clean_intermediate,
+            raster_resolution=raster_resolution,
+            rainfall_file=csv_file,
+            verbose=verbose
+        )
+
+        nc_files.append(nc_file)
+
+    if verbose:
+        print(f"Completed processing {len(nc_files)} files")
+
+    return nc_files
 
 
 def main():
     """
-    Command line entry point for the ncrain tool.
+      Command line entry point for the ncrain tool.
 
-    Example usage:
-        ncrain --shp-folder SHP --tab-folder TAB --nc-folder NC --resolution 320
-    """
+      Example usage:
+          ncrain --shp-folder SHP --tab-folder TAB --nc-folder NC --resolution 320
+      """
     import argparse
 
-    parser = argparse.ArgumentParser(description="Generate NetCDF files from rainfall data and thiessen polygon shapefiles")
+    parser = argparse.ArgumentParser(
+        description="Generate NetCDF files from rainfall data and thiessen polygon shapefiles")
 
     parser.add_argument('--shp-folder', dest='input_shp_folder', default='SHP',
                         help='Path to the folder containing input shapefiles (default: SHP)')
@@ -282,6 +366,8 @@ def main():
                         help='Resolution of the raster in meters (default: 320)')
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Display additional information during processing')
+    parser.add_argument('--single', dest='single_file',
+                        help='Process only a specific CSV file instead of all files')
 
     args = parser.parse_args()
 
@@ -291,19 +377,37 @@ def main():
         for arg, value in vars(args).items():
             print(f"  {arg}: {value}")
 
-    # Generate the NetCDF file with the provided arguments
-    result = generate(
-        input_shp_folder=args.input_shp_folder,
-        input_tab_folder=args.input_tab_folder,
-        output_nc_folder=args.output_nc_folder,
-        intermediate_ras_folder=args.intermediate_ras_folder,
-        intermediate_shp_folder=args.intermediate_shp_folder,
-        clean_intermediate=args.clean_intermediate,
-        raster_resolution=args.raster_resolution
-    )
+    # Process a single file or all files based on arguments
+    if args.single_file:
+        result = generate(
+            input_shp_folder=args.input_shp_folder,
+            input_tab_folder=args.input_tab_folder,
+            output_nc_folder=args.output_nc_folder,
+            intermediate_ras_folder=args.intermediate_ras_folder,
+            intermediate_shp_folder=args.intermediate_shp_folder,
+            clean_intermediate=args.clean_intermediate,
+            raster_resolution=args.raster_resolution,
+            rainfall_file=args.single_file,
+            verbose=args.verbose
+        )
 
-    if args.verbose:
-        print(f"Completed processing: {result}")
+        if args.verbose:
+            print(f"Completed processing: {result}")
+    else:
+        # Process all CSV files in the folder
+        results = generate_all(
+            input_shp_folder=args.input_shp_folder,
+            input_tab_folder=args.input_tab_folder,
+            output_nc_folder=args.output_nc_folder,
+            intermediate_ras_folder=args.intermediate_ras_folder,
+            intermediate_shp_folder=args.intermediate_shp_folder,
+            clean_intermediate=args.clean_intermediate,
+            raster_resolution=args.raster_resolution,
+            verbose=args.verbose
+        )
+
+        if args.verbose:
+            print(f"Completed processing {len(results)} files")
 
 
 if __name__ == "__main__":

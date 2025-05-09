@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.9.1",
+    version="0.10.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description="A collection of tools for working with shapefiles and converting them for Delft3D modeling",
@@ -25,6 +25,7 @@ setup(
     install_requires=requirements,
     entry_points={
         "console_scripts": [
+            # "ncrain=d3dtools.ncrain:main",
             "ncrain=d3dtools.ncrain:main",
             "shpbc2pli=d3dtools.shpbc2pli:main",
             "shp2pli=d3dtools.shpbc2pli:main",  # Alias for shpbc2pli

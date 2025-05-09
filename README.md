@@ -30,7 +30,7 @@ This package provides several utilities for converting shapefiles to various for
 ```python
 from d3dtools import ncrain
 
-# Default usage
+# Default usage - processes first CSV file in the input folder
 ncrain.generate()
 
 # With custom parameters
@@ -42,6 +42,21 @@ ncrain.generate(
     intermediate_shp_folder='custom/SHP_RAIN',
     clean_intermediate=True,
     raster_resolution=320
+)
+
+# Process a specific CSV file
+ncrain.generate(
+    input_tab_folder='custom/TAB',
+    rainfall_file='specific_rainfall.csv',
+    verbose=True
+)
+
+# Process all CSV files in the input folder
+ncrain.generate_all(
+    input_shp_folder='custom/SHP',
+    input_tab_folder='custom/TAB',
+    output_nc_folder='custom/NC',
+    verbose=True
 )
 ```
 
@@ -156,10 +171,11 @@ The package also provides command-line utilities:
 
 ```bash
 # Generate NetCDF from rainfall data
-ncrain
+ncrain                      # Process all CSV files in the input folder
 ncrain --shp-folder custom/SHP --tab-folder custom/TAB --nc-folder custom/NC --resolution 320
-ncrain --verbose   # Display additional processing information
-ncrain --no-clean  # Keep intermediate files
+ncrain --verbose            # Display additional processing information
+ncrain --no-clean           # Keep intermediate files
+ncrain --single rainfall.csv  # Process only a specific CSV file
 
 # Convert boundary shapefiles to LDB
 shp2ldb
