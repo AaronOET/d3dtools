@@ -17,6 +17,7 @@ pip install d3dtools
 This package provides several utilities for converting shapefiles to various formats used in Delft3D modeling:
 
 - **ncrain**: Generate a NetCDF file from rainfall data and thiessen polygon shapefiles
+- **snorain**: Process rainfall scenario data and generate time series CSV files
 - **shp2ldb**: Convert boundary line shapefiles to LDB files
 - **shpbc2pli** (alias: **shp2pli**): Convert boundary line shapefiles to PLI files
 - **shpblock2pol** (alias: **shp2pol**): Convert shapefile blocks to POL files
@@ -143,6 +144,19 @@ shp2ldb.convert(
 )
 ```
 
+### Process rainfall scenario data
+
+```python
+from d3dtools import snorain
+
+# Process a scenario rainfall CSV file
+snorain.convert(
+    input_file='rainfall_scenarios.csv',
+    output_folder='custom/TAB',
+    verbose=True
+)
+```
+
 ### Convert point shapefiles to XYZ
 
 ```python
@@ -177,6 +191,10 @@ ncrain --verbose            # Display additional processing information
 ncrain --no-clean           # Keep intermediate files
 ncrain --single rainfall.csv  # Process only a specific CSV file
 
+# Process rainfall scenario data
+snorain -i rainfall_scenarios.csv -o custom/TAB
+snorain --input rainfall_scenarios.csv --output custom/TAB --verbose
+
 # Convert boundary shapefiles to LDB
 shp2ldb
 shp2ldb -i custom/SHP_LDB -o custom/LDB  # Specify input and output folders
@@ -204,6 +222,7 @@ For more command-line options:
 
 ```bash
 ncrain --help
+snorain --help
 shp2ldb --help
 shpbc2pli --help
 shpblock2pol --help

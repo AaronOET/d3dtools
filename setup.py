@@ -1,20 +1,22 @@
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:
-    long_description = fh.read()
+  long_description = fh.read()
 
 with open("requirements.txt", "r", encoding="utf-8") as f:
-    requirements = f.read().splitlines()
+  requirements = f.read().splitlines()
 
 setup(
     name="d3dtools",
-    version="0.10.0",
+    version="0.11.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
-    description="A collection of tools for working with shapefiles and converting them for Delft3D modeling",
+    description=
+    "A collection of tools for working with shapefiles and converting them for Delft3D modeling",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/AaronOET/d3dtools",  # Update with your GitHub repo URL
+    url=
+    "https://github.com/AaronOET/d3dtools",  # Update with your GitHub repo URL
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -25,7 +27,6 @@ setup(
     install_requires=requirements,
     entry_points={
         "console_scripts": [
-            # "ncrain=d3dtools.ncrain:main",
             "ncrain=d3dtools.ncrain:main",
             "shpbc2pli=d3dtools.shpbc2pli:main",
             "shp2pli=d3dtools.shpbc2pli:main",  # Alias for shpbc2pli
@@ -35,6 +36,7 @@ setup(
             "shp2pliz=d3dtools.shpdike2pliz:main",  # Alias for shpdike2pliz
             "shp2ldb=d3dtools.shp2ldb:main",
             "shp2xyz=d3dtools.shp2xyz:main",
+            "snorain=d3dtools.snorain:main",
         ],
     },
 )
