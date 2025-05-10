@@ -24,8 +24,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
-    install_requires=requirements,
-    entry_points={
+    install_requires=requirements,    entry_points={
         "console_scripts": [
             "ncrain=d3dtools.ncrain:main",
             "shpbc2pli=d3dtools.shpbc2pli:main",
@@ -37,6 +36,7 @@ setup(
             "shp2ldb=d3dtools.shp2ldb:main",
             "shp2xyz=d3dtools.shp2xyz:main",
             "snorain=d3dtools.snorain:main",
+            "d3dtools-info=d3dtools.describe:main",  # New tool to display package descriptions
         ],
     },
 )

@@ -181,7 +181,21 @@ shp2xyz.convert(
 
 ## Command-line Usage
 
-The package also provides command-line utilities:
+The package provides a command-line utility to display information about all available tools:
+
+```bash
+# Display description of all available tools
+d3dtools-info
+
+# Display detailed information about a specific tool
+d3dtools-info ncrain
+d3dtools-info shp2xyz
+
+# Display the package version
+d3dtools-info --version
+```
+
+The package also provides command-line utilities for each specific tool:
 
 ```bash
 # Generate NetCDF from rainfall data

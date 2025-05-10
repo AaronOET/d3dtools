@@ -14,3 +14,4 @@ from . import shp2pliz
 from . import shp2pol
 from . import shp2ldb
 from . import shp2xyz
+from . import describe
