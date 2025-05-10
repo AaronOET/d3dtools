@@ -181,19 +181,46 @@ shp2xyz.convert(
 
 ## Command-line Usage
 
-The package provides a command-line utility to display information about all available tools:
+### d3dtools-info: Access Tool Information
+
+The package provides the `d3dtools-info` command-line utility that serves as a central information hub for all available tools:
 
 ```bash
+# Display the package version
+d3dtools-info --version
+
+# Get help on d3dtools-info itself
+d3dtools-info --help
+
 # Display description of all available tools
 d3dtools-info
 
 # Display detailed information about a specific tool
 d3dtools-info ncrain
+d3dtools-info snorain
+d3dtools-info shp2ldb
+d3dtools-info shp2pli
+d3dtools-info shp2pliz
+d3dtools-info shp2pol
 d3dtools-info shp2xyz
+d3dtools-info shpbc2pli
+d3dtools-info shpblock2pol
+d3dtools-info shpdike2pliz
 
-# Display the package version
-d3dtools-info --version
+# Display help for specific tools
+ncrain --help
+snorain --help
+shp2ldb --help
+shp2pli --help
+shp2pliz --help
+shp2pol --help
+shp2xyz --help
+shpbc2pli --help
+shpblock2pol --help
+shpdike2pliz --help
 ```
+
+The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
 
 The package also provides command-line utilities for each specific tool:
 
@@ -230,18 +257,6 @@ shpdike2pliz --id_field DikeName  # Specify custom ID field
 shp2xyz
 shp2xyz -i custom/SHP_SAMPLE -o custom/XYZ_SAMPLE  # Specify input and output folders
 shp2xyz --z_field ELEVATION  # Specify custom Z-field name
-```
-
-For more command-line options:
-
-```bash
-ncrain --help
-snorain --help
-shp2ldb --help
-shpbc2pli --help
-shpblock2pol --help
-shpdike2pliz --help
-shp2xyz --help
 ```
 
 ## Requirements

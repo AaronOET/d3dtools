@@ -5,6 +5,7 @@ Command-line utility to display descriptions of d3dtools functionality.
 
 import argparse
 import sys
+import webbrowser
 from textwrap import dedent
 
 TOOL_DESCRIPTIONS = {
@@ -134,11 +135,20 @@ def main():
                         action='store_true',
                         help='Show the d3dtools version')
 
+    parser.add_argument('--pypi',
+                        action='store_true',
+                        help='Open the d3dtools PyPI project page in a web browser')
+
     args = parser.parse_args()
 
     if args.version:
         from . import __version__
         print(f"d3dtools version {__version__}")
+        return
+
+    if args.pypi:
+        print("Opening d3dtools PyPI project page in your web browser...")
+        webbrowser.open("https://pypi.org/project/d3dtools/")
         return
 
     if args.tool == 'all':

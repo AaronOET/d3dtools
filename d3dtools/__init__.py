@@ -2,7 +2,7 @@
 D3DTOOLS - A collection of tools for working with shapefiles and converting them for Delft3D modeling.
 """
 
-__version__ = '0.11.2'
+__version__ = '0.11.3'
 
 from . import ncrain
 from . import snorain
