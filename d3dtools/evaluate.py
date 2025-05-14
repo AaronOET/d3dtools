@@ -17,9 +17,9 @@ def confusion_matrix(sim_path, obs_path, output_csv=None):
 
         Parameters
         ----------
-        sim_path : str (required)
+        sim_path : str
             Path to the simulated flood extent shapefile
-        obs_path : str (required)
+        obs_path : str
             Path to the observed flood extent shapefile
         output_csv : str (optional)
             Path to the output CSV file

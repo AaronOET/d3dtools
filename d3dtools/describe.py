@@ -21,6 +21,18 @@ TOOL_DESCRIPTIONS = {
             evaluate --sim SHP/SIM.shp --obs SHP/OBS.shp
             evaluate --sim SHP/SIM.shp --obs SHP/OBS.shp --output results.csv
     """,
+    'sensor':
+    """
+        Extract time series data at observation points from Delft3D FM NetCDF files.
+
+        This tool extracts water depth or other parameters at specified observation points
+        from Delft3D FM NetCDF output files and exports the results to CSV and/or Excel.
+
+        Examples:
+            sensor --nc-file results.nc --obs-shp observation_points.shp
+            sensor --nc-file results.nc --obs-shp points.shp --output-csv depth.csv
+            sensor --nc-file results.nc --obs-shp points.shp --plot --verbose
+    """,
     'ncrain':
     """
         Generate a NetCDF file from rainfall data and thiessen polygon shapefiles.
