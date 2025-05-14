@@ -52,7 +52,7 @@ def confusion_matrix(sim_path, obs_path, output_csv=None):
     print(f"Recall: {recall:.2f}%")
 
     # Output
-    if output_path:
+    if output_csv:
         # Create a DataFrame to store the results
         results_df = pd.DataFrame({
             'Simulation': [os.path.basename(sim_path)],
@@ -62,8 +62,8 @@ def confusion_matrix(sim_path, obs_path, output_csv=None):
         })
 
         # Save the results to a CSV file
-        results_df.to_csv(output_path, index=False)
-        print(f"Results saved to {output_path}")
+        results_df.to_csv(output_csv, index=False)
+        print(f"Results saved to {output_csv}")
     # Return the results as a dictionary
     return {'accuracy': accuracy, 'recall': recall}
 
