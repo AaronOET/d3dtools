@@ -23,6 +23,8 @@ This package provides several utilities for converting shapefiles to various for
 - **shpblock2pol** (alias: **shp2pol**): Convert shapefile blocks to POL files
 - **shpdike2pliz** (alias: **shp2pliz**): Convert bankline shapefiles to PLIZ files
 - **shp2xyz**: Convert point shapefiles to XYZ files
+- **evaluate**: Calculate flood simulation accuracy metrics by comparing simulated and observed flood extents
+- **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
 
 ## Usage Examples
 
@@ -179,6 +181,42 @@ shp2xyz.convert(
 )
 ```
 
+### Extract time series data from NetCDF files
+
+```python
+from d3dtools import sensor
+
+# Extract data from NetCDF file at observation points
+data = sensor.getdata(
+    nc_file='path/to/model_output.nc',
+    obs_shp='path/to/observation_points.shp',
+    output_csv='water_depth.csv',
+    output_excel='water_depth.xlsx',
+    plot=True  # Display a plot of the time series
+)
+
+# Process the data further if needed
+print(data.head())
+stats = data.describe().transpose()
+print(stats)
+```
+
+### Calculate flood simulation accuracy
+
+```python
+from d3dtools import evaluate
+
+# Compare simulated and observed flood extents
+results = evaluate.confusion_matrix(
+    sim_path='path/to/simulated_flood.shp',
+    obs_path='path/to/observed_flood.shp',
+    output_path='accuracy_results.csv'
+)
+
+print(f"Accuracy: {results['accuracy']:.2f}%")
+print(f"Recall (Catch Rate): {results['recall']:.2f}%")
+```
+
 ## Command-line Usage
 
 ### d3dtools-info: Access Tool Information
@@ -206,6 +244,8 @@ d3dtools-info shp2xyz
 d3dtools-info shpbc2pli
 d3dtools-info shpblock2pol
 d3dtools-info shpdike2pliz
+d3dtools-info sensor
+d3dtools-info evaluate
 
 # Display help for specific tools
 ncrain --help
@@ -218,6 +258,8 @@ shp2xyz --help
 shpbc2pli --help
 shpblock2pol --help
 shpdike2pliz --help
+sensor --help
+evaluate --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -257,6 +299,15 @@ shpdike2pliz --id_field DikeName  # Specify custom ID field
 shp2xyz
 shp2xyz -i custom/SHP_SAMPLE -o custom/XYZ_SAMPLE  # Specify input and output folders
 shp2xyz --z_field ELEVATION  # Specify custom Z-field name
+
+# Extract time series data at observation points
+sensor --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp
+sensor --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp --output-csv water_depth.csv --output-excel water_depth.xlsx --plot
+sensor --verbose  # Display additional processing information
+
+# Calculate flood simulation accuracy metrics
+evaluate --sim path/to/simulated_flood.shp --obs path/to/observed_flood.shp
+evaluate --sim path/to/simulated_flood.shp --obs path/to/observed_flood.shp --output accuracy_results.csv
 ```
 
 ## Requirements
@@ -269,6 +320,7 @@ shp2xyz --z_field ELEVATION  # Specify custom Z-field name
 - pyproj>=3.0.0
 - shapely>=1.8.0
 - matplotlib>=3.4.0
+- openpyxl>=3.0.0
 
 ## License
 

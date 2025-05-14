@@ -9,6 +9,18 @@ import webbrowser
 from textwrap import dedent
 
 TOOL_DESCRIPTIONS = {
+    'evaluate':
+    """
+        Calculate flood simulation accuracy and catch rate metrics.
+
+        This tool compares simulated flood extent shapefiles with observed flood extent
+        shapefiles to calculate accuracy and catch rate metrics, which are important for
+        validating flood model performance.
+
+        Examples:
+            evaluate --sim SHP/SIM.shp --obs SHP/OBS.shp
+            evaluate --sim SHP/SIM.shp --obs SHP/OBS.shp --output results.csv
+    """,
     'ncrain':
     """
         Generate a NetCDF file from rainfall data and thiessen polygon shapefiles.

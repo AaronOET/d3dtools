@@ -36,7 +36,9 @@ setup(
             "shp2ldb=d3dtools.shp2ldb:main",
             "shp2xyz=d3dtools.shp2xyz:main",
             "snorain=d3dtools.snorain:main",
+            "evaluate=d3dtools.evaluate:main",  # Tool for flood accuracy metrics
             "d3dtools-info=d3dtools.describe:main",  # New tool to display package descriptions
+            "sensor=d3dtools.sensor:main",  # Tool for extracting time series data from NetCDF files
         ],
     },
 )
