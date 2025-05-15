@@ -1,5 +1,6 @@
 # Python build artifacts
 __pycache__/
+d3dtools/__pycache__/
 *.py[cod]
 *$py.class
 *.so
