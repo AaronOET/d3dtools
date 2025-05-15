@@ -24,6 +24,7 @@ This package provides several utilities for converting shapefiles to various for
 - **shpdike2pliz** (alias: **shp2pliz**): Convert bankline shapefiles to PLIZ files
 - **shp2xyz**: Convert point shapefiles to XYZ files
 - **evaluate**: Calculate flood simulation accuracy metrics by comparing simulated and observed flood extents
+- **evaluate_sensor**: Calculate flood simulation accuracy metrics by comparing simulated flood extents with point-based sensor data (with configurable buffer radius and depth threshold)
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
 
 ## Usage Examples
@@ -201,6 +202,24 @@ stats = data.describe().transpose()
 print(stats)
 ```
 
+### Calculate flood simulation accuracy using sensor data
+
+```python
+from d3dtools import evaluate_sensor
+
+# Compare simulated flood extents with sensor observations
+results = evaluate_sensor.confusion_matrix(
+    sim_path='path/to/simulated_flood.shp',
+    obs_path='path/to/sensor_observations.shp',
+    buffer_radius=30,               # Buffer radius around sensor points in meters (default: 30)
+    depth_threshold=30,             # Water depth threshold in centimeters (default: 30)
+    output_csv='sensor_accuracy.csv'
+)
+
+print(f"Accuracy: {results['accuracy']:.2f}%")
+print(f"Recall (Catch Rate): {results['recall']:.2f}%")
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -246,6 +265,7 @@ d3dtools-info shpblock2pol
 d3dtools-info shpdike2pliz
 d3dtools-info sensor
 d3dtools-info evaluate
+d3dtools-info evaluate_sensor
 
 # Display help for specific tools
 ncrain --help
@@ -260,6 +280,7 @@ shpblock2pol --help
 shpdike2pliz --help
 sensor --help
 evaluate --help
+evaluate_sensor --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -308,6 +329,10 @@ sensor --verbose  # Display additional processing information
 # Calculate flood simulation accuracy metrics
 evaluate --sim path/to/simulated_flood.shp --obs path/to/observed_flood.shp
 evaluate --sim path/to/simulated_flood.shp --obs path/to/observed_flood.shp --output accuracy_results.csv
+
+# Calculate flood simulation accuracy using sensor data
+evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.shp
+evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.shp --buffer 30 --threshold 30 --output sensor_accuracy.csv
 ```
 
 ## Requirements
