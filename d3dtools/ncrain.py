@@ -118,7 +118,7 @@ def generate(input_shp_folder='SHP',
                     res = raster_resolution
                     # Create the raster
                     raster = f'{intermediate_ras_folder}/THIESSEN_{i}.tif'
-                    # Create the raster, set nodata value to -9999
+                    # Create the raster, set nodata value to -999
                     gdal.Rasterize(raster,
                                    f'{intermediate_shp_folder}/THIESSEN_{i}.shp',
                                    format='GTiff',
@@ -127,7 +127,7 @@ def generate(input_shp_folder='SHP',
                                    yRes=res,
                                    attribute='rainfall',
                                    outputSRS=thiessen.crs,
-                                   noData=-9999)
+                                   noData=-999)
 
     # Get timestamps, including hours, minutes, and seconds
     timestamps = rainfall['time'].dt.strftime('%Y-%m-%d %H:%M:%S').to_list()
