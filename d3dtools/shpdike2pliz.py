@@ -103,7 +103,16 @@ def main():
     """
     Command line entry point
     """
-    parser = argparse.ArgumentParser(description='Convert bankline shapefile to PLIZ file')
+    parser = argparse.ArgumentParser(
+        description='Convert bankline shapefile to PLIZ file',
+        epilog='''
+examples:
+  %(prog)s                                # Use default folders (SHP_DIKE -> PLIZ_DIKE)
+  %(prog)s -i custom/SHP_DIKE -o custom/PLIZ_DIKE
+  %(prog)s -i SHP_DIKE -o PLIZ_DIKE -f MyDike
+  %(prog)s --id_field DikeName
+        ''',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i', '--input', default='SHP_DIKE', help='Input folder path (default: SHP_DIKE)')
     parser.add_argument('-o', '--output', default='PLIZ_DIKE', help='Output folder path (default: PLIZ_DIKE)')
     parser.add_argument('-f', '--filename', default='Dike', help='Output filename without extension (default: Dike)')

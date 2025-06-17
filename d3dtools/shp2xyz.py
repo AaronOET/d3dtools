@@ -88,7 +88,15 @@ def main():
       Command line entry point
       """
     parser = argparse.ArgumentParser(
-        description='Convert point shapefile to *.xyz file')
+        description='Convert point shapefile to *.xyz file',
+        epilog='''
+examples:
+  %(prog)s                                # Use default folders (SHP_SAMPLE -> XYZ_SAMPLE)
+  %(prog)s -i custom/SHP_SAMPLE -o custom/XYZ_SAMPLE
+  %(prog)s --z_field ELEVATION
+  %(prog)s -i points -o xyz_output --z_field HEIGHT
+        ''',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i',
                         '--input',
                         default='SHP_SAMPLE',

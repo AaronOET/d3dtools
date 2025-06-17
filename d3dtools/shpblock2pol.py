@@ -75,7 +75,15 @@ def main():
     Command line entry point
     """
     # Set up argument parser
-    parser = argparse.ArgumentParser(description='Convert shapefile blocks to *.pol files')
+    parser = argparse.ArgumentParser(
+        description='Convert shapefile blocks to *.pol files',
+        epilog='''
+examples:
+  %(prog)s                                # Use default folders (SHP_BLOCK -> POL_BLOCK)
+  %(prog)s -i custom/SHP_BLOCK -o custom/POL_BLOCK
+  %(prog)s --input my_blocks --output my_polygons
+        ''',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i', '--input', default='SHP_BLOCK',
                         help='Input folder containing shapefiles (default: SHP_BLOCK)')
     parser.add_argument('-o', '--output', default='POL_BLOCK',

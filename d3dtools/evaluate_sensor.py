@@ -116,7 +116,14 @@ def main():
     Main function for the command line interface.
     """
     parser = argparse.ArgumentParser(
-        description='Calculate flood simulation accuracy and recall using sensor data.')
+        description='Calculate flood simulation accuracy and recall using sensor data.',
+        epilog='''
+examples:
+  %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp
+  %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --buffer 50 --threshold 20
+  %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --output results.csv
+        ''',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--sim', required=True,
                         help='Path to simulated flood extent shapefile')
     parser.add_argument('--obs', required=True,

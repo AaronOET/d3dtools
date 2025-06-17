@@ -133,9 +133,15 @@ def main():
         sensor --nc-file path/to/file.nc --obs-shp path/to/observations.shp --output-csv results.csv --plot
     """
   import argparse
-
   parser = argparse.ArgumentParser(
-      description="Extract time series data from Delft3D FM NetCDF files at observation points")
+      description="Extract time series data from Delft3D FM NetCDF files at observation points",
+      epilog='''
+examples:
+  %(prog)s --nc-file results.nc --obs-shp observation_points.shp
+  %(prog)s --nc-file results.nc --obs-shp points.shp --output-csv depth.csv
+  %(prog)s --nc-file results.nc --obs-shp points.shp --plot --verbose
+      ''',
+      formatter_class=argparse.RawDescriptionHelpFormatter)
 
   parser.add_argument('--nc-file', dest='nc_file', required=True,
                       help='Path to the NetCDF file containing model results')

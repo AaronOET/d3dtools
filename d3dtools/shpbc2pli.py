@@ -52,7 +52,15 @@ def main():
     """
     Command line entry point
     """
-    parser = argparse.ArgumentParser(description='Convert boundary line shapefile to *.pli file')
+    parser = argparse.ArgumentParser(
+        description='Convert boundary line shapefile to *.pli file',
+        epilog='''
+examples:
+  %(prog)s                               # Use default folders (SHP_BC -> PLI_BC)
+  %(prog)s -i custom/SHP_BC -o custom/PLI_BC
+  %(prog)s --id_field BoundaryName
+        ''',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i', '--input', default='SHP_BC', help='Input folder path (default: SHP_BC)')
     parser.add_argument('-o', '--output', default='PLI_BC', help='Output folder path (default: PLI_BC)')
     parser.add_argument('--id_field', help='Name of the field to use for boundary names (default: looks for ID/Id/id/iD)')

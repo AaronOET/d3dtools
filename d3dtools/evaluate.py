@@ -73,7 +73,13 @@ def main():
         Main function for the command line interface.
         """
     parser = argparse.ArgumentParser(
-        description='Calculate flood simulation accuracy and catch rate.')
+        description='Calculate flood simulation accuracy and catch rate.',
+        epilog='''
+examples:
+  %(prog)s --sim SHP/SIM.shp --obs SHP/OBS.shp
+  %(prog)s --sim SHP/SIM.shp --obs SHP/OBS.shp --output results.csv
+        ''',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--sim',
                         required=True,
                         help='Path to simulated flood extent shapefile')

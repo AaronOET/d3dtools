@@ -96,7 +96,14 @@ def main():
           Command line entry point
           """
   parser = argparse.ArgumentParser(
-      description='Process rainfall scenario data and generate time series CSV files')
+      description='Process rainfall scenario data and generate time series CSV files',
+      epilog='''
+examples:
+  %(prog)s -i rainfall_scenarios.csv
+  %(prog)s -i rainfall_scenarios.csv -o custom/TAB
+  %(prog)s --input rainfall_scenarios.csv --output custom/TAB --verbose
+      ''',
+      formatter_class=argparse.RawDescriptionHelpFormatter)
 
   parser.add_argument('-i',
                       '--input',

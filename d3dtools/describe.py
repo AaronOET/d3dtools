@@ -21,6 +21,19 @@ TOOL_DESCRIPTIONS = {
             evaluate --sim SHP/SIM.shp --obs SHP/OBS.shp
             evaluate --sim SHP/SIM.shp --obs SHP/OBS.shp --output results.csv
     """,
+    'evaluate_sensor':
+    """
+        Evaluate flood simulation accuracy and recall using sensor data.
+
+        This tool compares simulated flood extent shapefiles with observed flood extent
+        shapefiles to calculate accuracy and recall metrics, which are important for
+        validating flood model performance.
+
+        Examples:
+            evaluate_sensor --sim SHP/SIM.shp --obs SHP/OBS.shp
+            evaluate_sensor --sim SHP/SIM.shp --obs SHP/OBS.shp --buffer 50 --threshold 20
+            evaluate_sensor --sim SHP/SIM.shp --obs SHP/OBS.shp --output results.csv
+    """,
     'sensor':
     """
         Extract time series data at observation points from Delft3D FM NetCDF files.

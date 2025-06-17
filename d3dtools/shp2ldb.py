@@ -50,7 +50,15 @@ def main():
     """
     Command line entry point
     """
-    parser = argparse.ArgumentParser(description='Convert boundary line shapefile to *.ldb file')
+    parser = argparse.ArgumentParser(
+        description='Convert boundary line shapefile to *.ldb file',
+        epilog='''
+examples:
+  %(prog)s                               # Use default folders (SHP_LDB -> LDB)
+  %(prog)s -i custom/SHP_LDB -o custom/LDB
+  %(prog)s --id_field BoundaryName
+        ''',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i', '--input', default='SHP_LDB', help='Input folder path (default: SHP_LDB)')
     parser.add_argument('-o', '--output', default='LDB', help='Output folder path (default: LDB)')
     parser.add_argument('--id_field', help='Name of the field to use for boundary names (default: looks for ID/Id/id/iD)')

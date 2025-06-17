@@ -340,15 +340,22 @@ def generate_all(input_shp_folder='SHP',
 
 def main():
     """
-      Command line entry point for the ncrain tool.
-
-      Example usage:
+      Command line entry point for the ncrain tool.      Example usage:
           ncrain --shp-folder SHP --tab-folder TAB --nc-folder NC --resolution 320
       """
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Generate NetCDF files from rainfall data and thiessen polygon shapefiles")
+        description="Generate NetCDF files from rainfall data and thiessen polygon shapefiles",
+        epilog='''
+examples:
+  %(prog)s                           # Process all CSV files in the input folder
+  %(prog)s --single rainfall.csv     # Process only a specific CSV file
+  %(prog)s --verbose                 # Display additional processing information
+  %(prog)s --no-clean                # Keep intermediate files
+  %(prog)s --shp-folder custom/SHP --tab-folder custom/TAB --nc-folder custom/NC
+        ''',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('--shp-folder', dest='input_shp_folder', default='SHP',
                         help='Path to the folder containing input shapefiles (default: SHP)')
