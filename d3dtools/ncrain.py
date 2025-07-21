@@ -223,12 +223,12 @@ def generate(input_shp_folder='SHP',
     time = ncFile.createVariable('time', np.float64, ('time', ))
     time.standard_name = "time"
     time.long_name = "time"
-    time.units = "minutes since 1970-01-01 08:00:00.0 +0800"
+    time.units = "minutes since 1970-01-01 00:00:00.0 +0000"
     time.axis = "T"
 
     # Convert timestamp to minutes since 1970-01-01 08:00:00.0 +0800
     timestamp = [datetime.strptime(i, '%Y-%m-%d %H:%M:%S') for i in timestamps]
-    time[:] = [(i - datetime(1970, 1, 1, 8, 0, 0)).total_seconds() / 60
+    time[:] = [(i - datetime(1970, 1, 1, 0, 0, 0)).total_seconds() / 60
                for i in timestamp]
 
     # CRS
