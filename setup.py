@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.13.0",
+    version="0.14.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -40,6 +40,7 @@ setup(
             "sensor=d3dtools.sensor:main",  # Tool for extracting time series data from NetCDF files
             "evaluate=d3dtools.evaluate:main",  # Tool for flood accuracy metrics
             "evaluate_sensor=d3dtools.evaluate_sensor:main",  # Tool for evaluating sensor data
+            "getfacez=d3dtools.getfacez:main",  # Tool for extracting Mesh2d_face_z values from NetCDF files
         ],
     },
 )

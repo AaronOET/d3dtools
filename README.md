@@ -26,6 +26,7 @@ This package provides several utilities for converting shapefiles to various for
 - **evaluate**: Calculate flood simulation accuracy metrics by comparing simulated and observed flood extents
 - **evaluate_sensor**: Calculate flood simulation accuracy metrics by comparing simulated flood extents with point-based sensor data (with configurable buffer radius and depth threshold)
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
+- **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
 
 ## Usage Examples
 
@@ -202,6 +203,25 @@ stats = data.describe().transpose()
 print(stats)
 ```
 
+### Extract Mesh2d_face_z values from NetCDF files
+
+```python
+from d3dtools import getfacez
+
+# Extract bed level/bathymetry data from NetCDF file at observation points
+data = getfacez.extract_mesh2d_face_z(
+    nc_file='path/to/model_output.nc',
+    obs_shp='path/to/observation_points.shp',
+    output_csv='bathymetry.csv',
+    output_excel='bathymetry.xlsx',
+    verbose=True  # Display additional information during processing
+)
+
+# Process the data further if needed
+print(data.head())
+print(f"Bathymetry range: {data['Mesh2d_face_z'].min():.3f} to {data['Mesh2d_face_z'].max():.3f}")
+```
+
 ### Calculate flood simulation accuracy using sensor data
 
 ```python
@@ -266,6 +286,7 @@ d3dtools-info shpdike2pliz
 d3dtools-info sensor
 d3dtools-info evaluate
 d3dtools-info evaluate_sensor
+d3dtools-info getfacez
 
 # Display help for specific tools
 ncrain --help
@@ -281,6 +302,7 @@ shpdike2pliz --help
 sensor --help
 evaluate --help
 evaluate_sensor --help
+getfacez --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -333,6 +355,11 @@ evaluate --sim path/to/simulated_flood.shp --obs path/to/observed_flood.shp --ou
 # Calculate flood simulation accuracy using sensor data
 evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.shp
 evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.shp --buffer 30 --threshold 30 --output sensor_accuracy.csv
+
+# Extract Mesh2d_face_z values at observation points
+getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp
+getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp --output-csv bathymetry.csv --output-excel bathymetry.xlsx
+getfacez --verbose  # Display additional processing information
 ```
 
 ## Requirements

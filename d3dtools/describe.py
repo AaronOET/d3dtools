@@ -153,6 +153,18 @@ TOOL_DESCRIPTIONS = {
             shp2xyz
             shp2xyz -i custom/SHP_SAMPLE -o custom/XYZ_SAMPLE
             shp2xyz --z_field ELEVATION
+    """,
+    'getfacez':
+    """
+        Extract Mesh2d_face_z values from Delft3D FM NetCDF files at observation points.
+
+        This tool extracts bed level/bathymetry values (Mesh2d_face_z) at specified observation
+        points from Delft3D FM NetCDF output files and exports the results to CSV and/or Excel.
+
+        Examples:
+            getfacez --nc-file results.nc --obs-shp observation_points.shp
+            getfacez --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv
+            getfacez --nc-file results.nc --obs-shp points.shp --output-excel bathymetry.xlsx --verbose
     """
 }
 
