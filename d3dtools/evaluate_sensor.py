@@ -20,7 +20,7 @@ def confusion_matrix(sim_path, obs_path, buffer_radius=30, depth_threshold=30, o
     obs_path : str
         Path to the observed sensor point shapefile
     buffer_radius : float, optional
-        Buffer radius around sensor points in meters (default: 30)
+        Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 30)
     depth_threshold : float, optional
         Water depth threshold in centimeters (default: 30)
     output_csv : str, optional
@@ -35,15 +35,18 @@ def confusion_matrix(sim_path, obs_path, buffer_radius=30, depth_threshold=30, o
     sim_gdf = gpd.read_file(sim_path)
     obs_gdf = gpd.read_file(obs_path)
 
-    # Create a buffer around observation points
+    # Create a buffer around observation points or use original points if buffer_radius is 0
     obs_buffer = obs_gdf.copy()
-    obs_buffer['geometry'] = obs_buffer.geometry.buffer(buffer_radius)
+    if buffer_radius > 0:
+        obs_buffer['geometry'] = obs_buffer.geometry.buffer(buffer_radius)
+    # If buffer_radius is 0, keep the original point geometry
 
     # Calculate True Positive (TP)
     # Sensors with depth >= threshold that intersect with simulated flood
     True_Positive = 0
     for _, obs in obs_buffer.iterrows():
         if obs['最大深'] >= depth_threshold:
+            # For both point and buffered data, intersects works appropriately
             if sim_gdf.intersects(obs.geometry).any():
                 True_Positive += 1
 
@@ -57,6 +60,7 @@ def confusion_matrix(sim_path, obs_path, buffer_radius=30, depth_threshold=30, o
     False_Positive = 0
     for _, obs in obs_buffer.iterrows():
         if obs['最大深'] < depth_threshold:
+            # For both point and buffered data, intersects works appropriately
             if sim_gdf.intersects(obs.geometry).any():
                 False_Positive += 1
 
@@ -121,6 +125,7 @@ def main():
 examples:
   %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp
   %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --buffer 50 --threshold 20
+  %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --buffer 0 --threshold 30
   %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --output results.csv
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -129,7 +134,7 @@ examples:
     parser.add_argument('--obs', required=True,
                         help='Path to observed sensor point shapefile')
     parser.add_argument('--buffer', type=float, default=30,
-                        help='Buffer radius around sensor points in meters (default: 30)')
+                        help='Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 30)')
     parser.add_argument('--threshold', type=float, default=30,
                         help='Water depth threshold in cm (default: 30)')
     parser.add_argument('--output', help='Path to output CSV file (optional)')
