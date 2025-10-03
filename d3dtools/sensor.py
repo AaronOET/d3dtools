@@ -3,13 +3,16 @@ Sensor data extraction module for Delft3D FM NetCDF files.
 
 This module provides functions for extracting time series data at observation points
 from Delft3D FM NetCDF output files.
+
+Note:
+  Observation shapefiles used by this module must contain a 'Name' attribute/field
+  for each observation point. The 'Name' field is used as the column header for
+  extracted time series values.
 """
 import matplotlib.pyplot as plt
-import numpy as np
 import geopandas as gpd
 import pandas as pd
 from netCDF4 import Dataset
-import os
 
 
 def getdata(nc_file,
@@ -24,8 +27,10 @@ def getdata(nc_file,
       -----------
       nc_file : str (required)
           Path to the NetCDF file containing model results
-      obs_shp : str (required)
-          Path to the shapefile containing observation points
+    obs_shp : str (required)
+      Path to the shapefile containing observation points. The shapefile must
+      include a 'Name' attribute for each point which will be used as the
+      identifier/column name in the output.
       output_csv : str (required, default: 'water_depth.csv')
           Path to save the output CSV file
       output_excel : str (required, default: 'water_depth.xlsx')
@@ -140,13 +145,17 @@ examples:
   %(prog)s --nc-file results.nc --obs-shp observation_points.shp
   %(prog)s --nc-file results.nc --obs-shp points.shp --output-csv depth.csv
   %(prog)s --nc-file results.nc --obs-shp points.shp --plot --verbose
+  
+Note:
+  Observation shapefiles must include a 'Name' attribute for each point; that
+  field will be used as the identifier/column name in the output.
       ''',
       formatter_class=argparse.RawDescriptionHelpFormatter)
 
   parser.add_argument('--nc-file', dest='nc_file', required=True,
                       help='Path to the NetCDF file containing model results')
   parser.add_argument('--obs-shp', dest='obs_shp', required=True,
-                      help='Path to the shapefile containing observation points')
+                      help="Path to the shapefile containing observation points. The shapefile must include a 'Name' field which will be used as the identifier/column name for each observation point.")
   parser.add_argument('--output-csv', dest='output_csv', default='water_depth.csv',
                       metavar='water_depth.csv',
                       help='Path to save the output CSV file')
