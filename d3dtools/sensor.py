@@ -44,7 +44,7 @@ def getdata(nc_file,
           DataFrame containing time series data at observation points
       """
   # Read observation points from shapefile
-  obs = gpd.read_file(obs_shp)
+  obs = gpd.read_file(obs_shp, encoding='utf-8')
 
   # Read NetCDF file
   nc = Dataset(nc_file, mode='r')
