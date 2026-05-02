@@ -25,6 +25,7 @@ This package provides several utilities for converting shapefiles to various for
 - **shp2xyz**: Convert point shapefiles to XYZ files
 - **evaluate**: Calculate flood simulation accuracy metrics by comparing simulated and observed flood extents
 - **evaluate_sensor**: Calculate flood simulation accuracy metrics by comparing simulated flood extents with point-based sensor data (with configurable buffer radius and depth threshold)
+- **evaluate_sensor2**: Calculate flood simulation accuracy metrics using sensor data with dual-threshold shapefiles (separate low and high depth threshold simulations)
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
 - **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
 
@@ -240,6 +241,25 @@ print(f"Accuracy: {results['accuracy']:.2f}%")
 print(f"Recall (Catch Rate): {results['recall']:.2f}%")
 ```
 
+### Calculate flood simulation accuracy using sensor data with dual thresholds
+
+```python
+from d3dtools import evaluate_sensor2
+
+# Compare simulated flood extents (low/high threshold) with sensor observations
+results = evaluate_sensor2.confusion_matrix(
+    low_threshold_sim_path='path/to/simulated_flood_low.shp',
+    high_threshold_sim_path='path/to/simulated_flood_high.shp',
+    obs_path='path/to/sensor_observations.shp',
+    buffer_radius=30,               # Buffer radius around sensor points in meters (default: 30)
+    depth_threshold=30,             # Water depth threshold in centimeters (default: 30)
+    output_csv='sensor_accuracy2.csv'
+)
+
+print(f"Accuracy: {results['accuracy']:.2f}%")
+print(f"Recall (Catch Rate): {results['recall']:.2f}%")
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -286,6 +306,7 @@ d3dtools-info shpdike2pliz
 d3dtools-info sensor
 d3dtools-info evaluate
 d3dtools-info evaluate_sensor
+d3dtools-info evaluate_sensor2
 d3dtools-info getfacez
 
 # Display help for specific tools
@@ -302,6 +323,7 @@ shpdike2pliz --help
 sensor --help
 evaluate --help
 evaluate_sensor --help
+evaluate_sensor2 --help
 getfacez --help
 ```
 
@@ -355,6 +377,10 @@ evaluate --sim path/to/simulated_flood.shp --obs path/to/observed_flood.shp --ou
 # Calculate flood simulation accuracy using sensor data
 evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.shp
 evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.shp --buffer 30 --threshold 30 --output sensor_accuracy.csv
+
+# Calculate flood simulation accuracy using sensor data with dual-threshold shapefiles
+evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp
+evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --threshold 20 --output sensor_accuracy2.csv
 
 # Extract Mesh2d_face_z values at observation points
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp

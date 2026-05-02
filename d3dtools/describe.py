@@ -34,6 +34,19 @@ TOOL_DESCRIPTIONS = {
             evaluate_sensor --sim SHP/SIM.shp --obs SHP/OBS.shp --buffer 50 --threshold 20
             evaluate_sensor --sim SHP/SIM.shp --obs SHP/OBS.shp --output results.csv
     """,
+    'evaluate_sensor2':
+    """
+        Evaluate flood simulation accuracy using sensor data with dual-threshold shapefiles.
+
+        This tool compares two simulated flood extent shapefiles (low and high depth threshold)
+        with observed sensor point data to calculate accuracy and recall metrics. TP/FN are
+        determined against the low-threshold simulation; FP/TN against the high-threshold one.
+
+        Examples:
+            evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp
+            evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --threshold 20
+            evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --output results.csv
+    """,
     'sensor':
     """
         Extract time series data at observation points from Delft3D FM NetCDF files.
