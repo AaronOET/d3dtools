@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.15.3",
+    version="0.15.4",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -42,6 +42,7 @@ setup(
             "evaluate_sensor=d3dtools.evaluate_sensor:main",  # Tool for evaluating sensor data
             "evaluate_sensor2=d3dtools.evaluate_sensor2:main",  # Tool for evaluating sensor data with dual-threshold shapefiles
             "getfacez=d3dtools.getfacez:main",  # Tool for extracting Mesh2d_face_z values from NetCDF files
+            "fou2shp=d3dtools.fou2shp:main",  # Tool for converting Delft3D FOU output to shapefiles
         ],
     },
 )
