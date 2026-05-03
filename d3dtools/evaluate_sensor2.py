@@ -137,6 +137,7 @@ def main():
     Main function for the command line interface.
     """
     parser = argparse.ArgumentParser(
+        prog=os.path.splitext(os.path.basename(sys.argv[0]))[0],
         description="Calculate flood simulation accuracy and recall using sensor data.",
         epilog="""
 examples:
