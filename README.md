@@ -28,6 +28,7 @@ This package provides several utilities for converting shapefiles to various for
 - **evaluate_sensor2**: Calculate flood simulation accuracy metrics using sensor data with dual-threshold shapefiles (separate low and high depth threshold simulations)
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
 - **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
+- **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles
 
 ## Usage Examples
 
@@ -260,6 +261,18 @@ print(f"Accuracy: {results['accuracy']:.2f}%")
 print(f"Recall (Catch Rate): {results['recall']:.2f}%")
 ```
 
+### Reconstruct FOU mesh faces as threshold shapefiles
+
+```python
+from d3dtools import fou2shp
+import subprocess
+
+# Run via command line (recommended)
+# fou2shp
+# fou2shp --input NC/FlowFM_fou.nc --out-dir SHP
+# fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -308,6 +321,7 @@ d3dtools-info evaluate
 d3dtools-info evaluate_sensor
 d3dtools-info evaluate_sensor2
 d3dtools-info getfacez
+d3dtools-info fou2shp
 
 # Display help for specific tools
 ncrain --help
@@ -325,6 +339,7 @@ evaluate --help
 evaluate_sensor --help
 evaluate_sensor2 --help
 getfacez --help
+fou2shp --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -386,6 +401,11 @@ evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp --output-csv bathymetry.csv --output-excel bathymetry.xlsx
 getfacez --verbose  # Display additional processing information
+
+# Reconstruct FOU mesh faces as threshold-filtered shapefiles
+fou2shp                                         # Use defaults (NC/FlowFM_fou.nc -> SHP/)
+fou2shp --input NC/FlowFM_fou.nc --out-dir SHP  # Specify input and output directory
+fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
 ```
 
 ## Requirements
