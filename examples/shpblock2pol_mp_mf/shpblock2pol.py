@@ -27,9 +27,8 @@ def convert(input_folder='SHP_BLOCK', output_folder='POL_BLOCK'):
     """
     # Read shapefile data
     blockList = glob(f'{input_folder}/*.shp')
-    blockNameList = [
-        os.path.basename(block).split('.')[0] for block in blockList
-    ]
+    blockNameList = [os.path.basename(block).split('.')[0]
+                     for block in blockList]
 
     # Extract wkt from blocks and convert to pol
     for i, block in enumerate(blockList):
@@ -84,16 +83,10 @@ examples:
   %(prog)s --input my_blocks --output my_polygons
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument(
-        '-i',
-        '--input',
-        default='SHP_BLOCK',
-        help='Input folder containing shapefiles (default: SHP_BLOCK)')
-    parser.add_argument(
-        '-o',
-        '--output',
-        default='POL_BLOCK',
-        help='Output folder for .pol files (default: POL_BLOCK)')
+    parser.add_argument('-i', '--input', default='SHP_BLOCK',
+                        help='Input folder containing shapefiles (default: SHP_BLOCK)')
+    parser.add_argument('-o', '--output', default='POL_BLOCK',
+                        help='Output folder for .pol files (default: POL_BLOCK)')
 
     # Parse arguments
     args = parser.parse_args()

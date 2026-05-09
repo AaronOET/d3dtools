@@ -52,16 +52,13 @@ def convert(input_folder='SHP_DIKE',
                     parts = [geom]
 
                 for k, part in enumerate(parts):
-                    label = str(
-                        names[j]) if len(parts) == 1 else f'{names[j]}_{k+1}'
+                    label = str(names[j]) if len(parts) == 1 else f'{names[j]}_{k+1}'
                     coords = list(part.coords)
                     f.write(f'{label}\n')
                     f.write(f'{len(coords)} 5\n')
                     for coord in coords:
                         z = coord[2] if len(coord) > 2 else 0.0
-                        f.write(
-                            f'{coord[0]:.6f} {coord[1]:.6f} {z:.3f} {z:.3f} {z:.3f}\n'
-                        )
+                        f.write(f'{coord[0]:.6f} {coord[1]:.6f} {z:.3f} {z:.3f} {z:.3f}\n')
                     f.write('\n')
 
     print(f'Done! PLIZ file created at: {output_path}')
@@ -82,25 +79,13 @@ examples:
   %(prog)s --id_field DikeName
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-i',
-                        '--input',
-                        default='SHP_DIKE',
-                        help='Input folder path (default: SHP_DIKE)')
-    parser.add_argument('-o',
-                        '--output',
-                        default='PLIZ_DIKE',
-                        help='Output folder path (default: PLIZ_DIKE)')
-    parser.add_argument(
-        '-f',
-        '--filename',
-        default='Dike',
-        help='Output filename without extension (default: Dike)')
+    parser.add_argument('-i', '--input', default='SHP_DIKE', help='Input folder path (default: SHP_DIKE)')
+    parser.add_argument('-o', '--output', default='PLIZ_DIKE', help='Output folder path (default: PLIZ_DIKE)')
+    parser.add_argument('-f', '--filename', default='Dike', help='Output filename without extension (default: Dike)')
 
     args = parser.parse_args()
 
-    convert(input_folder=args.input,
-            output_folder=args.output,
-            output_filename=args.filename)
+    convert(input_folder=args.input, output_folder=args.output, output_filename=args.filename)
 
 
 if __name__ == "__main__":

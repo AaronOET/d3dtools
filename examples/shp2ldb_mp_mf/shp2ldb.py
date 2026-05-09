@@ -5,7 +5,7 @@ import os
 import glob
 import geopandas as gpd
 import argparse
-from . import utils
+import utils
 
 
 def convert(input_folder='SHP_LDB', output_folder='LDB'):
@@ -41,8 +41,7 @@ def convert(input_folder='SHP_LDB', output_folder='LDB'):
                 parts = [geom]
 
             for k, part in enumerate(parts):
-                label = str(
-                    names[j]) if len(parts) == 1 else f'{names[j]}_{k+1}'
+                label = str(names[j]) if len(parts) == 1 else f'{names[j]}_{k+1}'
                 coords = list(part.coords)
                 out_path = f'{output_folder}/{label}.ldb'
                 if utils.write_boundary_file(out_path, label, coords):
@@ -64,14 +63,8 @@ examples:
   %(prog)s -i custom/SHP_LDB -o custom/LDB
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-i',
-                        '--input',
-                        default='SHP_LDB',
-                        help='Input folder path (default: SHP_LDB)')
-    parser.add_argument('-o',
-                        '--output',
-                        default='LDB',
-                        help='Output folder path (default: LDB)')
+    parser.add_argument('-i', '--input', default='SHP_LDB', help='Input folder path (default: SHP_LDB)')
+    parser.add_argument('-o', '--output', default='LDB', help='Output folder path (default: LDB)')
 
     args = parser.parse_args()
 

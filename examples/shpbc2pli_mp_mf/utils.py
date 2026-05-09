@@ -103,9 +103,7 @@ def get_boundary_names(gdfs, id_field=None):
             if found_id_field:
                 bcName = [name for name in gdf[found_id_field].values]
             else:
-                raise KeyError(
-                    f"No ID field found in the shapefile. Please ensure your shapefile has one of these fields: {possible_id_fields} or specify the field name using id_field parameter"
-                )
+                raise KeyError(f"No ID field found in the shapefile. Please ensure your shapefile has one of these fields: {possible_id_fields} or specify the field name using id_field parameter")
 
         bcNames.append(bcName)
 
@@ -173,5 +171,6 @@ def write_boundary_file(filepath, boundary_name, points, extension=None):
             f.write(
                 f'{float(point[0]):.6f} {float(point[1]):.6f} {boundary_name}_{k+1:0>4}\n'
             )
+        f.write('\n')
 
     return True

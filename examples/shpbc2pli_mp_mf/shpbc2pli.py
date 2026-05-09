@@ -1,23 +1,26 @@
 """
-Convert boundary line shapefile to *.ldb file
+Convert boundary line shapefile to *.pli file
+
+This module can be executed using either 'shpbc2pli' or 'shp2pli' command.
 """
 import os
 import glob
 import geopandas as gpd
 import argparse
-from . import utils
+# from . import utils
+import utils
 
 
-def convert(input_folder='SHP_LDB', output_folder='LDB'):
+def convert(input_folder='SHP_BC', output_folder='PLI_BC'):
     """
-    Convert boundary line shapefile to *.ldb file
+    Convert boundary line shapefile to *.pli file
 
     Parameters:
     -----------
     input_folder : str
-        Path to the folder containing shapefiles with LineString/MultiLineString geometry (default: 'SHP_LDB')
+        Path to the folder containing shapefiles with LineString/MultiLineString geometry (default: 'SHP_BC')
     output_folder : str
-        Path to the output folder for LDB files (default: 'LDB')
+        Path to the output folder for PLI files (default: 'PLI_BC')
     """
     fileList = glob.glob(f'{input_folder}/*.shp')
     print(f"Found {len(fileList)} shapefiles in {input_folder}")
@@ -41,14 +44,13 @@ def convert(input_folder='SHP_LDB', output_folder='LDB'):
                 parts = [geom]
 
             for k, part in enumerate(parts):
-                label = str(
-                    names[j]) if len(parts) == 1 else f'{names[j]}_{k+1}'
+                label = str(names[j]) if len(parts) == 1 else f'{names[j]}_{k+1}'
                 coords = list(part.coords)
-                out_path = f'{output_folder}/{label}.ldb'
+                out_path = f'{output_folder}/{label}.pli'
                 if utils.write_boundary_file(out_path, label, coords):
                     file_count += 1
 
-    print(f'Done! Generated {file_count} LDB files in {output_folder}')
+    print(f'Done! Generated {file_count} PLI files in {output_folder}')
     return file_count
 
 
@@ -57,22 +59,15 @@ def main():
     Command line entry point
     """
     parser = argparse.ArgumentParser(
-        description='Convert boundary line shapefile to *.ldb file',
+        description='Convert boundary line shapefile to *.pli file',
         epilog='''
 examples:
-  %(prog)s                               # Use default folders (SHP_LDB -> LDB)
-  %(prog)s -i custom/SHP_LDB -o custom/LDB
+  %(prog)s                               # Use default folders (SHP_BC -> PLI_BC)
+  %(prog)s -i custom/SHP_BC -o custom/PLI_BC
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-i',
-                        '--input',
-                        default='SHP_LDB',
-                        help='Input folder path (default: SHP_LDB)')
-    parser.add_argument('-o',
-                        '--output',
-                        default='LDB',
-                        help='Output folder path (default: LDB)')
-
+    parser.add_argument('-i', '--input', default='SHP_BC', help='Input folder path (default: SHP_BC)')
+    parser.add_argument('-o', '--output', default='PLI_BC', help='Output folder path (default: PLI_BC)')
     args = parser.parse_args()
 
     convert(input_folder=args.input, output_folder=args.output)
