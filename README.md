@@ -29,6 +29,7 @@ This package provides several utilities for converting shapefiles to various for
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
 - **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles
+- **pliz2shp**: Convert Delft3D PLIZ polyline files to ESRI Shapefiles
 
 ## Usage Examples
 
@@ -273,6 +274,22 @@ import subprocess
 # fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
 ```
 
+### Convert PLIZ files to Shapefiles
+
+```python
+from d3dtools import pliz2shp
+
+# Convert a single .pliz file
+pliz2shp.pliz_to_shp(
+    pliz_path='PLIZ/MyDike.pliz',
+    output_dir='SHP_DIKE'           # Optional; defaults to same folder as input
+)
+
+# Batch convert all .pliz files in a folder via CLI (recommended for multiple files)
+# pliz2shp
+# pliz2shp -i custom/PLIZ -o custom/SHP
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -322,6 +339,7 @@ d3dtools-info evaluate_sensor
 d3dtools-info evaluate_sensor2
 d3dtools-info getfacez
 d3dtools-info fou2shp
+d3dtools-info pliz2shp
 
 # Display help for specific tools
 ncrain --help
@@ -340,6 +358,7 @@ evaluate_sensor --help
 evaluate_sensor2 --help
 getfacez --help
 fou2shp --help
+pliz2shp --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -406,7 +425,22 @@ getfacez --verbose  # Display additional processing information
 fou2shp                                         # Use defaults (NC/FlowFM_fou.nc -> SHP/)
 fou2shp --input NC/FlowFM_fou.nc --out-dir SHP  # Specify input and output directory
 fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
+
+# Convert Delft3D PLIZ files to ESRI Shapefiles
+pliz2shp                             # Use defaults (PLIZ/ -> SHP_DIKE/)
+pliz2shp -i custom/PLIZ -o custom/SHP  # Specify custom input and output folders
+pliz2shp --help
 ```
+
+## Changelog
+
+### 0.18.1
+- Added **pliz2shp**: converts Delft3D `*.pliz` polyline files to ESRI Shapefiles
+
+### 0.18.0
+- Added **fou2shp**: reconstructs Delft3D FM 2D mesh face polygons from FOU (Fourier) NetCDF output and exports threshold-filtered shapefiles
+- Added **pliz2shp** module (internal)
+- Added **evaluate_sensor2**: flood accuracy evaluation with dual-threshold shapefiles
 
 ## Requirements
 
