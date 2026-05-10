@@ -178,6 +178,30 @@ TOOL_DESCRIPTIONS = {
             getfacez --nc-file results.nc --obs-shp observation_points.shp
             getfacez --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv
             getfacez --nc-file results.nc --obs-shp points.shp --output-excel bathymetry.xlsx --verbose
+    """,
+    'fou2shp':
+    """
+        Reconstruct FlowFM 2D mesh faces as polygons in threshold shapefiles from FOU NetCDF output.
+
+        This tool reads a Delft3D FM fourier/statistics NetCDF file, extracts 2D mesh face
+        polygons with depth values, and writes multiple threshold-based shapefiles (e.g.,
+        SIM_thrd125, SIM_thrd300, SIM_thrd475) to an output directory.
+
+        Examples:
+            fou2shp
+            fou2shp --input NC/FlowFM_fou.nc --out-dir SHP
+            fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
+    """,
+    'pliz2shp':
+    """
+        Convert Delft3D PLIZ files to ESRI Shapefiles.
+
+        This tool reads all *.pliz files from an input folder and converts each polyline
+        (with Z values) to a shapefile in the output folder.
+
+        Examples:
+            pliz2shp
+            pliz2shp -i custom/PLIZ -o custom/SHP
     """
 }
 
