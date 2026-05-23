@@ -4,9 +4,9 @@ Convert dike line shapefile to *.pli file with z values
 This module can be executed using either 'shpdike2pliz' or 'shp2pliz' command.
 """
 import os
-import glob
 import geopandas as gpd
 import argparse
+from . import utils
 
 
 def convert(input_folder='SHP_DIKE',
@@ -27,13 +27,14 @@ def convert(input_folder='SHP_DIKE',
     Returns:
     --------
     str
-        Path to the created PLIZ file
+        Path to the created PLIZ file, or None if no input shapefiles were found
     """
-    fileList = glob.glob(f'{input_folder}/*.shp')
-    print(f"Found {len(fileList)} shapefiles in {input_folder}")
+    fileList = utils.find_shapefiles(input_folder)
+    if not fileList:
+        print(f'No shapefiles found in {input_folder}. Nothing to do.')
+        return None
 
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+    utils.ensure_output_folder(output_folder)
 
     output_path = os.path.join(output_folder, f"{output_filename}.pliz")
     with open(output_path, 'w', encoding='utf-8') as f:
@@ -64,7 +65,8 @@ def convert(input_folder='SHP_DIKE',
                         )
                     f.write('\n')
 
-    print(f'Done! PLIZ file created at: {output_path}')
+    # print(f'Done! Generated PLIZ file at {output_path}')
+    print(f'Done! Generated PLIZ file in {output_folder}')
     return output_path
 
 

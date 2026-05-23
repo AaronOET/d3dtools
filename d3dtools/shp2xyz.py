@@ -6,27 +6,30 @@ This module can be executed using either 'shpxyz2xyz' or 'shp2xyz' command.
 import os
 import argparse
 from . import utils
-import geopandas as gpd
 
 
 def convert(input_folder='SHP_SAMPLE',
             output_folder='XYZ_SAMPLE',
             z_field=None):
     """
-      Convert point shapefile to *.xyz file
-      Attribute table must contain a Z-value field (default: looks for 'Z', 'z', 'ELEVATION', 'elevation', 'HEIGHT', 'height')
+    Convert point shapefile to *.xyz file
+    Attribute table must contain a Z-value field (default: looks for 'Z', 'z', 'ELEVATION', 'elevation', 'HEIGHT', 'height')
 
-      Parameters:
-      -----------
-      input_folder : str
-          Path to the folder containing shapefiles with Point geometry (default: 'SHP_SAMPLE')
-      output_folder : str
-          Path to the output folder for XYZ files (default: 'XYZ_SAMPLE')
-      z_field : str, optional
-          Name of the field to use for Z values. If None, will look for common elevation field names
-      """
+    Parameters:
+    -----------
+    input_folder : str
+        Path to the folder containing shapefiles with Point geometry (default: 'SHP_SAMPLE')
+    output_folder : str
+        Path to the output folder for XYZ files (default: 'XYZ_SAMPLE')
+    z_field : str, optional
+        Name of the field to use for Z values. If None, will look for common elevation field names
+    """
     # Find and load shapefiles
     fileList = utils.find_shapefiles(input_folder)
+    if not fileList:
+        print(f'No shapefiles found in {input_folder}. Nothing to do.')
+        return 0
+
     gdfs = utils.read_shapefiles(fileList)
 
     # Create output folder if needed
@@ -35,10 +38,12 @@ def convert(input_folder='SHP_SAMPLE',
     # Process and write XYZ files
     file_count = 0
     for i, gdf in enumerate(gdfs):
+        base = os.path.splitext(os.path.basename(fileList[i]))[0]
+
         # Ensure we have Point geometries
         if not all(geom.geom_type == 'Point' for geom in gdf.geometry):
             print(
-                f"Warning: Skipping file {os.path.basename(fileList[i])} - not all geometries are points"
+                f"Warning: Skipping {base} - not all geometries are points"
             )
             continue
 
@@ -62,13 +67,12 @@ def convert(input_folder='SHP_SAMPLE',
                 z_column = found_z_field
             else:
                 print(
-                    f"Warning: No Z field found in {os.path.basename(fileList[i])}. Please specify using z_field parameter."
+                    f"Warning: No Z field found in {base}. Please specify using z_field parameter."
                 )
                 continue
 
-        # Get base filename without extension
-        base_filename = os.path.splitext(os.path.basename(fileList[i]))[0]
-        output_filename = f"{output_folder}/{base_filename}.xyz"
+        print(f'Processing: {base}')
+        output_filename = f"{output_folder}/{base}.xyz"
 
         # Write XYZ file
         with open(output_filename, 'w', encoding='utf-8') as f:
@@ -76,7 +80,6 @@ def convert(input_folder='SHP_SAMPLE',
                 x, y = row.geometry.x, row.geometry.y
                 z = row[z_column]
                 f.write(f"{x:20.6e} {y:20.6e} {z:20.6e}\n")
-        print(f"Created {output_filename}")
         file_count += 1
 
     print(f'Done! Generated {file_count} XYZ files in {output_folder}')

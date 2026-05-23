@@ -2,7 +2,6 @@
 Convert boundary line shapefile to *.ldb file
 """
 import os
-import glob
 import geopandas as gpd
 import argparse
 from . import utils
@@ -19,8 +18,10 @@ def convert(input_folder='SHP_LDB', output_folder='LDB'):
     output_folder : str
         Path to the output folder for LDB files (default: 'LDB')
     """
-    fileList = glob.glob(f'{input_folder}/*.shp')
-    print(f"Found {len(fileList)} shapefiles in {input_folder}")
+    fileList = utils.find_shapefiles(input_folder)
+    if not fileList:
+        print(f'No shapefiles found in {input_folder}. Nothing to do.')
+        return 0
 
     utils.ensure_output_folder(output_folder)
 

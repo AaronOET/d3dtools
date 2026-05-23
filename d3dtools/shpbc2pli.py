@@ -4,7 +4,6 @@ Convert boundary line shapefile to *.pli file
 This module can be executed using either 'shpbc2pli' or 'shp2pli' command.
 """
 import os
-import glob
 import geopandas as gpd
 import argparse
 from . import utils
@@ -21,8 +20,10 @@ def convert(input_folder='SHP_BC', output_folder='PLI_BC'):
     output_folder : str
         Path to the output folder for PLI files (default: 'PLI_BC')
     """
-    fileList = glob.glob(f'{input_folder}/*.shp')
-    print(f"Found {len(fileList)} shapefiles in {input_folder}")
+    fileList = utils.find_shapefiles(input_folder)
+    if not fileList:
+        print(f'No shapefiles found in {input_folder}. Nothing to do.')
+        return 0
 
     utils.ensure_output_folder(output_folder)
 
