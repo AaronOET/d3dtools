@@ -23,10 +23,8 @@ try:
 except ImportError:
     sys.exit("Missing package: pip install pyshp")
 
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-NC_FILE     = os.path.join(_SCRIPT_DIR, "NC", "FlowFM_fou.nc")
-_SHP_DIR    = os.path.join(_SCRIPT_DIR, "SHP")
-os.makedirs(_SHP_DIR, exist_ok=True)
+NC_FILE  = os.path.join("NC", "FlowFM_fou.nc")
+_SHP_DIR = "SHP"
 VAR_NAME   = "Mesh2d_fourier002_max_depth"
 FIELD_NAME = "fou_dep"   # 10-char DBF limit; full name stored in long_name attr above
 
@@ -105,16 +103,16 @@ def main():
         description="Reconstruct FlowFM 2D mesh faces as polygons in threshold shapefiles.",
         epilog="""
 examples:
-  %(prog)s
+  %(prog)s -i NC/FlowFM_fou.nc (default output dir: SHP)
   %(prog)s --input NC/FlowFM_fou.nc --out-dir SHP
   %(prog)s --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--input",
-        default=NC_FILE,
-        help="Path to the input NetCDF file (default: NC/FlowFM_fou.nc)",
+        "-i", "--input",
+        required=True,
+        help="Path to the input NetCDF file (e.g., NC/FlowFM_fou.nc)",
     )
     parser.add_argument(
         "--out-dir",

@@ -63,7 +63,7 @@ def main():
         epilog='''
 examples:
   %(prog)s                               # Use default folders (SHP_BC -> PLI_BC)
-  %(prog)s -i custom/SHP_BC -o custom/PLI_BC
+  %(prog)s -i SHP_BC -o PLI_BC
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i',

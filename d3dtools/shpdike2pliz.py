@@ -77,7 +77,7 @@ def main():
         epilog='''
 examples:
   %(prog)s                                # Use default folders (SHP_DIKE -> PLIZ_DIKE)
-  %(prog)s -i custom/SHP_DIKE -o custom/PLIZ_DIKE
+  %(prog)s -i SHP_DIKE -o PLIZ_DIKE
   %(prog)s -i SHP_DIKE -o PLIZ_DIKE -f MyDike
   %(prog)s --id_field DikeName
         ''',

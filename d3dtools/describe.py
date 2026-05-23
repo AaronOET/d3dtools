@@ -202,14 +202,49 @@ TOOL_DESCRIPTIONS = {
         Examples:
             pliz2shp
             pliz2shp -i custom/PLIZ -o custom/SHP
+    """,
+    'rmgrid':
+    """
+        Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM .dsproj project.
+
+        This tool empties the 2D mesh in the project's NetCDF net file while preserving the
+        1D network (pipes/branches). It also strips any 2D-specific sections from the
+        IniFieldFile. The original net file is backed up as <name>.nc.bak so the change can
+        be reverted with --restore.
+
+        Examples:
+            rmgrid
+            rmgrid -i MyProject.dsproj
+            rmgrid -i MyProject.dsproj --restore
+            rmgrid -i MyProject.dsproj --force-backup
     """
 }
+
+
+def _build_tool_listing():
+    """Build the formatted listing of all available tools."""
+    lines = [
+        "D3DTOOLS - A collection of tools for working with shapefiles and converting them for Delft3D modeling.",
+        "",
+        "Available tools:",
+        "",
+    ]
+    for tool, description in TOOL_DESCRIPTIONS.items():
+        short_desc = description.strip().split('\n')[0]
+        lines.append(f"  {tool:<18} - {short_desc}")
+    lines.append("")
+    lines.append("Use 'd3dtools <tool_name>' to get detailed information about a specific tool.")
+    lines.append("Use '<tool_name> --help' to see command-line options for each tool.")
+    return "\n".join(lines)
 
 
 def main():
     """Main function to display tool descriptions."""
     parser = argparse.ArgumentParser(
-        description='Display descriptions of d3dtools functionality.')
+        prog='d3dtools',
+        description='Display descriptions of d3dtools functionality.',
+        epilog=_build_tool_listing(),
+        formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('tool',
                         nargs='?',
@@ -238,20 +273,7 @@ def main():
         return
 
     if args.tool == 'all':
-        print(
-            "D3DTOOLS - A collection of tools for working with shapefiles and converting them for Delft3D modeling.\n"
-        )
-        print("Available tools:\n")
-
-        for tool, description in TOOL_DESCRIPTIONS.items():
-            short_desc = description.strip().split('\n')[0]
-            print(f"  {tool:<12} - {short_desc}")
-
-        print(
-            "\nUse 'd3dtools-info <tool_name>' to get detailed information about a specific tool."
-        )
-        print(
-            "Use '<tool_name> --help' to see command-line options for each tool.")
+        print(_build_tool_listing())
     else:
         print(dedent(TOOL_DESCRIPTIONS[args.tool]).strip())
         print(f"\nUse '{args.tool} --help' to see all command-line options.\n")

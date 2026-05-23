@@ -26,7 +26,8 @@ setup(
     python_requires=">=3.6",
     install_requires=requirements,    entry_points={
         "console_scripts": [
-            "d3dtools-info=d3dtools.describe:main",  # New tool to display package descriptions
+            "d3dtools=d3dtools.describe:main",  # Display package descriptions (use `d3dtools -h`)
+            "d3dtools-info=d3dtools.describe:main",  # Alias for d3dtools
             "ncrain=d3dtools.ncrain:main",
             "snorain=d3dtools.snorain:main",
             "shpbc2pli=d3dtools.shpbc2pli:main",
@@ -41,9 +42,11 @@ setup(
             "evaluate=d3dtools.evaluate:main",  # Tool for flood accuracy metrics
             "evaluate_sensor=d3dtools.evaluate_sensor:main",  # Tool for evaluating sensor data
             "evaluate_sensor2=d3dtools.evaluate_sensor2:main",  # Tool for evaluating sensor data with dual-threshold shapefiles
+            "eval_iot=d3dtools.evaluate_sensor2:main",  # Alias for evaluate_sensor2
             "getfacez=d3dtools.getfacez:main",  # Tool for extracting Mesh2d_face_z values from NetCDF files
             "fou2shp=d3dtools.fou2shp:main",  # Tool for converting Delft3D FOU output to shapefiles
             "pliz2shp=d3dtools.pliz2shp:main",  # Tool for converting Delft3D PLIZ files to shapefiles
+            "rmgrid=d3dtools.rmgrid:main",  # Tool for removing the 2D mesh from a D-Flow FM .dsproj project
         ],
     },
 )

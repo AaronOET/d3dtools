@@ -11,11 +11,11 @@ import pandas as pd
 
 
 def confusion_matrix(
-    low_threshold_sim_path,
-    high_threshold_sim_path,
-    obs_path,
-    buffer_radius=30,
-    depth_threshold=30,
+    low_threshold_sim_path="SHP/SIM_thrd125.shp",
+    high_threshold_sim_path="SHP/SIM_thrd475.shp",
+    obs_path="SHP/IOT_SENSOR.shp",
+    buffer_radius=20,
+    depth_threshold=10,
     output_csv=None,
 ):
     """
@@ -30,9 +30,9 @@ def confusion_matrix(
     obs_path : str
         Path to the observed sensor point shapefile
     buffer_radius : float, optional
-        Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 30)
+        Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 20)
     depth_threshold : float, optional
-        Water depth threshold in centimeters (default: 30)
+        Water depth threshold in centimeters (default: 10)
     output_csv : str, optional
         Path to the output CSV file
 
@@ -141,37 +141,40 @@ def main():
         description="Calculate flood simulation accuracy and recall using sensor data.",
         epilog="""
 examples:
-  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp
-  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --threshold 20
-  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 0 --threshold 30
-  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --output results.csv
+  %(prog)s              # Use default shapefiles and parameters (input SHP/SIM_thrd125.shp, SHP/SIM_thrd475.shp, SHP/IOT_SENSOR.shp; buffer 20m; threshold 10cm)
+  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp (default arguments)
+  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 50 --threshold 20
+  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 0 --threshold 30
+  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --output results.csv
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--sim-low",
-        required=True,
-        help="Path to low-threshold simulated flood extent shapefile",
+        default=os.path.join("SHP", "SIM_thrd125.shp"),
+        help="Path to low-threshold simulated flood extent shapefile (default: SHP/SIM_thrd125.shp)",
     )
     parser.add_argument(
         "--sim-high",
-        required=True,
-        help="Path to high-threshold simulated flood extent shapefile",
+        default=os.path.join("SHP", "SIM_thrd475.shp"),
+        help="Path to high-threshold simulated flood extent shapefile (default: SHP/SIM_thrd475.shp)",
     )
     parser.add_argument(
-        "--obs", required=True, help="Path to observed sensor point shapefile"
+        "--obs",
+        default=os.path.join("SHP", "IOT_SENSOR.shp"),
+        help="Path to observed sensor point shapefile (default: SHP/IOT_SENSOR.shp)",
     )
     parser.add_argument(
         "--buffer",
         type=float,
-        default=30,
-        help="Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 30)",
+        default=20,
+        help="Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 20)",
     )
     parser.add_argument(
         "--threshold",
         type=float,
-        default=30,
-        help="Water depth threshold in cm (default: 30)",
+        default=10,
+        help="Water depth threshold in cm (default: 10)",
     )
     parser.add_argument("--output", help="Path to output CSV file (optional)")
 

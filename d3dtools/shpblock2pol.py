@@ -80,7 +80,7 @@ def main():
         epilog='''
 examples:
   %(prog)s                                # Use default folders (SHP_BLOCK -> POL_BLOCK)
-  %(prog)s -i custom/SHP_BLOCK -o custom/POL_BLOCK
+  %(prog)s -i SHP_BLOCK -o POL_BLOCK
   %(prog)s --input my_blocks --output my_polygons
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)

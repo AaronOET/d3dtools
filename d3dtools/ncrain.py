@@ -349,7 +349,7 @@ def main():
         description="Generate NetCDF files from rainfall data and thiessen polygon shapefiles",
         epilog='''
 examples:
-  %(prog)s                           # Process all CSV files in the input folder
+  %(prog)s                           # Process all CSV files in the input folder (default name: TAB) and save NetCDF files to the output folder (default name: NC)
   %(prog)s --single rainfall.csv     # Process only a specific CSV file
   %(prog)s --verbose                 # Display additional processing information
   %(prog)s --no-clean                # Keep intermediate files
