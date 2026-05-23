@@ -10,6 +10,16 @@ import geopandas as gpd
 import pandas as pd
 
 
+SOURCE_FIELD = "來源說"
+
+
+def _resolve_radius(source_value, buffer_radius):
+    """Return the buffer radius for a given sensor source value."""
+    if isinstance(buffer_radius, dict):
+        return float(buffer_radius.get(source_value, 0))
+    return float(buffer_radius)
+
+
 def confusion_matrix(
     low_threshold_sim_path="SHP/SIM_thrd125.shp",
     high_threshold_sim_path="SHP/SIM_thrd475.shp",
@@ -17,6 +27,7 @@ def confusion_matrix(
     buffer_radius=20,
     depth_threshold=10,
     output_csv=None,
+    output_buffer_shp=None,
 ):
     """
     Calculate the accuracy and recall of a flood simulation using sensor data.
@@ -29,12 +40,18 @@ def confusion_matrix(
         Path to the simulated flood extent shapefile with high threshold
     obs_path : str
         Path to the observed sensor point shapefile
-    buffer_radius : float, optional
-        Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 20)
+    buffer_radius : float or dict, optional
+        Buffer radius around sensor points in meters. Set to 0 to use point
+        data directly. Pass a dict mapping ``來源說`` values to radii to use
+        different radii per source, e.g. ``{"EMIC": 20, "淹水感測": 30}``
+        (sources missing from the dict get a radius of 0). Default: 20.
     depth_threshold : float, optional
         Water depth threshold in centimeters (default: 10)
     output_csv : str, optional
         Path to the output CSV file
+    output_buffer_shp : str, optional
+        Path to a shapefile where the buffered sensor geometries (with the
+        applied radius and computed area) will be written.
 
     Returns
     -------
@@ -46,11 +63,40 @@ def confusion_matrix(
     high_sim_gdf = gpd.read_file(high_threshold_sim_path)
     obs_gdf = gpd.read_file(obs_path)
 
-    # Create a buffer around observation points or use original points if buffer_radius is 0
+    # Create a buffer around observation points (per-source radius supported).
+    # Rows whose resolved radius is 0 keep their original point geometry.
     obs_buffer = obs_gdf.copy()
-    if buffer_radius > 0:
+    if isinstance(buffer_radius, dict):
+        if SOURCE_FIELD not in obs_buffer.columns:
+            raise ValueError(
+                f"Per-source buffer requires field '{SOURCE_FIELD}' in {obs_path}"
+            )
+        radii = obs_buffer[SOURCE_FIELD].map(
+            lambda s: _resolve_radius(s, buffer_radius)
+        )
+        obs_buffer["geometry"] = [
+            geom.buffer(r) if r > 0 else geom
+            for geom, r in zip(obs_buffer.geometry, radii)
+        ]
+    elif buffer_radius > 0:
         obs_buffer["geometry"] = obs_buffer.geometry.buffer(buffer_radius)
-    # If buffer_radius is 0, keep the original point geometry
+        radii = pd.Series([float(buffer_radius)] * len(obs_buffer), index=obs_buffer.index)
+    else:
+        radii = pd.Series([0.0] * len(obs_buffer), index=obs_buffer.index)
+
+    # Record applied radius and resulting buffer area for each sensor
+    obs_buffer["buf_r"] = radii.astype(float).values
+    obs_buffer["buf_area"] = obs_buffer.geometry.area
+
+    # Export buffered geometries if requested
+    if output_buffer_shp:
+        out_dir = os.path.dirname(output_buffer_shp)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
+        obs_buffer.to_file(output_buffer_shp, encoding="utf-8")
+        print(f"Buffer geometries saved to {output_buffer_shp}")
+        total_area = float(obs_buffer.geometry.area.sum())
+        print(f"Total buffer area: {total_area:.2f} (CRS units squared)")
 
     # Calculate True Positive (TP) and False Positive (FP)
     # Sensors with depth >= threshold that intersect with simulated flood
@@ -146,6 +192,7 @@ examples:
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 50 --threshold 20
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 0 --threshold 30
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --output results.csv
+  %(prog)s --buffer-by-source EMIC=20 淹水感測=30   # Use different buffer radii per "來源說" source
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -168,7 +215,16 @@ examples:
         "--buffer",
         type=float,
         default=20,
-        help="Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 20)",
+        help="Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 20). Ignored when --buffer-by-source is given.",
+    )
+    parser.add_argument(
+        "--buffer-by-source",
+        nargs="+",
+        metavar="SOURCE=RADIUS",
+        help=(
+            "Per-source buffer radii using the '來源說' field, e.g. "
+            "--buffer-by-source EMIC=20 淹水感測=30. Sources not listed get radius 0."
+        ),
     )
     parser.add_argument(
         "--threshold",
@@ -177,6 +233,11 @@ examples:
         help="Water depth threshold in cm (default: 10)",
     )
     parser.add_argument("--output", help="Path to output CSV file (optional)")
+    parser.add_argument(
+        "--output-buffer",
+        default=os.path.join("SHP", "IOT_BUFFER.shp"),
+        help="Path to output shapefile of the buffered sensor geometries (default: SHP/IOT_BUFFER.shp). Use '' to disable.",
+    )
 
     args = parser.parse_args()
 
@@ -198,14 +259,29 @@ examples:
         sys.exit(1)
 
     try:
+        # Build buffer parameter: dict for per-source radii, else scalar
+        if args.buffer_by_source:
+            buffer_param = {}
+            for item in args.buffer_by_source:
+                if "=" not in item:
+                    print(
+                        f"Error: --buffer-by-source expects SOURCE=RADIUS, got: {item}"
+                    )
+                    sys.exit(1)
+                key, value = item.split("=", 1)
+                buffer_param[key.strip()] = float(value)
+        else:
+            buffer_param = args.buffer
+
         # Run the confusion matrix calculation (output is already handled in the function)
         confusion_matrix(
             low_threshold_sim_path=args.sim_low,
             high_threshold_sim_path=args.sim_high,
             obs_path=args.obs,
-            buffer_radius=args.buffer,
+            buffer_radius=buffer_param,
             depth_threshold=args.threshold,
             output_csv=args.output,
+            output_buffer_shp=args.output_buffer,
         )
     except Exception as e:
         print(f"Error processing sensor evaluation: {str(e)}")

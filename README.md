@@ -30,6 +30,7 @@ This package provides several utilities for converting shapefiles to various for
 - **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles
 - **pliz2shp**: Convert Delft3D PLIZ polyline files to ESRI Shapefiles
+- **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
 
 ## Usage Examples
 
@@ -290,6 +291,20 @@ pliz2shp.pliz_to_shp(
 # pliz2shp -i custom/PLIZ -o custom/SHP
 ```
 
+### Remove the 2D mesh from a D-Flow FM project
+
+```python
+# Recommended usage via the command line (operates on a .dsproj project)
+# rmgrid                                  # Auto-detect the .dsproj in the current folder
+# rmgrid -i MyProject.dsproj              # Specify the project explicitly
+# rmgrid -i MyProject.dsproj --force-backup  # Overwrite an existing .nc.bak
+# rmgrid -i MyProject.dsproj --restore    # Restore the original net file from .nc.bak
+```
+
+The tool empties the 2D mesh in the project's UGRID NetCDF net file while preserving the
+1D network (pipes/branches), strips 2D-specific blocks from the `IniFieldFile`, and creates
+a `<name>.nc.bak` backup so the change can be reverted with `--restore`.
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -340,6 +355,7 @@ d3dtools-info evaluate_sensor2
 d3dtools-info getfacez
 d3dtools-info fou2shp
 d3dtools-info pliz2shp
+d3dtools-info rmgrid
 
 # Display help for specific tools
 ncrain --help
@@ -359,6 +375,7 @@ evaluate_sensor2 --help
 getfacez --help
 fou2shp --help
 pliz2shp --help
+rmgrid --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -430,9 +447,18 @@ fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir out
 pliz2shp                             # Use defaults (PLIZ/ -> SHP_DIKE/)
 pliz2shp -i custom/PLIZ -o custom/SHP  # Specify custom input and output folders
 pliz2shp --help
+
+# Remove the 2D computational mesh from a D-Flow FM .dsproj project
+rmgrid                                # Auto-detect the .dsproj in the current folder
+rmgrid -i MyProject.dsproj            # Specify the project explicitly
+rmgrid -i MyProject.dsproj --force-backup  # Overwrite an existing .nc.bak
+rmgrid -i MyProject.dsproj --restore  # Restore the original net file from .nc.bak
 ```
 
 ## Changelog
+
+### 0.19.0
+- Added **rmgrid**: removes (clears) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network. Supports automatic `.nc.bak` backup, `--force-backup`, and `--restore`, and cleans `locationType = 2d` blocks from any referenced `IniFieldFile`.
 
 ### 0.18.1
 - Added **pliz2shp**: converts Delft3D `*.pliz` polyline files to ESRI Shapefiles
