@@ -47,25 +47,27 @@ def convert(input_folder='SHP_SAMPLE',
             )
             continue
 
-        # Get the Z field if specified or try to find common elevation field names
-        if z_field and z_field in gdf.columns:
-            z_column = z_field
+        # Detect Point Z / Point ZM geometries (shapely exposes Z via has_z)
+        use_geom_z = all(geom.has_z for geom in gdf.geometry)
+
+        z_column = None
+        if use_geom_z:
+            print(f"Detected Point Z/ZM geometry in {base} - using geometry Z values")
         else:
-            # Check for common Z field names
-            possible_z_fields = [
-                'Z', 'z', 'ELEVATION', 'elevation', 'HEIGHT', 'height', 'DEPTH',
-                'depth', 'ELEV', 'elev', 'DEP', 'dep'
-            ]
-            found_z_field = None
-
-            for field in possible_z_fields:
-                if field in gdf.columns:
-                    found_z_field = field
-                    break
-
-            if found_z_field:
-                z_column = found_z_field
+            # Get the Z field if specified or try to find common elevation field names
+            if z_field and z_field in gdf.columns:
+                z_column = z_field
             else:
+                possible_z_fields = [
+                    'Z', 'z', 'ELEVATION', 'elevation', 'HEIGHT', 'height', 'DEPTH',
+                    'depth', 'ELEV', 'elev', 'DEP', 'dep'
+                ]
+                for field in possible_z_fields:
+                    if field in gdf.columns:
+                        z_column = field
+                        break
+
+            if z_column is None:
                 print(
                     f"Warning: No Z field found in {base}. Please specify using z_field parameter."
                 )
@@ -78,7 +80,7 @@ def convert(input_folder='SHP_SAMPLE',
         with open(output_filename, 'w', encoding='utf-8') as f:
             for idx, row in gdf.iterrows():
                 x, y = row.geometry.x, row.geometry.y
-                z = row[z_column]
+                z = row.geometry.z if use_geom_z else row[z_column]
                 f.write(f"{x:20.6e} {y:20.6e} {z:20.6e}\n")
         file_count += 1
 

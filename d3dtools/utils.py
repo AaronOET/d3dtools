@@ -39,9 +39,15 @@ def read_shapefiles(fileList):
     list
         List of GeoDataFrames
     """
+    import warnings
     gdfs = []
     for item in fileList:
-        gdf = gpd.read_file(item)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore',
+                message='Measured \\(M\\) geometry types are not supported.*',
+            )
+            gdf = gpd.read_file(item)
         gdfs.append(gdf)
     return gdfs
 
