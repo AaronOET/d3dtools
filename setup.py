@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.19.2",
+    version="0.19.3",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
