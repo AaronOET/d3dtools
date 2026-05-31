@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 try:
@@ -163,6 +164,26 @@ def create_empty_mesh(src_path, dst_path):
     orphan dimensions) so the Delft3D-FM GUI's "Generate Links" tool will
     accept the result.
     """
+    # netCDF4's C layer cannot open paths with non-ASCII characters on Windows.
+    # Copy through the system temp dir (always ASCII) to work around this.
+    fd, tmp_src = tempfile.mkstemp(suffix=".nc")
+    os.close(fd)
+    fd, tmp_dst = tempfile.mkstemp(suffix=".nc")
+    os.close(fd)
+    try:
+        shutil.copy2(src_path, tmp_src)
+        _create_empty_mesh_impl(tmp_src, tmp_dst)
+        shutil.copy2(tmp_dst, dst_path)
+    finally:
+        if os.path.exists(tmp_src):
+            os.unlink(tmp_src)
+        if os.path.exists(tmp_dst):
+            os.unlink(tmp_dst)
+    print(f"  Written (1D preserved, links removed, mesh emptied) -> {dst_path}")
+
+
+def _create_empty_mesh_impl(src_path, dst_path):
+    """Process the NetCDF file; both paths must be ASCII-safe."""
     with nc.Dataset(src_path, "r") as src, \
             nc.Dataset(dst_path, "w", format="NETCDF4") as dst:
 
@@ -212,8 +233,6 @@ def create_empty_mesh(src_path, dst_path):
                 if src_var.dimensions:
                     if all(len(src.dimensions[d]) > 0 for d in src_var.dimensions):
                         dst_var[:] = src_var[:]
-
-    print(f"  Written (1D preserved, links removed, mesh emptied) -> {dst_path}")
 
 
 def restore_mesh(net_path):
@@ -317,17 +336,23 @@ examples:
                 tmp_path.unlink()
             raise
 
-        with nc.Dataset(net_path, "r") as ds:
-            n_nodes = len(ds.dimensions["Mesh2d_nNodes"]) if "Mesh2d_nNodes" in ds.dimensions else 0
-            n_edges = len(ds.dimensions["Mesh2d_nEdges"]) if "Mesh2d_nEdges" in ds.dimensions else 0
-            n_faces = len(ds.dimensions["Mesh2d_nFaces"]) if "Mesh2d_nFaces" in ds.dimensions else 0
-            n_links = len(ds.dimensions["links_nContacts"]) if "links_nContacts" in ds.dimensions else 0
-            n1d_nd = len(ds.dimensions["mesh1d_nNodes"]) if "mesh1d_nNodes" in ds.dimensions else 0
-            n1d_edg = len(ds.dimensions["mesh1d_nEdges"]) if "mesh1d_nEdges" in ds.dimensions else 0
-            n_br = len(ds.dimensions["network_nEdges"]) if "network_nEdges" in ds.dimensions else 0
-            has_1d = "mesh1d" in ds.variables
-            has_links_topo = "links" in ds.variables
-            has_comp = "composite_mesh" in ds.variables
+        fd, tmp_verify = tempfile.mkstemp(suffix=".nc")
+        os.close(fd)
+        try:
+            shutil.copy2(net_path, tmp_verify)
+            with nc.Dataset(tmp_verify, "r") as ds:
+                n_nodes = len(ds.dimensions["Mesh2d_nNodes"]) if "Mesh2d_nNodes" in ds.dimensions else 0
+                n_edges = len(ds.dimensions["Mesh2d_nEdges"]) if "Mesh2d_nEdges" in ds.dimensions else 0
+                n_faces = len(ds.dimensions["Mesh2d_nFaces"]) if "Mesh2d_nFaces" in ds.dimensions else 0
+                n_links = len(ds.dimensions["links_nContacts"]) if "links_nContacts" in ds.dimensions else 0
+                n1d_nd = len(ds.dimensions["mesh1d_nNodes"]) if "mesh1d_nNodes" in ds.dimensions else 0
+                n1d_edg = len(ds.dimensions["mesh1d_nEdges"]) if "mesh1d_nEdges" in ds.dimensions else 0
+                n_br = len(ds.dimensions["network_nEdges"]) if "network_nEdges" in ds.dimensions else 0
+                has_1d = "mesh1d" in ds.variables
+                has_links_topo = "links" in ds.variables
+                has_comp = "composite_mesh" in ds.variables
+        finally:
+            os.unlink(tmp_verify)
         print(
             f"\nDone:\n"
             f"  2D mesh cleared : nodes={n_nodes}  edges={n_edges}  faces={n_faces}\n"
