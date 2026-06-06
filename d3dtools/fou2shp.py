@@ -200,7 +200,7 @@ examples:
                 remove_mask_paths.extend(matched)
 
             if remove_mask_paths:
-                rm_out_dir = args.out_dir.rstrip("/\\") + "_rm"
+                rm_out_dir = args.out_dir.rstrip("/\\") + "_RM"
                 os.makedirs(rm_out_dir, exist_ok=True)
 
                 mask_parts = [gpd.read_file(p)[["geometry"]] for p in remove_mask_paths]
