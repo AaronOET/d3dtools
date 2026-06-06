@@ -43,7 +43,7 @@ def confusion_matrix(
     buffer_radius : float or dict, optional
         Buffer radius around sensor points in meters. Set to 0 to use point
         data directly. Pass a dict mapping ``來源說`` values to radii to use
-        different radii per source, e.g. ``{"EMIC": 20, "淹水感測": 30}``
+        different radii per source, e.g. ``{"EMIC": 30, "淹水感測": 20}``
         (sources missing from the dict get a radius of 0). Default: 20.
     depth_threshold : float, optional
         Water depth threshold in centimeters (default: 10)
@@ -192,7 +192,7 @@ examples:
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 50 --threshold 20
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 0 --threshold 30
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --output results.csv
-  %(prog)s --buffer-by-source EMIC=20 淹水感測=30   # Use different buffer radii per "來源說" source
+  %(prog)s --buffer-by-source EMIC=30 淹水感測=20   # Use different buffer radii per "來源說" source
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -223,7 +223,7 @@ examples:
         metavar="SOURCE=RADIUS",
         help=(
             "Per-source buffer radii using the '來源說' field, e.g. "
-            "--buffer-by-source EMIC=20 淹水感測=30. Sources not listed get radius 0."
+            "--buffer-by-source EMIC=30 淹水感測=20. Sources not listed get radius 0."
         ),
     )
     parser.add_argument(
