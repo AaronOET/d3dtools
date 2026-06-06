@@ -192,7 +192,7 @@ examples:
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 50 --threshold 20
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 0 --threshold 30
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --output results.csv
-  %(prog)s --buffer-by-source EMIC=30 淹水感測=20   # Use different buffer radii per "來源說" source
+  %(prog)s --buffer-by-source 淹水感測=20 EMIC=30 # Use different buffer radii per "來源說" source
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
