@@ -25,7 +25,7 @@ This package provides several utilities for converting shapefiles to various for
 - **shp2xyz**: Convert point shapefiles to XYZ files
 - **evaluate**: Calculate flood simulation accuracy metrics by comparing simulated and observed flood extents
 - **evaluate_sensor**: Calculate flood simulation accuracy metrics by comparing simulated flood extents with point-based sensor data (with configurable buffer radius and depth threshold)
-- **evaluate_sensor2**: Calculate flood simulation accuracy metrics using sensor data with dual-threshold shapefiles (separate low and high depth threshold simulations)
+- **evaluate_sensor2** (alias: **eval_iot**): Calculate flood simulation accuracy metrics using sensor data with dual-threshold shapefiles (separate low and high depth threshold simulations)
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
 - **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<out-dir>_RM/`)
@@ -353,6 +353,7 @@ d3dtools-info sensor
 d3dtools-info evaluate
 d3dtools-info evaluate_sensor
 d3dtools-info evaluate_sensor2
+d3dtools-info eval_iot
 d3dtools-info getfacez
 d3dtools-info fou2shp
 d3dtools-info pliz2shp
@@ -373,6 +374,7 @@ sensor --help
 evaluate --help
 evaluate_sensor --help
 evaluate_sensor2 --help
+eval_iot --help
 getfacez --help
 fou2shp --help
 pliz2shp --help
@@ -433,6 +435,8 @@ evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.sh
 # Calculate flood simulation accuracy using sensor data with dual-threshold shapefiles
 evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp
 evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --threshold 20 --output sensor_accuracy2.csv
+eval_iot --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp  # Alias for evaluate_sensor2
+eval_iot --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 30 --threshold 20 --output sensor_accuracy2.csv
 
 # Extract Mesh2d_face_z values at observation points
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp
