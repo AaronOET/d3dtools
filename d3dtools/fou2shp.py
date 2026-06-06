@@ -122,9 +122,9 @@ examples:
   %(prog)s -i NC/FlowFM_fou.nc (default output dir: SHP)
   %(prog)s --input NC/FlowFM_fou.nc --out-dir SHP
   %(prog)s --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
-  %(prog)s -i NC/FlowFM_fou.nc --rm SHP/EXCLUDE.shp
-  %(prog)s -i NC/FlowFM_fou.nc --rm SHP/*.shp
-  %(prog)s -i NC/FlowFM_fou.nc --rm SHP/ROAD.shp SHP/BUILDING.shp
+  %(prog)s -i NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
+  %(prog)s -i NC/FlowFM_fou.nc -r SHP/*.shp
+  %(prog)s -i NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -144,13 +144,13 @@ examples:
         help=f"Variable name in the NetCDF file (default: {VAR_NAME})",
     )
     parser.add_argument(
-        "--rm",
+        "-r", "--remove",
         nargs="+",
         metavar="MASK.shp",
         help=(
             "Remove output polygons that intersect these mask shapefiles. "
             "Filtered copies are written to <out-dir>_RM. "
-            "Glob patterns are supported (e.g. --rm SHP/*.shp)."
+            "Glob patterns are supported (e.g. --remove SHP/*.shp)."
         ),
     )
 
@@ -187,16 +187,16 @@ examples:
             print(f"Threshold > {threshold:.3f}m  ->  {stem}")
             write_threshold_shp(shp_out, threshold, fn, fn_fill, node_x, node_y, values)
 
-        if args.rm:
+        if args.remove:
             if gpd is None:
-                print("Error: --rm requires geopandas: pip install geopandas")
+                print("Error: --remove requires geopandas: pip install geopandas")
                 sys.exit(1)
 
             remove_mask_paths = []
-            for pattern in args.rm:
+            for pattern in args.remove:
                 matched = _glob.glob(pattern)
                 if not matched:
-                    print(f"Warning: --rm pattern matched no files: {pattern}")
+                    print(f"Warning: --remove pattern matched no files: {pattern}")
                 remove_mask_paths.extend(matched)
 
             if remove_mask_paths:

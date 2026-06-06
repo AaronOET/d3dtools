@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.20.3
+
+- `fou2shp`: Renamed `--rm` to `-r`/`--remove` for consistency with CLI conventions. Short form `-r` and long form `--remove` are now both accepted.
+
+## 0.20.2
+
+- Expanded README examples and documentation for existing features.
+
 ## 0.20.1
 
 - `fou2shp`: Fixed output directory suffix for mask-filtered shapefiles to use `_RM` (uppercase) consistently.

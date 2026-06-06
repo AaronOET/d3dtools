@@ -28,7 +28,7 @@ This package provides several utilities for converting shapefiles to various for
 - **evaluate_sensor2**: Calculate flood simulation accuracy metrics using sensor data with dual-threshold shapefiles (separate low and high depth threshold simulations)
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
 - **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
-- **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `--rm` to remove output polygons that intersect mask shapefiles (filtered copies written to `<out-dir>_RM/`)
+- **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<out-dir>_RM/`)
 - **pliz2shp**: Convert Delft3D PLIZ polyline files to ESRI Shapefiles
 - **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
 
@@ -271,9 +271,9 @@ print(f"Recall (Catch Rate): {results['recall']:.2f}%")
 # fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
 
 # Remove polygons intersecting a mask shapefile; filtered copies go to SHP_RM/
-# fou2shp --input NC/FlowFM_fou.nc --rm SHP/EXCLUDE.shp
-# fou2shp --input NC/FlowFM_fou.nc --rm SHP/*.shp
-# fou2shp --input NC/FlowFM_fou.nc --rm SHP/ROAD.shp SHP/BUILDING.shp
+# fou2shp --input NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
+# fou2shp --input NC/FlowFM_fou.nc -r SHP/*.shp
+# fou2shp --input NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp
 ```
 
 ### Convert PLIZ files to Shapefiles
@@ -443,9 +443,9 @@ getfacez --verbose  # Display additional processing information
 fou2shp                                         # Use defaults (NC/FlowFM_fou.nc -> SHP/)
 fou2shp --input NC/FlowFM_fou.nc --out-dir SHP  # Specify input and output directory
 fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
-fou2shp --input NC/FlowFM_fou.nc --rm SHP/EXCLUDE.shp          # Remove polygons intersecting a mask; output -> SHP_RM/
-fou2shp --input NC/FlowFM_fou.nc --rm SHP/*.shp                 # Glob pattern for multiple masks
-fou2shp --input NC/FlowFM_fou.nc --rm SHP/ROAD.shp SHP/BUILDING.shp  # Multiple explicit masks
+fou2shp --input NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp             # Remove polygons intersecting a mask; output -> SHP_RM/
+fou2shp --input NC/FlowFM_fou.nc -r SHP/*.shp                   # Glob pattern for multiple masks
+fou2shp --input NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp  # Multiple explicit masks
 
 # Convert Delft3D PLIZ files to ESRI Shapefiles
 pliz2shp                             # Use defaults (PLIZ/ -> SHP_DIKE/)
@@ -461,13 +461,21 @@ rmgrid -i MyProject.dsproj --restore  # Restore the original net file from .nc.b
 
 ## Changelog
 
+### 0.20.3
+
+- **fou2shp**: Renamed `--rm` to `-r`/`--remove` for consistency with CLI conventions. Short form `-r` and long form `--remove` are now both accepted.
+
+### 0.20.2
+
+- Expanded README examples and documentation for existing features.
+
 ### 0.20.1
 
 - **fou2shp**: Fixed output directory suffix for mask-filtered shapefiles to use `_RM` consistently.
 
 ### 0.20.0
 
-- **fou2shp**: Added `--rm MASK.shp [...]` to remove output polygons that intersect one or more mask shapefiles. Glob patterns are supported (e.g. `--rm SHP/*.shp`). Filtered copies of all threshold shapefiles are written to `<out-dir>_RM/`. Requires `geopandas`.
+- **fou2shp**: Added `--remove MASK.shp [...]` (short: `-r`) to remove output polygons that intersect one or more mask shapefiles. Glob patterns are supported (e.g. `--remove SHP/*.shp`). Filtered copies of all threshold shapefiles are written to `<out-dir>_RM/`. Requires `geopandas`.
 
 ### 0.19.4
 
