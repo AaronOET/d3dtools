@@ -8,6 +8,7 @@ Input : FlowFM_fou.nc  (UGRID 2D mesh, EPSG:3826 TWD97/TM2-121)
 Output: FlowFM_fou_faces.shp  (+.dbf, .shx, .prj)
 """
 
+import glob as _glob
 import os
 import sys
 import numpy as np
@@ -22,6 +23,13 @@ try:
     import shapefile
 except ImportError:
     sys.exit("Missing package: pip install pyshp")
+
+try:
+    import geopandas as gpd
+    import pandas as pd
+except ImportError:
+    gpd = None
+    pd = None
 
 NC_FILE  = os.path.join("NC", "FlowFM_fou.nc")
 _SHP_DIR = "SHP"
@@ -55,6 +63,14 @@ PRJ_WKT = (
     'UNIT["metre",1,AUTHORITY["EPSG","9001"]],'
     'AUTHORITY["EPSG","3826"]]'
 )
+
+
+def _to_file_polygon(gdf, path, encoding="utf-8"):
+    """Save a GeoDataFrame as a shapefile, forcing Polygon type when empty."""
+    kwargs = {"encoding": encoding}
+    if gdf.empty:
+        kwargs["geometry_type"] = "Polygon"
+    gdf.to_file(path, **kwargs)
 
 
 def write_threshold_shp(shp_out, threshold, fn, fn_fill, node_x, node_y, values):
@@ -106,6 +122,9 @@ examples:
   %(prog)s -i NC/FlowFM_fou.nc (default output dir: SHP)
   %(prog)s --input NC/FlowFM_fou.nc --out-dir SHP
   %(prog)s --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
+  %(prog)s -i NC/FlowFM_fou.nc --rm SHP/EXCLUDE.shp
+  %(prog)s -i NC/FlowFM_fou.nc --rm SHP/*.shp
+  %(prog)s -i NC/FlowFM_fou.nc --rm SHP/ROAD.shp SHP/BUILDING.shp
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -123,6 +142,16 @@ examples:
         "--var",
         default=VAR_NAME,
         help=f"Variable name in the NetCDF file (default: {VAR_NAME})",
+    )
+    parser.add_argument(
+        "--rm",
+        nargs="+",
+        metavar="MASK.shp",
+        help=(
+            "Remove output polygons that intersect these mask shapefiles. "
+            "Filtered copies are written to <out-dir>_RM. "
+            "Glob patterns are supported (e.g. --rm SHP/*.shp)."
+        ),
     )
 
     args = parser.parse_args()
@@ -157,6 +186,43 @@ examples:
             shp_out = os.path.join(args.out_dir, stem)
             print(f"Threshold > {threshold:.3f}m  ->  {stem}")
             write_threshold_shp(shp_out, threshold, fn, fn_fill, node_x, node_y, values)
+
+        if args.rm:
+            if gpd is None:
+                print("Error: --rm requires geopandas: pip install geopandas")
+                sys.exit(1)
+
+            remove_mask_paths = []
+            for pattern in args.rm:
+                matched = _glob.glob(pattern)
+                if not matched:
+                    print(f"Warning: --rm pattern matched no files: {pattern}")
+                remove_mask_paths.extend(matched)
+
+            if remove_mask_paths:
+                rm_out_dir = args.out_dir.rstrip("/\\") + "_rm"
+                os.makedirs(rm_out_dir, exist_ok=True)
+
+                mask_parts = [gpd.read_file(p)[["geometry"]] for p in remove_mask_paths]
+                mask_gdf = gpd.GeoDataFrame(
+                    pd.concat(mask_parts, ignore_index=True), crs=mask_parts[0].crs
+                )
+                mask_union = mask_gdf.geometry.union_all()
+
+                print(f"\nApplying mask removal  ->  {rm_out_dir}/")
+                for _, stem in THRESHOLDS:
+                    src = os.path.join(args.out_dir, stem + ".shp")
+                    if not os.path.exists(src):
+                        continue
+                    gdf = gpd.read_file(src)
+                    if mask_gdf.crs != gdf.crs:
+                        mask_union = mask_gdf.to_crs(gdf.crs).geometry.union_all()
+                    n_before = len(gdf)
+                    gdf = gdf[~gdf.geometry.intersects(mask_union)].copy()
+                    dst = os.path.join(rm_out_dir, stem + ".shp")
+                    _to_file_polygon(gdf, dst)
+                    print(f"  {dst}  — {n_before - len(gdf)} removed, {len(gdf)} remaining")
+
     except KeyError as e:
         print(f"Error: Variable not found in NetCDF file: {e}")
         sys.exit(1)
