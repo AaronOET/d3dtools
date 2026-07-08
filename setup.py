@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.20.4",
+    version="0.21.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -47,6 +47,8 @@ setup(
             "fou2shp=d3dtools.fou2shp:main",  # Tool for converting Delft3D FOU output to shapefiles
             "pliz2shp=d3dtools.pliz2shp:main",  # Tool for converting Delft3D PLIZ files to shapefiles
             "rmgrid=d3dtools.rmgrid:main",  # Tool for removing the 2D mesh from a D-Flow FM .dsproj project
+            "transzone1=d3dtools.transzone1:main",  # Tool for building a transition zone from triangle mesh faces
+            "transzone2=d3dtools.transzone2:main",  # Tool for building the transition zone core from trans_zone_faces
         ],
     },
 )
