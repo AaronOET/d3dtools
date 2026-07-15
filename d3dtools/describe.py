@@ -169,15 +169,29 @@ TOOL_DESCRIPTIONS = {
     """,
     'getfacez':
     """
+        Extract Mesh2d_face_z values from Delft3D FM NetCDF files at observation points (faster).
+
+        Drop-in, spatial-index accelerated replacement for getfacez. Uses an STRtree for
+        point-in-polygon matching and a cKDTree for nearest-neighbor matching instead of
+        scanning every mesh face for every observation point, which speeds up processing
+        on large meshes. Same arguments and output format as getfacez.
+
+        Examples:
+            getfacez --nc-file results.nc --obs-shp observation_points.shp
+            getfacez --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv
+            getfacez --nc-file results.nc --obs-shp points.shp --output-excel bathymetry.xlsx --verbose
+    """,
+    'getfacez2':
+    """
         Extract Mesh2d_face_z values from Delft3D FM NetCDF files at observation points.
 
         This tool extracts bed level/bathymetry values (Mesh2d_face_z) at specified observation
         points from Delft3D FM NetCDF output files and exports the results to CSV and/or Excel.
 
         Examples:
-            getfacez --nc-file results.nc --obs-shp observation_points.shp
-            getfacez --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv
-            getfacez --nc-file results.nc --obs-shp points.shp --output-excel bathymetry.xlsx --verbose
+            getfacez2 --nc-file results.nc --obs-shp observation_points.shp
+            getfacez2 --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv
+            getfacez2 --nc-file results.nc --obs-shp points.shp --output-excel bathymetry.xlsx --verbose
     """,
     'fou2shp':
     """

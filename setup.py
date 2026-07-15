@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.21.0",
+    version="0.22.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -44,6 +44,7 @@ setup(
             "evaluate_sensor2=d3dtools.evaluate_sensor2:main",  # Tool for evaluating sensor data with dual-threshold shapefiles
             "eval_iot=d3dtools.evaluate_sensor2:main",  # Alias for evaluate_sensor2
             "getfacez=d3dtools.getfacez:main",  # Tool for extracting Mesh2d_face_z values from NetCDF files
+            "getfacez2=d3dtools.getfacez2:main",  # Faster, spatial-index accelerated version of getfacez
             "fou2shp=d3dtools.fou2shp:main",  # Tool for converting Delft3D FOU output to shapefiles
             "pliz2shp=d3dtools.pliz2shp:main",  # Tool for converting Delft3D PLIZ files to shapefiles
             "rmgrid=d3dtools.rmgrid:main",  # Tool for removing the 2D mesh from a D-Flow FM .dsproj project

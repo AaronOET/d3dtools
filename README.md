@@ -27,7 +27,8 @@ This package provides several utilities for converting shapefiles to various for
 - **evaluate_sensor**: Calculate flood simulation accuracy metrics by comparing simulated flood extents with point-based sensor data (with configurable buffer radius and depth threshold)
 - **evaluate_sensor2** (alias: **eval_iot**): Calculate flood simulation accuracy metrics using sensor data with dual-threshold shapefiles (separate low and high depth threshold simulations)
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
-- **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
+- **getfacez**: Spatial-index accelerated version of getfacez — uses a shapely STRtree for point-in-polygon matching and a scipy cKDTree for nearest-neighbor matching instead of scanning every mesh face for every observation point, which is much faster on large meshes. Same arguments, Python API, and output format as getfacez2
+- **getfacez2**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<out-dir>_RM/`)
 - **pliz2shp**: Convert Delft3D PLIZ polyline files to ESRI Shapefiles
 - **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
@@ -228,6 +229,26 @@ print(data.head())
 print(f"Bathymetry range: {data['Mesh2d_face_z'].min():.3f} to {data['Mesh2d_face_z'].max():.3f}")
 ```
 
+### Extract Mesh2d_face_z values from NetCDF files (faster, spatial-index accelerated)
+
+```python
+from d3dtools import getfacez2
+
+# Same signature and output as getfacez, but backed by an STRtree (point-in-polygon)
+# or cKDTree (nearest neighbor) spatial index instead of a per-point full mesh scan
+data = getfacez2.extract_mesh2d_face_z(
+    nc_file='path/to/model_output.nc',
+    obs_shp='path/to/observation_points.shp',
+    output_csv='bathymetry.csv',
+    output_excel='bathymetry.xlsx',
+    verbose=True  # Display additional information during processing
+)
+
+# Process the data further if needed
+print(data.head())
+print(f"Bathymetry range: {data['Mesh2d_face_z'].min():.3f} to {data['Mesh2d_face_z'].max():.3f}")
+```
+
 ### Calculate flood simulation accuracy using sensor data
 
 ```python
@@ -383,6 +404,7 @@ d3dtools-info evaluate_sensor
 d3dtools-info evaluate_sensor2
 d3dtools-info eval_iot
 d3dtools-info getfacez
+d3dtools-info getfacez2
 d3dtools-info fou2shp
 d3dtools-info pliz2shp
 d3dtools-info rmgrid
@@ -406,6 +428,7 @@ evaluate_sensor --help
 evaluate_sensor2 --help
 eval_iot --help
 getfacez --help
+getfacez2 --help
 fou2shp --help
 pliz2shp --help
 rmgrid --help
@@ -475,6 +498,11 @@ getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp --output-csv bathymetry.csv --output-excel bathymetry.xlsx
 getfacez --verbose  # Display additional processing information
 
+# Extract Mesh2d_face_z values at observation points (faster, spatial-index accelerated)
+getfacez2 --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp
+getfacez2 --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp --output-csv bathymetry.csv --output-excel bathymetry.xlsx
+getfacez2 --verbose  # Display additional processing information
+
 # Reconstruct FOU mesh faces as threshold-filtered shapefiles
 fou2shp                                         # Use defaults (NC/FlowFM_fou.nc -> SHP/)
 fou2shp --input NC/FlowFM_fou.nc --out-dir SHP  # Specify input and output directory
@@ -511,6 +539,7 @@ transzone2 -b -2.0                                                            # 
 
 - Added **transzone1**: extracts triangle mesh faces from a faces shapefile, buffers and dissolves them into a transition zone (`trans_zone.shp`), then selects and dissolves all faces intersecting that zone (`trans_zone_faces.shp`).
 - Added **transzone2**: buffers `trans_zone_faces.shp` inward, selects FlowFM faces that lie fully within the buffered zone, and dissolves them into a transition zone core (`trans_zone_core.shp`).
+- Added **getfacez2**: drop-in, spatial-index accelerated replacement for **getfacez**, using a shapely STRtree for point-in-polygon matching and a scipy cKDTree for nearest-neighbor matching instead of scanning every mesh face per observation point.
 
 ### 0.20.3
 
@@ -555,7 +584,8 @@ transzone2 -b -2.0                                                            # 
 - rasterio>=1.2.0
 - netCDF4>=1.5.0
 - pyproj>=3.0.0
-- shapely>=1.8.0
+- shapely>=2.0.0
+- scipy>=1.7.0
 - matplotlib>=3.4.0
 - openpyxl>=3.0.0
 

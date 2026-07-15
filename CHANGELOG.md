@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.0
+- Changed **getfacez**: drop-in, spatial-index accelerated replacement for `getfacez`. Uses a shapely `STRtree` for point-in-polygon matching and a scipy `cKDTree` for nearest-neighbor matching instead of scanning every mesh face for every observation point, which speeds up processing on large meshes. Same CLI arguments, Python API, and output format as `getfacez`. Requires `scipy` and `shapely>=2.0.0` (bumped from `>=1.8.0`).
+- Keep original version of code in **getfacez2** as a fallback option.
+
+
 ## 0.21.0
 
 - Added **transzone1**: extracts triangle mesh faces from a faces shapefile, buffers and dissolves them into a transition zone (`trans_zone.shp`), then selects and dissolves all faces intersecting that zone (`trans_zone_faces.shp`).
