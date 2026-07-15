@@ -11,9 +11,9 @@ dependencies:
   - netcdf4>=1.5.0
   - pyproj>=3.0.0
   - gdal>=3.0.0
-  - shapely>=1.8.0
+  - shapely>=2.0.0
+  - scipy>=1.7.0
   - matplotlib>=3.4.0
+  - openpyxl>=3.0.0
   - ipython>=7.24.0
   - pip
-  - pip:
-    - glob2

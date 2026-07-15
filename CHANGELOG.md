@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.1
+
+- `d3dtoolsenv.yaml`: Added missing `scipy` and `openpyxl` dependencies (used by `getfacez`/`getfacez2` and Excel export), bumped `shapely` to `>=2.0.0` to match `requirements.txt`, and removed the unused `glob2` pip dependency.
+
 ## 0.22.0
 
 - Changed **getfacez**: now the spatial-index accelerated implementation. Uses a shapely `STRtree` for point-in-polygon matching and a scipy `cKDTree` for nearest-neighbor matching instead of scanning every mesh face for every observation point, which speeds up processing on large meshes. Same CLI arguments, Python API, and output format as before. Requires `scipy` and `shapely>=2.0.0` (bumped from `>=1.8.0`).
