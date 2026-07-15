@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.22.3
+
+- `getfacez` / `getfacez2`: Print total processing time (in seconds) to the console after extraction completes.
+
+## 0.22.2
+
+- `getfacez` / `getfacez2`: Output column now uses the detected/specified ID field name (e.g. `StationName`) instead of always being labeled `Point_ID`, falling back to `Point_ID` only when no name field was found.
+
 ## 0.22.1
 
 - `d3dtoolsenv.yaml`: Added missing `scipy` and `openpyxl` dependencies (used by `getfacez`/`getfacez2` and Excel export), bumped `shapely` to `>=2.0.0` to match `requirements.txt`, and removed the unused `glob2` pip dependency.

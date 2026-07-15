@@ -24,6 +24,7 @@ from shapely.geometry import Point, Polygon
 from shapely.strtree import STRtree
 from scipy.spatial import cKDTree
 import argparse
+import time
 
 
 def _build_face_polygons(x_bnd, y_bnd, verbose=False):
@@ -340,15 +341,18 @@ examples:
     try:
         # Call the extraction function
         print(f"Extracting Mesh2d_face_z values from {args.nc_file}...")
+        start_time = time.perf_counter()
         df = extract_mesh2d_face_z(nc_file=args.nc_file,
                                   obs_shp=args.obs_shp,
                                   output_csv=args.output_csv,
                                   output_excel=args.output_excel,
                                   id_field=args.id_field,
                                   verbose=args.verbose)
+        elapsed_time = time.perf_counter() - start_time
 
         print(f"\nExtraction completed successfully!")
         print(f"Processed {len(df)} observation points.")
+        print(f"Processing time: {elapsed_time:.2f} seconds")
 
         return 0
 
