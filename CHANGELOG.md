@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.4
+
+- `getfacez` / `getfacez2`: Fixed the non-UTF-8 shapefile fallback never actually kicking in — the retry read used Python's encoding name `'latin-1'`, which GDAL's Shapefile driver doesn't recognize, so it silently fell back to the `.cpg`-declared encoding and raised the same `UnicodeDecodeError` again. Now uses GDAL's recognized name (`'LATIN1'`), so shapefiles with a mismatched `.cpg`/actual encoding read successfully, dropping only the field(s) with undecodable names instead of failing entirely.
+- `getfacez` / `getfacez2`: The warning listing skipped non-UTF-8 field names could itself crash with `UnicodeEncodeError` on consoles using a non-UTF-8 codepage (e.g. Windows cp950). It now prints with unsupported characters replaced instead of raising.
+
 ## 0.22.3
 
 - `getfacez` / `getfacez2`: Print total processing time (in seconds) to the console after extraction completes.

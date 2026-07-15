@@ -20,6 +20,7 @@ import geopandas as gpd
 import pandas as pd
 from netCDF4 import Dataset
 import os
+import sys
 from shapely.geometry import Point, Polygon
 from shapely.strtree import STRtree
 from scipy.spatial import cKDTree
@@ -110,11 +111,52 @@ def _match_points_to_faces_by_nearest(obs_x, obs_y, face_x, face_y, verbose=Fals
     return nearest_idx
 
 
+def _drop_non_utf8_fields(gdf, verbose=False):
+    """Drop attribute columns whose original field name is not valid UTF-8.
+
+    Assumes gdf was read with encoding='latin-1', which maps each raw byte to a single
+    character 1:1 (lossless), so re-encoding a column name back to latin-1 recovers the
+    original bytes exactly, which can then be checked against UTF-8.
+    """
+    bad_fields = [
+        col for col in gdf.columns
+        if col != gdf.geometry.name and not _is_valid_utf8(col)
+    ]
+
+    if bad_fields:
+        _print_safe(f"Warning: skipping {len(bad_fields)} field(s) with non-UTF-8 names: {bad_fields}")
+        gdf = gdf.drop(columns=bad_fields)
+    elif verbose:
+        print("All field names are valid UTF-8; none skipped")
+
+    return gdf
+
+
+def _is_valid_utf8(name):
+    try:
+        name.encode('latin-1').decode('utf-8')
+        return True
+    except UnicodeDecodeError:
+        return False
+
+
+def _print_safe(message):
+    """Print a message, replacing characters the console encoding can't display.
+
+    Field names recovered via the latin-1 fallback may contain characters outside
+    the terminal's codepage (e.g. Windows cp950), which would otherwise crash print()
+    with a UnicodeEncodeError.
+    """
+    encoding = sys.stdout.encoding or 'utf-8'
+    print(message.encode(encoding, errors='replace').decode(encoding))
+
+
 def extract_mesh2d_face_z(nc_file,
                          obs_shp,
                          output_csv='mesh2d_face_z.csv',
                          output_excel='mesh2d_face_z.xlsx',
                          id_field=None,
+                         encoding=None,
                          verbose=False):
     """
     Extract Mesh2d_face_z values at observation points from a Delft3D FM NetCDF file.
@@ -135,6 +177,9 @@ def extract_mesh2d_face_z(nc_file,
     id_field : str (optional, default: None)
         Shapefile field to use for point names. If not given, tries common field names
         ('Name', 'name', 'NAME', 'id', 'ID', 'Id') before falling back to default names.
+    encoding : str (optional, default: None)
+        Text encoding of the shapefile's attribute table (e.g. 'cp950', 'big5'). If not
+        given, geopandas auto-detects the encoding (via the .cpg file or a UTF-8 default).
     verbose : bool (optional, default: False)
         Whether to print detailed information during processing
 
@@ -147,9 +192,23 @@ def extract_mesh2d_face_z(nc_file,
     if verbose:
         print(f"Reading observation points from: {obs_shp}")
 
-    # Read observation points from shapefile
+    # Read observation points from shapefile. If no encoding is specified and the default
+    # (UTF-8) decoding fails, re-read losslessly as 'latin-1' (which maps every byte 1:1 to
+    # a character and never raises a decode error) and drop any field whose name isn't
+    # valid UTF-8, instead of guessing at the "real" encoding.
     try:
-        obs = gpd.read_file(obs_shp)
+        if encoding:
+            obs = gpd.read_file(obs_shp, encoding=encoding)
+        else:
+            try:
+                obs = gpd.read_file(obs_shp)
+            except UnicodeDecodeError:
+                # GDAL's Shapefile driver only recognizes its own encoding names (e.g.
+                # 'LATIN1'), not Python's ('latin-1'); passing the latter is silently
+                # ignored and it falls back to the .cpg-declared encoding, reproducing
+                # the same failure. 'LATIN1' is honored and never raises a decode error.
+                obs = gpd.read_file(obs_shp, encoding='LATIN1')
+                obs = _drop_non_utf8_fields(obs, verbose=verbose)
     except Exception as e:
         raise ValueError(f"Error reading shapefile: {e}")
 
@@ -302,6 +361,7 @@ examples:
   %(prog)s --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv
   %(prog)s --nc-file results.nc --obs-shp points.shp --output-excel bathymetry.xlsx --verbose
   %(prog)s --nc-file results.nc --obs-shp points.shp -if StationName
+  %(prog)s --nc-file results.nc --obs-shp points.shp -e cp950
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
@@ -317,6 +377,8 @@ examples:
                         help='Path to save the output Excel file (default: mesh2d_face_z.xlsx)')
     parser.add_argument('-if', '--id-field', dest='id_field', default=None,
                         help="Shapefile field to use for point names (default: auto-detect from 'Name', 'name', 'NAME', 'id', 'ID', 'Id')")
+    parser.add_argument('-e', '--encoding', dest='encoding', default=None,
+                        help="Text encoding of the shapefile's attribute table, e.g. 'cp950', 'big5' (default: auto-detect)")
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Display additional information during processing')
 
@@ -347,6 +409,7 @@ examples:
                                   output_csv=args.output_csv,
                                   output_excel=args.output_excel,
                                   id_field=args.id_field,
+                                  encoding=args.encoding,
                                   verbose=args.verbose)
         elapsed_time = time.perf_counter() - start_time
 
