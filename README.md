@@ -32,8 +32,6 @@ This package provides several utilities for converting shapefiles to various for
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<out-dir>_RM/`)
 - **pliz2shp**: Convert Delft3D PLIZ polyline files to ESRI Shapefiles
 - **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
-- **transzone1**: Extract triangle mesh faces from a faces shapefile, buffer and dissolve them into a transition zone, then select and dissolve all faces intersecting that zone
-- **transzone2**: Buffer `trans_zone_faces` inward, select FlowFM faces that lie within the buffered zone, and dissolve them into a transition zone core
 
 ## Usage Examples
 
@@ -334,32 +332,6 @@ The tool empties the 2D mesh in the project's UGRID NetCDF net file while preser
 1D network (pipes/branches), strips 2D-specific blocks from the `IniFieldFile`, and creates
 a `<name>.nc.bak` backup so the change can be reverted with `--restore`.
 
-### Build a transition zone from triangle mesh faces
-
-```python
-# Run via command line (recommended)
-# transzone1                                              # Use defaults (SHP_NC/FlowFM_net_faces.shp -> SHP_TRANS/)
-# transzone1 -s SHP_NC/FlowFM_net_faces.shp -o SHP_TRANS
-# transzone1 -b 2.0                                        # Custom buffer distance
-```
-
-The tool extracts the triangular cells from a faces shapefile, buffers and dissolves them
-into `trans_zone.shp`, then selects and dissolves all faces intersecting that zone into
-`trans_zone_faces.shp`.
-
-### Build the transition zone core
-
-```python
-# Run via command line (recommended)
-# transzone2                                                                    # Use defaults (SHP_TRANS/trans_zone_faces.shp)
-# transzone2 -s SHP_NC/FlowFM_net_faces.shp -t SHP_TRANS/trans_zone_faces.shp
-# transzone2 -b -2.0                                                            # Custom (negative) buffer distance
-```
-
-The tool buffers `trans_zone_faces.shp` inward, selects the FlowFM faces that lie fully
-within the buffered zone, dissolves them, and saves the result as `trans_zone_core.shp`.
-Typically run after `transzone1`.
-
 ### Calculate flood simulation accuracy
 
 ```python
@@ -413,8 +385,6 @@ d3dtools-info getfacez2
 d3dtools-info fou2shp
 d3dtools-info pliz2shp
 d3dtools-info rmgrid
-d3dtools-info transzone1
-d3dtools-info transzone2
 
 # Display help for specific tools
 ncrain --help
@@ -437,8 +407,6 @@ getfacez2 --help
 fou2shp --help
 pliz2shp --help
 rmgrid --help
-transzone1 --help
-transzone2 --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -528,19 +496,13 @@ rmgrid                                # Auto-detect the .dsproj in the current f
 rmgrid -i MyProject.dsproj            # Specify the project explicitly
 rmgrid -i MyProject.dsproj --force-backup  # Overwrite an existing .nc.bak
 rmgrid -i MyProject.dsproj --restore  # Restore the original net file from .nc.bak
-
-# Build a transition zone from triangle mesh faces
-transzone1                                              # Use defaults (SHP_NC/FlowFM_net_faces.shp -> SHP_TRANS/)
-transzone1 -s SHP_NC/FlowFM_net_faces.shp -o SHP_TRANS
-transzone1 -b 2.0                                       # Custom buffer distance
-
-# Build the transition zone core from trans_zone_faces
-transzone2                                                                    # Use defaults (SHP_TRANS/trans_zone_faces.shp)
-transzone2 -s SHP_NC/FlowFM_net_faces.shp -t SHP_TRANS/trans_zone_faces.shp
-transzone2 -b -2.0                                                            # Custom (negative) buffer distance
 ```
 
 ## Changelog
+
+### 0.23.0
+
+- Removed **transzone1** and **transzone2**: these tools and their CLI entry points have been removed from the package.
 
 ### 0.22.0
 

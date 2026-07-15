@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.23.0
+
+- Removed **transzone1** and **transzone2**: these tools and their CLI entry points have been removed from the package.
+
 ## 0.22.4
 
 - `getfacez` / `getfacez2`: Fixed the non-UTF-8 shapefile fallback never actually kicking in — the retry read used Python's encoding name `'latin-1'`, which GDAL's Shapefile driver doesn't recognize, so it silently fell back to the `.cpg`-declared encoding and raised the same `UnicodeDecodeError` again. Now uses GDAL's recognized name (`'LATIN1'`), so shapefiles with a mismatched `.cpg`/actual encoding read successfully, dropping only the field(s) with undecodable names instead of failing entirely.

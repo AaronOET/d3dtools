@@ -232,32 +232,6 @@ TOOL_DESCRIPTIONS = {
             rmgrid -i MyProject.dsproj --restore
             rmgrid -i MyProject.dsproj --force-backup
     """,
-    'transzone1':
-    """
-        Extract triangle mesh faces, buffer and dissolve them into a transition zone, then dissolve all intersecting faces.
-
-        This tool reads a faces shapefile, selects the triangular cells, buffers and
-        dissolves them into a transition zone (trans_zone.shp), then selects and
-        dissolves all faces intersecting that zone (trans_zone_faces.shp).
-
-        Examples:
-            transzone1
-            transzone1 -s SHP_NC/FlowFM_net_faces.shp -o SHP_TRANS
-            transzone1 -b 2.0
-    """,
-    'transzone2':
-    """
-        Buffer trans_zone_faces inward and dissolve the FlowFM faces that lie within it into a transition zone core.
-
-        This tool buffers trans_zone_faces.shp inward (negative buffer), selects
-        the FlowFM faces that lie fully within the buffered zone, dissolves them,
-        and saves the result as trans_zone_core.shp.
-
-        Examples:
-            transzone2
-            transzone2 -s SHP_NC/FlowFM_net_faces.shp -t SHP_TRANS/trans_zone_faces.shp
-            transzone2 -b -2.0
-    """
 }
 
 

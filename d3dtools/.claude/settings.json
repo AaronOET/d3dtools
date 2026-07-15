@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/D_GITHUB_OET/d3dtools/**)",
+      "Bash(python -c \"import d3dtools; print\\(d3dtools.__version__\\); print\\(d3dtools.__all__\\)\")"
+    ],
+    "additionalDirectories": [
+      "D:\\D_GITHUB_OET\\d3dtools"
+    ]
+  }
+}
