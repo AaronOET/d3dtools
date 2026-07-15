@@ -113,6 +113,7 @@ def extract_mesh2d_face_z(nc_file,
                          obs_shp,
                          output_csv='mesh2d_face_z.csv',
                          output_excel='mesh2d_face_z.xlsx',
+                         id_field=None,
                          verbose=False):
     """
     Extract Mesh2d_face_z values at observation points from a Delft3D FM NetCDF file.
@@ -130,6 +131,9 @@ def extract_mesh2d_face_z(nc_file,
         Path to save the output CSV file
     output_excel : str (required, default: 'mesh2d_face_z.xlsx')
         Path to save the output Excel file
+    id_field : str (optional, default: None)
+        Shapefile field to use for point names. If not given, tries common field names
+        ('Name', 'name', 'NAME', 'id', 'ID', 'Id') before falling back to default names.
     verbose : bool (optional, default: False)
         Whether to print detailed information during processing
 
@@ -188,12 +192,18 @@ def extract_mesh2d_face_z(nc_file,
         nc.close()
         raise ValueError("Neither face boundary coordinates nor face center coordinates found in NetCDF file")
 
-    # Get observation point names (try common field names)
-    obs_name_field = None
-    for field in ['Name', 'name', 'NAME', 'id', 'ID', 'Id']:
-        if field in obs.columns:
-            obs_name_field = field
-            break
+    # Get observation point names (user-specified id_field takes priority over auto-detection)
+    if id_field is not None:
+        if id_field not in obs.columns:
+            nc.close()
+            raise ValueError(f"ID field '{id_field}' not found in shapefile. Available fields: {list(obs.columns)}")
+        obs_name_field = id_field
+    else:
+        obs_name_field = None
+        for field in ['Name', 'name', 'NAME', 'id', 'ID', 'Id']:
+            if field in obs.columns:
+                obs_name_field = field
+                break
 
     if obs_name_field is None:
         # Create default names if no name field found
@@ -225,7 +235,7 @@ def extract_mesh2d_face_z(nc_file,
         face_z_value = mesh2d_face_z[face_index] if face_index >= 0 else np.nan
 
         results.append({
-            'Point_Name': obs_names[i],
+            'Point_ID': obs_names[i],
             'X_Coordinate': obs_x[i],
             'Y_Coordinate': obs_y[i],
             'Mesh2d_face_z': face_z_value,
@@ -290,6 +300,7 @@ examples:
   %(prog)s --nc-file results.nc --obs-shp observation_points.shp
   %(prog)s --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv
   %(prog)s --nc-file results.nc --obs-shp points.shp --output-excel bathymetry.xlsx --verbose
+  %(prog)s --nc-file results.nc --obs-shp points.shp -if StationName
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
@@ -303,6 +314,8 @@ examples:
     parser.add_argument('--output-excel', dest='output_excel', default='mesh2d_face_z.xlsx',
                         metavar='mesh2d_face_z.xlsx',
                         help='Path to save the output Excel file (default: mesh2d_face_z.xlsx)')
+    parser.add_argument('-if', '--id-field', dest='id_field', default=None,
+                        help="Shapefile field to use for point names (default: auto-detect from 'Name', 'name', 'NAME', 'id', 'ID', 'Id')")
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Display additional information during processing')
 
@@ -331,6 +344,7 @@ examples:
                                   obs_shp=args.obs_shp,
                                   output_csv=args.output_csv,
                                   output_excel=args.output_excel,
+                                  id_field=args.id_field,
                                   verbose=args.verbose)
 
         print(f"\nExtraction completed successfully!")

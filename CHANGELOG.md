@@ -1,9 +1,10 @@
 # Changelog
 
 ## 0.22.0
-- Changed **getfacez**: drop-in, spatial-index accelerated replacement for `getfacez`. Uses a shapely `STRtree` for point-in-polygon matching and a scipy `cKDTree` for nearest-neighbor matching instead of scanning every mesh face for every observation point, which speeds up processing on large meshes. Same CLI arguments, Python API, and output format as `getfacez`. Requires `scipy` and `shapely>=2.0.0` (bumped from `>=1.8.0`).
-- Keep original version of code in **getfacez2** as a fallback option.
 
+- Changed **getfacez**: now the spatial-index accelerated implementation. Uses a shapely `STRtree` for point-in-polygon matching and a scipy `cKDTree` for nearest-neighbor matching instead of scanning every mesh face for every observation point, which speeds up processing on large meshes. Same CLI arguments, Python API, and output format as before. Requires `scipy` and `shapely>=2.0.0` (bumped from `>=1.8.0`).
+- Keep original version of code in **getfacez2** as a fallback option.
+- `getfacez` / `getfacez2`: Added `-if`/`--id-field` to specify which shapefile field to use for point names instead of relying on auto-detection (`Name`, `name`, `NAME`, `id`, `ID`, `Id`). Raises a clear error listing available fields if the specified field doesn't exist.
 
 ## 0.21.0
 

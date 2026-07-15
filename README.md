@@ -27,8 +27,8 @@ This package provides several utilities for converting shapefiles to various for
 - **evaluate_sensor**: Calculate flood simulation accuracy metrics by comparing simulated flood extents with point-based sensor data (with configurable buffer radius and depth threshold)
 - **evaluate_sensor2** (alias: **eval_iot**): Calculate flood simulation accuracy metrics using sensor data with dual-threshold shapefiles (separate low and high depth threshold simulations)
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
-- **getfacez**: Spatial-index accelerated version of getfacez — uses a shapely STRtree for point-in-polygon matching and a scipy cKDTree for nearest-neighbor matching instead of scanning every mesh face for every observation point, which is much faster on large meshes. Same arguments, Python API, and output format as getfacez2
-- **getfacez2**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points
+- **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points. Uses a spatial index (shapely STRtree for point-in-polygon matching, scipy cKDTree for nearest-neighbor matching) instead of scanning every mesh face for every observation point, which is much faster on large meshes. Supports `-if`/`--id-field` to specify which shapefile field to use for point names
+- **getfacez2**: Original brute-force implementation of getfacez (no spatial index), kept as a fallback. Same CLI arguments, Python API, and output format as getfacez, including `-if`/`--id-field`
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<out-dir>_RM/`)
 - **pliz2shp**: Convert Delft3D PLIZ polyline files to ESRI Shapefiles
 - **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
@@ -210,17 +210,20 @@ stats = data.describe().transpose()
 print(stats)
 ```
 
-### Extract Mesh2d_face_z values from NetCDF files
+### Extract Mesh2d_face_z values from NetCDF files (spatial-index accelerated)
 
 ```python
 from d3dtools import getfacez
 
-# Extract bed level/bathymetry data from NetCDF file at observation points
+# Extract bed level/bathymetry data from NetCDF file at observation points.
+# Uses an STRtree (point-in-polygon) or cKDTree (nearest neighbor) spatial index
+# instead of a per-point full mesh scan, so it stays fast on large meshes.
 data = getfacez.extract_mesh2d_face_z(
     nc_file='path/to/model_output.nc',
     obs_shp='path/to/observation_points.shp',
     output_csv='bathymetry.csv',
     output_excel='bathymetry.xlsx',
+    id_field='StationName',  # Optional; field to use for point names (default: auto-detect)
     verbose=True  # Display additional information during processing
 )
 
@@ -229,18 +232,20 @@ print(data.head())
 print(f"Bathymetry range: {data['Mesh2d_face_z'].min():.3f} to {data['Mesh2d_face_z'].max():.3f}")
 ```
 
-### Extract Mesh2d_face_z values from NetCDF files (faster, spatial-index accelerated)
+### Extract Mesh2d_face_z values from NetCDF files (original brute-force fallback)
 
 ```python
 from d3dtools import getfacez2
 
-# Same signature and output as getfacez, but backed by an STRtree (point-in-polygon)
-# or cKDTree (nearest neighbor) spatial index instead of a per-point full mesh scan
+# Same signature and output as getfacez, but uses the original per-point full mesh
+# scan (no spatial index). Kept as a fallback in case the spatial-index approach
+# ever misbehaves on unusual mesh data.
 data = getfacez2.extract_mesh2d_face_z(
     nc_file='path/to/model_output.nc',
     obs_shp='path/to/observation_points.shp',
     output_csv='bathymetry.csv',
     output_excel='bathymetry.xlsx',
+    id_field='StationName',  # Optional; field to use for point names (default: auto-detect)
     verbose=True  # Display additional information during processing
 )
 
@@ -493,14 +498,16 @@ evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --
 eval_iot --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp  # Alias for evaluate_sensor2
 eval_iot --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 30 --threshold 20 --output sensor_accuracy2.csv
 
-# Extract Mesh2d_face_z values at observation points
+# Extract Mesh2d_face_z values at observation points (spatial-index accelerated)
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp --output-csv bathymetry.csv --output-excel bathymetry.xlsx
+getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp -if StationName  # Specify custom id field
 getfacez --verbose  # Display additional processing information
 
-# Extract Mesh2d_face_z values at observation points (faster, spatial-index accelerated)
+# Extract Mesh2d_face_z values at observation points (original brute-force fallback)
 getfacez2 --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp
 getfacez2 --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp --output-csv bathymetry.csv --output-excel bathymetry.xlsx
+getfacez2 --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp -if StationName  # Specify custom id field
 getfacez2 --verbose  # Display additional processing information
 
 # Reconstruct FOU mesh faces as threshold-filtered shapefiles
@@ -535,11 +542,16 @@ transzone2 -b -2.0                                                            # 
 
 ## Changelog
 
+### 0.22.0
+
+- Changed **getfacez**: now the spatial-index accelerated implementation, using a shapely STRtree for point-in-polygon matching and a scipy cKDTree for nearest-neighbor matching instead of scanning every mesh face for every observation point. Same CLI arguments, Python API, and output format as before. Requires `scipy` and `shapely>=2.0.0` (bumped from `>=1.8.0`).
+- Kept the original brute-force implementation as **getfacez2**, a fallback with the same interface.
+- Added `-if`/`--id-field` to **getfacez** and **getfacez2**: lets you specify which shapefile field to use for point names instead of relying on auto-detection (`Name`, `name`, `NAME`, `id`, `ID`, `Id`). Raises a clear error listing available fields if the specified field doesn't exist.
+
 ### 0.21.0
 
 - Added **transzone1**: extracts triangle mesh faces from a faces shapefile, buffers and dissolves them into a transition zone (`trans_zone.shp`), then selects and dissolves all faces intersecting that zone (`trans_zone_faces.shp`).
 - Added **transzone2**: buffers `trans_zone_faces.shp` inward, selects FlowFM faces that lie fully within the buffered zone, and dissolves them into a transition zone core (`trans_zone_core.shp`).
-- Added **getfacez2**: drop-in, spatial-index accelerated replacement for **getfacez**, using a shapely STRtree for point-in-polygon matching and a scipy cKDTree for nearest-neighbor matching instead of scanning every mesh face per observation point.
 
 ### 0.20.3
 
