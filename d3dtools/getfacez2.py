@@ -173,7 +173,7 @@ def extract_mesh2d_face_z(nc_file,
         
         # Store results
         results.append({
-            'Point_ID': name,
+            (obs_name_field or 'Point_ID'): name,
             'X_Coordinate': x1,
             'Y_Coordinate': y1,
             'Mesh2d_face_z': face_z_value,

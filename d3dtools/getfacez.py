@@ -235,7 +235,7 @@ def extract_mesh2d_face_z(nc_file,
         face_z_value = mesh2d_face_z[face_index] if face_index >= 0 else np.nan
 
         results.append({
-            'Point_ID': obs_names[i],
+            (obs_name_field or 'Point_ID'): obs_names[i],
             'X_Coordinate': obs_x[i],
             'Y_Coordinate': obs_y[i],
             'Mesh2d_face_z': face_z_value,
