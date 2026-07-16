@@ -209,7 +209,7 @@ def main():
         epilog="""
 Examples:
   pol2shp -i POL_001.pol
-  pol2shp -i POL_001.pol -of output --crs EPSG:4326
+  pol2shp -i POL_001.pol -of OUTPUT_DIR --crs EPSG:4326
   pol2shp -i POL_001.pol -q
   pol2shp -if INPUT_DIR -of OUTPUT_DIR
         """,

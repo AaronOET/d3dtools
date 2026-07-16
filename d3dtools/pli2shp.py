@@ -177,7 +177,7 @@ def main():
         epilog="""
 Examples:
   pli2shp -i boundary.pli
-  pli2shp -i LDB_001.ldb -of output --crs EPSG:4326
+  pli2shp -i LDB_001.ldb -of OUTPUT_DIR --crs EPSG:4326
   pli2shp -i inlet.pli -q
   pli2shp -if INPUT_DIR -of OUTPUT_DIR
         """,

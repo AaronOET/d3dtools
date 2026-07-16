@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.3
+
+- `pli2shp` / `pliz2shp` / `pol2shp` / `xyz2shp`: Corrected the `-of`/`--output-folder` example in the CLI help text, which showed a lowercase `output` placeholder inconsistent with the `OUTPUT_DIR` placeholder used elsewhere.
+
 ## 0.24.2
 
 - Renamed the output-folder CLI flag from `-o`/`--output` to `-of`/`--output-folder` for consistency across the package: `shp2ldb`, `shpbc2pli`/`shp2pli`, `shpblock2pol`/`shp2pol`, `shpdike2pliz`/`shp2pliz`, `shp2xyz`, `snorain`, `pli2shp`, `pliz2shp`, `pol2shp`, `xyz2shp`. Not backward compatible with the previous `-o` flags; the Python API (`convert()`/`*_to_shp()` functions) is unchanged.

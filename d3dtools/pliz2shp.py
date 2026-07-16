@@ -218,7 +218,7 @@ def main():
         epilog="""
 Examples:
   pliz2shp -i Dike001.pliz
-  pliz2shp -i Dike001.pliz -of output --crs EPSG:4326
+  pliz2shp -i Dike001.pliz -of OUTPUT_DIR --crs EPSG:4326
   pliz2shp -i Dike001.pliz -q
   pliz2shp -if INPUT_DIR -of OUTPUT_DIR
         """,

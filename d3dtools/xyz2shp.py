@@ -175,7 +175,7 @@ def main():
         epilog="""
 Examples:
   xyz2shp -i XYZ_001.xyz
-  xyz2shp -i XYZ_001.csv -of output --crs EPSG:4326
+  xyz2shp -i XYZ_001.csv -of OUTPUT_DIR --crs EPSG:4326
   xyz2shp -i XYZ_001.xyz -d 2
   xyz2shp -i XYZ_001.xyz -q
   xyz2shp -if INPUT_DIR -of OUTPUT_DIR
