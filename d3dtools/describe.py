@@ -82,8 +82,8 @@ TOOL_DESCRIPTIONS = {
         time series files for use in modeling.
 
         Examples:
-            snorain -i rainfall_scenarios.csv -o custom/TAB
-            snorain --input rainfall_scenarios.csv --output custom/TAB --verbose
+            snorain -i rainfall_scenarios.csv -of custom/TAB
+            snorain --input rainfall_scenarios.csv --output-folder custom/TAB --verbose
     """,
     'shp2ldb':
     """
@@ -94,7 +94,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             shp2ldb
-            shp2ldb -i custom/SHP_LDB -o custom/LDB
+            shp2ldb -i custom/SHP_LDB -of custom/LDB
             shp2ldb --id_field BoundaryName
     """,
     'shpbc2pli':
@@ -106,7 +106,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             shpbc2pli
-            shpbc2pli -i custom/SHP_BC -o custom/PLI_BC
+            shpbc2pli -i custom/SHP_BC -of custom/PLI_BC
             shpbc2pli --id_field BoundaryName
     """,
     'shp2pli':
@@ -115,7 +115,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             shp2pli
-            shp2pli -i custom/SHP_BC -o custom/PLI_BC
+            shp2pli -i custom/SHP_BC -of custom/PLI_BC
     """,
     'shpblock2pol':
     """
@@ -126,7 +126,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             shpblock2pol
-            shpblock2pol -i custom/SHP_BLOCK -o custom/POL_BLOCK
+            shpblock2pol -i custom/SHP_BLOCK -of custom/POL_BLOCK
     """,
     'shp2pol':
     """
@@ -134,7 +134,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             shp2pol
-            shp2pol -i custom/SHP_BLOCK -o custom/POL_BLOCK
+            shp2pol -i custom/SHP_BLOCK -of custom/POL_BLOCK
     """,
     'shpdike2pliz':
     """
@@ -145,7 +145,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             shpdike2pliz
-            shpdike2pliz -i custom/SHP_DIKE -o custom/PLIZ_DIKE
+            shpdike2pliz -i custom/SHP_DIKE -of custom/PLIZ_DIKE
             shpdike2pliz --id_field DikeName
     """,
     'shp2pliz':
@@ -154,7 +154,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             shp2pliz
-            shp2pliz -i custom/SHP_DIKE -o custom/PLIZ_DIKE
+            shp2pliz -i custom/SHP_DIKE -of custom/PLIZ_DIKE
     """,
     'shp2xyz':
     """
@@ -164,7 +164,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             shp2xyz
-            shp2xyz -i custom/SHP_SAMPLE -o custom/XYZ_SAMPLE
+            shp2xyz -i custom/SHP_SAMPLE -of custom/XYZ_SAMPLE
             shp2xyz --z_field ELEVATION
     """,
     'getfacez':
@@ -203,19 +203,57 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             fou2shp
-            fou2shp --input NC/FlowFM_fou.nc --out-dir SHP
-            fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
+            fou2shp --input NC/FlowFM_fou.nc -of SHP
+            fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
     """,
     'pliz2shp':
     """
-        Convert Delft3D PLIZ files to ESRI Shapefiles.
+        Convert a Delft3D/D-Flow FM .pliz file (weir/dike polyline with Z) to a 3D ESRI Shapefile.
 
-        This tool reads all *.pliz files from an input folder and converts each polyline
-        (with Z values) to a shapefile in the output folder.
+        Reads one .pliz file or a folder of them and writes a PolylineZ shapefile per
+        input file, with length, Z range, and any extra attribute columns summarized.
 
         Examples:
-            pliz2shp
-            pliz2shp -i custom/PLIZ -o custom/SHP
+            pliz2shp -i Dike001.pliz
+            pliz2shp -i Dike001.pliz -of output --crs EPSG:4326
+            pliz2shp -if PLIZ_DIR -of SHP_DIR
+    """,
+    'pli2shp':
+    """
+        Convert a Delft3D polyline file (.pli or .ldb) to an ESRI Shapefile.
+
+        Reads one .pli/.ldb file or a folder of them and writes a line shapefile per
+        input file.
+
+        Examples:
+            pli2shp -i boundary.pli
+            pli2shp -i LDB_001.ldb -of output --crs EPSG:4326
+            pli2shp -if PLI_DIR -of SHP_DIR
+    """,
+    'pol2shp':
+    """
+        Convert a Delft3D/D-Flow FM .pol file to a polygon ESRI Shapefile.
+
+        Reads one .pol file or a folder of them and writes a polygon shapefile per
+        input file, closing unclosed rings and summarizing any extra attribute columns.
+
+        Examples:
+            pol2shp -i POL_001.pol
+            pol2shp -i POL_001.pol -of output --crs EPSG:4326
+            pol2shp -if POL_DIR -of SHP_DIR
+    """,
+    'xyz2shp':
+    """
+        Convert an XYZ point file (.xyz or .csv) to an ESRI Shapefile.
+
+        Reads one .xyz/.csv file or a folder of them and writes a point shapefile per
+        input file (3D x,y,z points by default; use -d 2 for 2D points).
+
+        Examples:
+            xyz2shp -i XYZ_001.xyz
+            xyz2shp -i XYZ_001.csv -of output --crs EPSG:4326
+            xyz2shp -i XYZ_001.xyz -d 2
+            xyz2shp -if XYZ_DIR -of SHP_DIR
     """,
     'rmgrid':
     """
@@ -266,7 +304,7 @@ def main():
                         default='all',
                         help='The specific tool to describe (default: all)')
 
-    parser.add_argument('--version',
+    parser.add_argument('-v', '--version',
                         action='store_true',
                         help='Show the d3dtools version')
 

@@ -100,8 +100,8 @@ def main():
       epilog='''
 examples:
   %(prog)s -i rainfall_scenarios.csv
-  %(prog)s -i rainfall_scenarios.csv -o custom/TAB
-  %(prog)s --input rainfall_scenarios.csv --output custom/TAB --verbose
+  %(prog)s -i rainfall_scenarios.csv -of custom/TAB
+  %(prog)s --input rainfall_scenarios.csv --output-folder custom/TAB --verbose
       ''',
       formatter_class=argparse.RawDescriptionHelpFormatter)
 
@@ -111,8 +111,8 @@ examples:
                       help='Input CSV file with rainfall scenario data')
 
   parser.add_argument(
-      '-o',
-      '--output',
+      '-of',
+      '--output-folder',
       default='TAB',
       help='Output folder for generated CSV files (default: "TAB")')
 
@@ -124,10 +124,10 @@ examples:
   args = parser.parse_args()
 
   # Check if output folder exists, if not create it
-  if not os.path.exists(args.output):
-    os.makedirs(args.output)
+  if not os.path.exists(args.output_folder):
+    os.makedirs(args.output_folder)
     if args.verbose:
-      print(f"Output folder '{args.output}' created.")
+      print(f"Output folder '{args.output_folder}' created.")
 
   # Check if file exists
   if not os.path.exists(args.input):
@@ -137,7 +137,7 @@ examples:
   # Process the file
   try:
     result_files = generate(input_file=args.input,
-                           output_folder=args.output,
+                           output_folder=args.output_folder,
                            verbose=args.verbose)
 
     if args.verbose:

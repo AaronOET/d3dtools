@@ -29,8 +29,11 @@ This package provides several utilities for converting shapefiles to various for
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
 - **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points. Uses a spatial index (shapely STRtree for point-in-polygon matching, scipy cKDTree for nearest-neighbor matching) instead of scanning every mesh face for every observation point, which is much faster on large meshes. Supports `-if`/`--id-field` to specify which shapefile field to use for point names
 - **getfacez2**: Original brute-force implementation of getfacez (no spatial index), kept as a fallback. Same CLI arguments, Python API, and output format as getfacez, including `-if`/`--id-field`
-- **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<out-dir>_RM/`)
-- **pliz2shp**: Convert Delft3D PLIZ polyline files to ESRI Shapefiles
+- **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<output-folder>_RM/`)
+- **pliz2shp**: Convert Delft3D/D-Flow FM `.pliz` weir/dike polyline files (with Z) to 3D ESRI Shapefiles
+- **pli2shp**: Convert Delft3D polyline files (`.pli`/`.ldb`) to ESRI Shapefiles
+- **pol2shp**: Convert Delft3D/D-Flow FM `.pol` polygon files to ESRI Shapefiles
+- **xyz2shp**: Convert XYZ point files (`.xyz`/`.csv`) to ESRI Shapefiles
 - **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
 
 ## Usage Examples
@@ -293,8 +296,8 @@ print(f"Recall (Catch Rate): {results['recall']:.2f}%")
 
 ```python
 # Run via command line (recommended)
-# fou2shp --input NC/FlowFM_fou.nc --out-dir SHP
-# fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
+# fou2shp --input NC/FlowFM_fou.nc -of SHP
+# fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
 
 # Remove polygons intersecting a mask shapefile; filtered copies go to SHP_RM/
 # fou2shp --input NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
@@ -309,13 +312,66 @@ from d3dtools import pliz2shp
 
 # Convert a single .pliz file
 pliz2shp.pliz_to_shp(
-    pliz_path='PLIZ/MyDike.pliz',
-    output_dir='SHP_DIKE'           # Optional; defaults to same folder as input
+    input_file='PLIZ/MyDike.pliz',
+    output_dir='SHP_LINES3D',       # Optional; default: SHP_LINES3D
+    crs='EPSG:3826'                 # Optional; default: EPSG:3826
 )
 
-# Batch convert all .pliz files in a folder via CLI (recommended for multiple files)
-# pliz2shp
-# pliz2shp -i custom/PLIZ -o custom/SHP
+# Batch convert via CLI (recommended for multiple files)
+# pliz2shp -i Dike001.pliz
+# pliz2shp -if custom/PLIZ -of custom/SHP
+```
+
+### Convert PLI/LDB files to Shapefiles
+
+```python
+from d3dtools import pli2shp
+
+# Convert a single .pli or .ldb file
+pli2shp.polyline_to_shp(
+    input_file='PLI/boundary.pli',
+    output_dir='SHP_LINES',         # Optional; default: SHP_LINES
+    crs='EPSG:3826'                 # Optional; default: EPSG:3826
+)
+
+# Batch convert via CLI (recommended for multiple files)
+# pli2shp -i boundary.pli
+# pli2shp -if custom/PLI -of custom/SHP
+```
+
+### Convert POL files to Shapefiles
+
+```python
+from d3dtools import pol2shp
+
+# Convert a single .pol file
+pol2shp.pol_to_shp(
+    input_file='POL/POL_001.pol',
+    output_dir='SHP_POLYGONS',      # Optional; default: SHP_POLYGONS
+    crs='EPSG:3826'                 # Optional; default: EPSG:3826
+)
+
+# Batch convert via CLI (recommended for multiple files)
+# pol2shp -i POL_001.pol
+# pol2shp -if custom/POL -of custom/SHP
+```
+
+### Convert XYZ/CSV point files to Shapefiles
+
+```python
+from d3dtools import xyz2shp
+
+# Convert a single .xyz or .csv point file
+xyz2shp.xyz_to_shp(
+    input_file='XYZ/XYZ_001.xyz',
+    output_dir='SHP_XYZ',           # Optional; default: SHP_XYZ
+    crs='EPSG:3826',                # Optional; default: EPSG:3826
+    dimension='3'                   # Optional; '3' for x,y,z points, '2' for x,y only
+)
+
+# Batch convert via CLI (recommended for multiple files)
+# xyz2shp -i XYZ_001.xyz
+# xyz2shp -if custom/XYZ -of custom/SHP
 ```
 
 ### Remove the 2D mesh from a D-Flow FM project
@@ -357,6 +413,7 @@ The package provides the `d3dtools-info` command-line utility that serves as a c
 ```bash
 # Display the package version
 d3dtools-info --version
+d3dtools-info -v
 
 # Get help on d3dtools-info itself
 d3dtools-info --help
@@ -384,6 +441,9 @@ d3dtools-info getfacez
 d3dtools-info getfacez2
 d3dtools-info fou2shp
 d3dtools-info pliz2shp
+d3dtools-info pli2shp
+d3dtools-info pol2shp
+d3dtools-info xyz2shp
 d3dtools-info rmgrid
 
 # Display help for specific tools
@@ -406,6 +466,9 @@ getfacez --help
 getfacez2 --help
 fou2shp --help
 pliz2shp --help
+pli2shp --help
+pol2shp --help
+xyz2shp --help
 rmgrid --help
 ```
 
@@ -422,12 +485,12 @@ ncrain --no-clean           # Keep intermediate files
 ncrain --single rainfall.csv  # Process only a specific CSV file
 
 # Process rainfall scenario data
-snorain -i rainfall_scenarios.csv -o custom/TAB
-snorain --input rainfall_scenarios.csv --output custom/TAB --verbose
+snorain -i rainfall_scenarios.csv -of custom/TAB
+snorain --input rainfall_scenarios.csv --output-folder custom/TAB --verbose
 
 # Convert boundary shapefiles to LDB
 shp2ldb
-shp2ldb -i custom/SHP_LDB -o custom/LDB  # Specify input and output folders
+shp2ldb -i custom/SHP_LDB -of custom/LDB  # Specify input and output folders
 shp2ldb --id_field BoundaryName  # Specify custom ID field
 
 # Convert boundary shapefiles to PLI
@@ -436,7 +499,7 @@ shpbc2pli --id_field BoundaryName  # Specify custom ID field
 
 # Convert block shapefiles to POL
 shpblock2pol  # or use the alias: shp2pol
-shpblock2pol -i custom/SHP_BLOCK -o custom/POL_BLOCK  # Specify input and output folders
+shpblock2pol -i custom/SHP_BLOCK -of custom/POL_BLOCK  # Specify input and output folders
 
 # Convert dike shapefiles to PLIZ
 shpdike2pliz  # or use the alias: shp2pliz
@@ -444,7 +507,7 @@ shpdike2pliz --id_field DikeName  # Specify custom ID field
 
 # Convert point shapefiles to XYZ
 shp2xyz
-shp2xyz -i custom/SHP_SAMPLE -o custom/XYZ_SAMPLE  # Specify input and output folders
+shp2xyz -i custom/SHP_SAMPLE -of custom/XYZ_SAMPLE  # Specify input and output folders
 shp2xyz --z_field ELEVATION  # Specify custom Z-field name
 
 # Extract time series data at observation points
@@ -480,16 +543,36 @@ getfacez2 --verbose  # Display additional processing information
 
 # Reconstruct FOU mesh faces as threshold-filtered shapefiles
 fou2shp                                         # Use defaults (NC/FlowFM_fou.nc -> SHP/)
-fou2shp --input NC/FlowFM_fou.nc --out-dir SHP  # Specify input and output directory
-fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
+fou2shp --input NC/FlowFM_fou.nc -of SHP        # Specify input and output directory
+fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
 fou2shp --input NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp             # Remove polygons intersecting a mask; output -> SHP_RM/
 fou2shp --input NC/FlowFM_fou.nc -r SHP/*.shp                   # Glob pattern for multiple masks
 fou2shp --input NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp  # Multiple explicit masks
 
-# Convert Delft3D PLIZ files to ESRI Shapefiles
-pliz2shp                             # Use defaults (PLIZ/ -> SHP_DIKE/)
-pliz2shp -i custom/PLIZ -o custom/SHP  # Specify custom input and output folders
+# Convert a Delft3D/D-Flow FM .pliz file (weir/dike polyline with Z) to a 3D ESRI Shapefile
+pliz2shp -i Dike001.pliz
+pliz2shp -i Dike001.pliz -of output --crs EPSG:4326  # Specify output folder and CRS
+pliz2shp -if custom/PLIZ -of custom/SHP              # Convert every .pliz file in a folder
 pliz2shp --help
+
+# Convert a Delft3D polyline file (.pli/.ldb) to an ESRI Shapefile
+pli2shp -i boundary.pli
+pli2shp -i LDB_001.ldb -of output --crs EPSG:4326
+pli2shp -if custom/PLI -of custom/SHP
+pli2shp --help
+
+# Convert a Delft3D/D-Flow FM .pol file to a polygon ESRI Shapefile
+pol2shp -i POL_001.pol
+pol2shp -i POL_001.pol -of output --crs EPSG:4326
+pol2shp -if custom/POL -of custom/SHP
+pol2shp --help
+
+# Convert an XYZ/CSV point file to an ESRI Shapefile
+xyz2shp -i XYZ_001.xyz
+xyz2shp -i XYZ_001.csv -of output --crs EPSG:4326
+xyz2shp -i XYZ_001.xyz -d 2                         # Write 2D (x,y) points instead of 3D
+xyz2shp -if custom/XYZ -of custom/SHP
+xyz2shp --help
 
 # Remove the 2D computational mesh from a D-Flow FM .dsproj project
 rmgrid                                # Auto-detect the .dsproj in the current folder
@@ -500,55 +583,7 @@ rmgrid -i MyProject.dsproj --restore  # Restore the original net file from .nc.b
 
 ## Changelog
 
-### 0.23.0
-
-- Removed **transzone1** and **transzone2**: these tools and their CLI entry points have been removed from the package.
-
-### 0.22.0
-
-- Changed **getfacez**: now the spatial-index accelerated implementation, using a shapely STRtree for point-in-polygon matching and a scipy cKDTree for nearest-neighbor matching instead of scanning every mesh face for every observation point. Same CLI arguments, Python API, and output format as before. Requires `scipy` and `shapely>=2.0.0` (bumped from `>=1.8.0`).
-- Kept the original brute-force implementation as **getfacez2**, a fallback with the same interface.
-- Added `-if`/`--id-field` to **getfacez** and **getfacez2**: lets you specify which shapefile field to use for point names instead of relying on auto-detection (`Name`, `name`, `NAME`, `id`, `ID`, `Id`). Raises a clear error listing available fields if the specified field doesn't exist.
-
-### 0.21.0
-
-- Added **transzone1**: extracts triangle mesh faces from a faces shapefile, buffers and dissolves them into a transition zone (`trans_zone.shp`), then selects and dissolves all faces intersecting that zone (`trans_zone_faces.shp`).
-- Added **transzone2**: buffers `trans_zone_faces.shp` inward, selects FlowFM faces that lie fully within the buffered zone, and dissolves them into a transition zone core (`trans_zone_core.shp`).
-
-### 0.20.3
-
-- **fou2shp**: Renamed `--rm` to `-r`/`--remove` for consistency with CLI conventions. Short form `-r` and long form `--remove` are now both accepted.
-
-### 0.20.2
-
-- Expanded README examples and documentation for existing features.
-
-### 0.20.1
-
-- **fou2shp**: Fixed output directory suffix for mask-filtered shapefiles to use `_RM` consistently.
-
-### 0.20.0
-
-- **fou2shp**: Added `--remove MASK.shp [...]` (short: `-r`) to remove output polygons that intersect one or more mask shapefiles. Glob patterns are supported (e.g. `--remove SHP/*.shp`). Filtered copies of all threshold shapefiles are written to `<out-dir>_RM/`. Requires `geopandas`.
-
-### 0.19.4
-
-- **evaluate_sensor2** / **eval_iot**: Corrected example buffer radii ordering in help documentation (`EMIC=30`, `淹水感測=20`).
-
-### 0.19.3
-
-- **create_empty_mesh**: Handle non-ASCII paths by using temporary files.
-
-### 0.19.0
-- Added **rmgrid**: removes (clears) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network. Supports automatic `.nc.bak` backup, `--force-backup`, and `--restore`, and cleans `locationType = 2d` blocks from any referenced `IniFieldFile`.
-
-### 0.18.1
-- Added **pliz2shp**: converts Delft3D `*.pliz` polyline files to ESRI Shapefiles
-
-### 0.18.0
-- Added **fou2shp**: reconstructs Delft3D FM 2D mesh face polygons from FOU (Fourier) NetCDF output and exports threshold-filtered shapefiles
-- Added **pliz2shp** module (internal)
-- Added **evaluate_sensor2**: flood accuracy evaluation with dual-threshold shapefiles
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ## Requirements
 

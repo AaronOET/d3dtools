@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.24.2
+
+- Renamed the output-folder CLI flag from `-o`/`--output` to `-of`/`--output-folder` for consistency across the package: `shp2ldb`, `shpbc2pli`/`shp2pli`, `shpblock2pol`/`shp2pol`, `shpdike2pliz`/`shp2pliz`, `shp2xyz`, `snorain`, `pli2shp`, `pliz2shp`, `pol2shp`, `xyz2shp`. Not backward compatible with the previous `-o` flags; the Python API (`convert()`/`*_to_shp()` functions) is unchanged.
+- `fou2shp`: Renamed `--out-dir` (no short form) to `-of`/`--output-folder` to match the rest of the package. Not backward compatible with the previous `--out-dir` flag.
+
+## 0.24.1
+
+- `d3dtools`/`d3dtools-info`: Added `-v` as a short alias for `--version`.
+
+## 0.24.0
+
+- Changed **pliz2shp**: reworked to support single-file (`-i`) or folder (`-if`) input, `--crs`, and `-q`/`--quiet`; output now includes length, Z range, and per-attribute-column summaries. CLI flags and Python API (`pliz_to_shp`) are not backward compatible with the previous folder-only version.
+- Added **pli2shp**: converts Delft3D polyline files (`.pli`/`.ldb`) to ESRI line Shapefiles.
+- Added **pol2shp**: converts Delft3D/D-Flow FM `.pol` polygon files to ESRI polygon Shapefiles.
+- Added **xyz2shp**: converts XYZ point files (`.xyz`/`.csv`) to ESRI point Shapefiles, with `-d`/`--dimension` to choose 2D or 3D output.
+
 ## 0.23.0
 
 - Removed **transzone1** and **transzone2**: these tools and their CLI entry points have been removed from the package.

@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.23.0",
+    version="0.24.2",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -47,6 +47,9 @@ setup(
             "getfacez2=d3dtools.getfacez2:main",  # Faster, spatial-index accelerated version of getfacez
             "fou2shp=d3dtools.fou2shp:main",  # Tool for converting Delft3D FOU output to shapefiles
             "pliz2shp=d3dtools.pliz2shp:main",  # Tool for converting Delft3D PLIZ files to shapefiles
+            "pli2shp=d3dtools.pli2shp:main",  # Tool for converting Delft3D PLI/LDB polyline files to shapefiles
+            "pol2shp=d3dtools.pol2shp:main",  # Tool for converting Delft3D POL polygon files to shapefiles
+            "xyz2shp=d3dtools.xyz2shp:main",  # Tool for converting XYZ/CSV point files to shapefiles
             "rmgrid=d3dtools.rmgrid:main",  # Tool for removing the 2D mesh from a D-Flow FM .dsproj project
         ],
     },

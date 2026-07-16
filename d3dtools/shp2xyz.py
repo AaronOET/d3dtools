@@ -97,17 +97,17 @@ def main():
         epilog='''
 examples:
   %(prog)s                                # Use default folders (SHP_SAMPLE -> XYZ_SAMPLE)
-  %(prog)s -i custom/SHP_SAMPLE -o custom/XYZ_SAMPLE
+  %(prog)s -i custom/SHP_SAMPLE -of custom/XYZ_SAMPLE
   %(prog)s --z_field ELEVATION
-  %(prog)s -i points -o xyz_output --z_field HEIGHT
+  %(prog)s -i points -of xyz_output --z_field HEIGHT
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i',
                         '--input',
                         default='SHP_SAMPLE',
                         help='Input folder path (default: SHP_SAMPLE)')
-    parser.add_argument('-o',
-                        '--output',
+    parser.add_argument('-of',
+                        '--output-folder',
                         default='XYZ_SAMPLE',
                         help='Output folder path (default: XYZ_SAMPLE)')
     parser.add_argument(
@@ -119,7 +119,7 @@ examples:
     args = parser.parse_args()
 
     convert(input_folder=args.input,
-            output_folder=args.output,
+            output_folder=args.output_folder,
             z_field=args.z_field)
 
 

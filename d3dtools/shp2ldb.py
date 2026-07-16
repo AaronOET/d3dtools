@@ -62,21 +62,21 @@ def main():
         epilog='''
 examples:
   %(prog)s                               # Use default folders (SHP_LDB -> LDB)
-  %(prog)s -i custom/SHP_LDB -o custom/LDB
+  %(prog)s -i custom/SHP_LDB -of custom/LDB
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i',
                         '--input',
                         default='SHP_LDB',
                         help='Input folder path (default: SHP_LDB)')
-    parser.add_argument('-o',
-                        '--output',
+    parser.add_argument('-of',
+                        '--output-folder',
                         default='LDB',
                         help='Output folder path (default: LDB)')
 
     args = parser.parse_args()
 
-    convert(input_folder=args.input, output_folder=args.output)
+    convert(input_folder=args.input, output_folder=args.output_folder)
 
 
 if __name__ == "__main__":

@@ -79,8 +79,8 @@ def main():
         epilog='''
 examples:
   %(prog)s                                # Use default folders (SHP_DIKE -> PLIZ_DIKE)
-  %(prog)s -i SHP_DIKE -o PLIZ_DIKE
-  %(prog)s -i SHP_DIKE -o PLIZ_DIKE -f MyDike
+  %(prog)s -i SHP_DIKE -of PLIZ_DIKE
+  %(prog)s -i SHP_DIKE -of PLIZ_DIKE -f MyDike
   %(prog)s --id_field DikeName
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -88,8 +88,8 @@ examples:
                         '--input',
                         default='SHP_DIKE',
                         help='Input folder path (default: SHP_DIKE)')
-    parser.add_argument('-o',
-                        '--output',
+    parser.add_argument('-of',
+                        '--output-folder',
                         default='PLIZ_DIKE',
                         help='Output folder path (default: PLIZ_DIKE)')
     parser.add_argument(
@@ -101,7 +101,7 @@ examples:
     args = parser.parse_args()
 
     convert(input_folder=args.input,
-            output_folder=args.output,
+            output_folder=args.output_folder,
             output_filename=args.filename)
 
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-pliz2shp - Convert Delft3D/D-Flow FM weir polyline files (.pliz) to 3D ESRI Shapefiles
+pol2shp - Convert Delft3D/D-Flow FM polygon files (.pol) to ESRI Shapefiles
 
-Reads a .pliz file — one or more line segments, each introduced by a name
-line, a "num_points num_columns" line, and that many coordinate lines
-(X Y Z [attr4 attr5 ...], whitespace- or comma-delimited) — and writes a
-single 3D (PolylineZ) line shapefile:
+Reads a .pol file — one or more rings, each introduced by a name line, a
+"num_points num_columns" line, and that many coordinate lines
+(X Y [attr3 attr4 ...], whitespace- or comma-delimited) — and writes a
+single polygon shapefile:
   {stem}.shp
 """
 
@@ -15,8 +15,7 @@ import re
 import sys
 
 import geopandas as gpd
-import numpy as np
-from shapely.geometry import LineString
+from shapely.geometry import Polygon
 
 _TOKEN_RE = re.compile(r'[,\s]+')
 
@@ -26,24 +25,24 @@ def _tokenize(line):
     return [t for t in _TOKEN_RE.split(line.strip()) if t]
 
 
-def read_pliz_file(file_path, quiet=False):
+def read_pol_file(file_path, quiet=False):
     """
-    Parse a .pliz file into one or more 3D line segments.
+    Parse a .pol file into one or more polygon rings.
 
-    Each segment starts with a name line, then a line giving
+    Each ring starts with a name line, then a line giving
     "num_points num_columns", then that many coordinate lines of the form
-    X Y Z [attr4 attr5 ...]. Comment lines starting with '*' and blank
+    X Y [attr3 attr4 ...]. Comment lines starting with '*' and blank
     lines are skipped.
 
     Returns:
         list[dict]: [{
             'name': str,
             'num_columns': int,
-            'coordinates': [(x, y, z), ...],
-            'attributes': [[attr4, attr5, ...], ...],  # may be empty per point
+            'coordinates': [(x, y), ...],
+            'attributes': [[attr3, attr4, ...], ...],  # may be empty per point
         }, ...]
     """
-    _print(f"Reading pliz file: {file_path}", quiet)
+    _print(f"Reading pol file: {file_path}", quiet)
 
     with open(file_path) as f:
         content = f.readlines()
@@ -87,15 +86,17 @@ def read_pliz_file(file_path, quiet=False):
             tokens = _tokenize(coord_line)
             try:
                 x, y = float(tokens[0]), float(tokens[1])
-                z = float(tokens[2]) if len(tokens) > 2 else 0.0
-                extra = [float(t) for t in tokens[3:num_columns]]
-                coordinates.append((x, y, z))
+                extra = [float(t) for t in tokens[2:num_columns]]
+                coordinates.append((x, y))
                 attributes.append(extra)
             except (ValueError, IndexError):
                 _print(f"  Warning: could not parse coordinate line: '{coord_line}'", quiet)
             i += 1
 
-        if len(coordinates) >= 2:
+        if len(coordinates) >= 3:
+            if coordinates[0] != coordinates[-1]:
+                coordinates.append(coordinates[0])
+                attributes.append(attributes[0])
             segments.append({
                 'name': name,
                 'num_columns': num_columns,
@@ -104,105 +105,95 @@ def read_pliz_file(file_path, quiet=False):
             })
             _print(f"  Parsed '{name}': {len(coordinates)} points, {num_columns} columns", quiet)
         else:
-            _print(f"  Warning: '{name}' has fewer than 2 points; skipping.", quiet)
+            _print(f"  Warning: '{name}' has fewer than 3 points; skipping.", quiet)
 
-    _print(f"  Segments: {len(segments)}", quiet)
+    _print(f"  Polygons: {len(segments)}", quiet)
     return segments
 
 
-def create_lines(segments, quiet=False):
+def create_polygons(segments, quiet=False):
     """
-    Build 3D Shapely LineString objects (with Z) from parsed pliz segments.
+    Build Shapely Polygon objects from parsed pol rings.
 
     Returns:
-        list[LineString]
+        list[Polygon]
     """
-    _print("Creating 3D lines from pliz data...", quiet)
-    lines = [LineString(seg['coordinates']) for seg in segments]
-    _print(f"  Lines created: {len(lines)}", quiet)
-    return lines
+    _print("Creating polygons from pol data...", quiet)
+    polygons = [Polygon(seg['coordinates']) for seg in segments]
+    _print(f"  Polygons created: {len(polygons)}", quiet)
+    return polygons
 
 
-def _line_length_3d(coordinates):
-    """Compute true 3D length of a polyline given (x, y, z) vertices."""
-    pts = np.asarray(coordinates, dtype=float)
-    return float(np.sum(np.linalg.norm(np.diff(pts, axis=0), axis=1)))
-
-
-def create_geodataframe(segments, lines, source_ext, crs="EPSG:3826"):
-    """Build a GeoDataFrame from parsed pliz segments and their 3D line geometries."""
-    z_values = [[c[2] for c in seg['coordinates']] for seg in segments]
-    max_extra_cols = max((seg['num_columns'] - 3 for seg in segments), default=0)
+def create_geodataframe(segments, polygons, source_ext, crs="EPSG:3826"):
+    """Build a GeoDataFrame from parsed pol segments and their polygon geometries."""
+    max_extra_cols = max((seg['num_columns'] - 2 for seg in segments), default=0)
     max_extra_cols = max(max_extra_cols, 0)
 
     data = {
         'ID': range(1, len(segments) + 1),
-        'LINE_NAME': [seg['name'] for seg in segments],
+        'POLY_NAME': [seg['name'] for seg in segments],
         'NUM_POINTS': [len(seg['coordinates']) for seg in segments],
-        'LENGTH': [line.length for line in lines],
-        'LENGTH_3D': [_line_length_3d(seg['coordinates']) for seg in segments],
-        'Z_MIN': [min(z) for z in z_values],
-        'Z_MAX': [max(z) for z in z_values],
-        'Z_MEAN': [sum(z) / len(z) for z in z_values],
+        'AREA': [poly.area for poly in polygons],
+        'PERIMETER': [poly.length for poly in polygons],
         'SRC_TYPE': [source_ext.lstrip('.').upper()] * len(segments),
     }
 
     for col_idx in range(max_extra_cols):
-        field = f'C{col_idx + 4}_MEAN'
+        field = f'C{col_idx + 3}_MEAN'
         values = []
         for seg in segments:
             col_vals = [a[col_idx] for a in seg['attributes'] if len(a) > col_idx]
             values.append(sum(col_vals) / len(col_vals) if col_vals else None)
         data[field] = values
 
-    return gpd.GeoDataFrame(data, geometry=lines, crs=crs)
+    return gpd.GeoDataFrame(data, geometry=polygons, crs=crs)
 
 
-def pliz_to_shp(input_file, output_dir="SHP_LINES3D", crs="EPSG:3826", quiet=False):
+def pol_to_shp(input_file, output_dir="SHP_POLYGONS", crs="EPSG:3826", quiet=False):
     """
-    Convert a .pliz file to a 3D (PolylineZ) line shapefile.
+    Convert a .pol file to a polygon shapefile.
 
     Args:
-        input_file (str): Path to the input .pliz file.
+        input_file (str): Path to the input .pol file.
         output_dir (str): Directory for the output shapefile.
         crs (str): CRS for the output shapefile.
         quiet (bool): Suppress non-error output.
 
     Returns:
-        str: Path to the output lines shapefile.
+        str: Path to the output polygon shapefile.
     """
-    _print("=== PLIZ to 3D Shapefile Converter ===", quiet)
+    _print("=== POL to Shapefile Converter ===", quiet)
 
     ext = os.path.splitext(input_file)[1].lower()
     os.makedirs(output_dir, exist_ok=True)
     stem = os.path.splitext(os.path.basename(input_file))[0]
-    out_lines = os.path.join(output_dir, f"{stem}.shp")
+    out_polygons = os.path.join(output_dir, f"{stem}.shp")
 
-    segments = read_pliz_file(input_file, quiet)
+    segments = read_pol_file(input_file, quiet)
     if not segments:
-        raise RuntimeError("No pliz segments were parsed from the input file.")
+        raise RuntimeError("No pol polygons were parsed from the input file.")
 
-    lines = create_lines(segments, quiet)
-    gdf = create_geodataframe(segments, lines, ext, crs)
+    polygons = create_polygons(segments, quiet)
+    gdf = create_geodataframe(segments, polygons, ext, crs)
 
-    _print(f"Saving 3D lines shapefile: {out_lines}", quiet)
-    gdf.to_file(out_lines)
+    _print(f"Saving polygon shapefile: {out_polygons}", quiet)
+    gdf.to_file(out_polygons)
 
     if not quiet:
         bounds = gdf.total_bounds
         print("\n=== SUMMARY ===")
         print(f"  Input:  {input_file}")
-        print(f"  Output: {out_lines}")
-        print(f"  Lines: {len(gdf):,}")
+        print(f"  Output: {out_polygons}")
+        print(f"  Polygons: {len(gdf):,}")
         print(f"  Total points: {gdf['NUM_POINTS'].sum():,}")
         print(f"  CRS: {gdf.crs}")
-        print(f"  Length (2D) — min: {gdf['LENGTH'].min():.2f}  max: {gdf['LENGTH'].max():.2f}  "
-              f"total: {gdf['LENGTH'].sum():.2f}")
-        print(f"  Z — min: {gdf['Z_MIN'].min():.3f}  max: {gdf['Z_MAX'].max():.3f}")
+        print(f"  Area — min: {gdf['AREA'].min():.2f}  max: {gdf['AREA'].max():.2f}  "
+              f"total: {gdf['AREA'].sum():.2f}")
+        print(f"  Perimeter — min: {gdf['PERIMETER'].min():.2f}  max: {gdf['PERIMETER'].max():.2f}")
         print(f"  X: {bounds[0]:.2f} to {bounds[2]:.2f}")
         print(f"  Y: {bounds[1]:.2f} to {bounds[3]:.2f}")
 
-    return out_lines
+    return out_polygons
 
 
 def _print(msg, quiet=False):
@@ -212,15 +203,15 @@ def _print(msg, quiet=False):
 
 def main():
     parser = argparse.ArgumentParser(
-        prog='pliz2shp',
-        description='Convert a Delft3D/D-Flow FM .pliz file to a 3D (PolylineZ) ESRI Shapefile',
+        prog='pol2shp',
+        description='Convert a Delft3D/D-Flow FM .pol file to a polygon ESRI Shapefile',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  pliz2shp -i Dike001.pliz
-  pliz2shp -i Dike001.pliz -of output --crs EPSG:4326
-  pliz2shp -i Dike001.pliz -q
-  pliz2shp -if INPUT_DIR -of OUTPUT_DIR
+  pol2shp -i POL_001.pol
+  pol2shp -i POL_001.pol -of output --crs EPSG:4326
+  pol2shp -i POL_001.pol -q
+  pol2shp -if INPUT_DIR -of OUTPUT_DIR
         """,
     )
 
@@ -228,19 +219,19 @@ Examples:
     input_group.add_argument(
         '-i', '--input',
         metavar='FILE',
-        help='Path to the pliz file (.pliz)',
+        help='Path to the pol file (.pol)',
     )
     input_group.add_argument(
         '-if', '--input-folder',
         metavar='DIR',
-        help='Path to a folder of .pliz files; all are converted to the output folder',
+        help='Path to a folder of .pol files; all are converted to the output folder',
     )
     parser.add_argument(
         '-of', '--output-folder',
         dest='output_dir',
-        default='SHP_LINES3D',
+        default='SHP_POLYGONS',
         metavar='DIR',
-        help='Output directory for the shapefile (default: SHP_LINES3D)',
+        help='Output directory for the shapefile (default: SHP_POLYGONS)',
     )
     parser.add_argument(
         '--crs',
@@ -262,10 +253,10 @@ Examples:
 
         input_files = sorted(
             f for f in os.listdir(args.input_folder)
-            if os.path.splitext(f)[1].lower() == '.pliz'
+            if os.path.splitext(f)[1].lower() == '.pol'
         )
         if not input_files:
-            print(f"Error: No .pliz files found in '{args.input_folder}'.",
+            print(f"Error: No .pol files found in '{args.input_folder}'.",
                   file=sys.stderr)
             sys.exit(1)
 
@@ -273,7 +264,7 @@ Examples:
         for fname in input_files:
             input_file = os.path.join(args.input_folder, fname)
             try:
-                out_path = pliz_to_shp(
+                out_path = pol_to_shp(
                     input_file, args.output_dir, args.crs, args.quiet
                 )
                 if args.quiet:
@@ -290,13 +281,13 @@ Examples:
         print(f"Error: File '{args.input}' not found.", file=sys.stderr)
         sys.exit(1)
 
-    if os.path.splitext(args.input)[1].lower() != '.pliz':
-        print(f"Error: Unsupported file type '{args.input}'. Expected .pliz.",
+    if os.path.splitext(args.input)[1].lower() != '.pol':
+        print(f"Error: Unsupported file type '{args.input}'. Expected .pol.",
               file=sys.stderr)
         sys.exit(1)
 
     try:
-        out_path = pliz_to_shp(
+        out_path = pol_to_shp(
             args.input, args.output_dir, args.crs, args.quiet
         )
         if args.quiet:

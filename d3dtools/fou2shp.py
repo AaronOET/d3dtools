@@ -120,8 +120,8 @@ def main():
         epilog="""
 examples:
   %(prog)s -i NC/FlowFM_fou.nc (default output dir: SHP)
-  %(prog)s --input NC/FlowFM_fou.nc --out-dir SHP
-  %(prog)s --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --out-dir output
+  %(prog)s --input NC/FlowFM_fou.nc -of SHP
+  %(prog)s --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
   %(prog)s -i NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
   %(prog)s -i NC/FlowFM_fou.nc -r SHP/*.shp
   %(prog)s -i NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp
@@ -134,8 +134,10 @@ examples:
         help="Path to the input NetCDF file (e.g., NC/FlowFM_fou.nc)",
     )
     parser.add_argument(
-        "--out-dir",
+        "-of", "--output-folder",
+        dest="out_dir",
         default=_SHP_DIR,
+        metavar="DIR",
         help="Output directory for shapefiles (default: SHP)",
     )
     parser.add_argument(
@@ -149,7 +151,7 @@ examples:
         metavar="MASK.shp",
         help=(
             "Remove output polygons that intersect these mask shapefiles. "
-            "Filtered copies are written to <out-dir>_RM. "
+            "Filtered copies are written to <output-folder>_RM. "
             "Glob patterns are supported (e.g. --remove SHP/*.shp)."
         ),
     )

@@ -64,20 +64,20 @@ def main():
         epilog='''
 examples:
   %(prog)s                               # Use default folders (SHP_BC -> PLI_BC)
-  %(prog)s -i SHP_BC -o PLI_BC
+  %(prog)s -i SHP_BC -of PLI_BC
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-i',
                         '--input',
                         default='SHP_BC',
                         help='Input folder path (default: SHP_BC)')
-    parser.add_argument('-o',
-                        '--output',
+    parser.add_argument('-of',
+                        '--output-folder',
                         default='PLI_BC',
                         help='Output folder path (default: PLI_BC)')
     args = parser.parse_args()
 
-    convert(input_folder=args.input, output_folder=args.output)
+    convert(input_folder=args.input, output_folder=args.output_folder)
 
 
 if __name__ == "__main__":

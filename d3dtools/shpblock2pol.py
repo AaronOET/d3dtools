@@ -73,8 +73,8 @@ def main():
         epilog='''
 examples:
   %(prog)s                                # Use default folders (SHP_BLOCK -> POL_BLOCK)
-  %(prog)s -i SHP_BLOCK -o POL_BLOCK
-  %(prog)s --input my_blocks --output my_polygons
+  %(prog)s -i SHP_BLOCK -of POL_BLOCK
+  %(prog)s --input my_blocks --output-folder my_polygons
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
@@ -83,14 +83,14 @@ examples:
         default='SHP_BLOCK',
         help='Input folder containing shapefiles (default: SHP_BLOCK)')
     parser.add_argument(
-        '-o',
-        '--output',
+        '-of',
+        '--output-folder',
         default='POL_BLOCK',
         help='Output folder for .pol files (default: POL_BLOCK)')
 
     args = parser.parse_args()
 
-    convert(input_folder=args.input, output_folder=args.output)
+    convert(input_folder=args.input, output_folder=args.output_folder)
 
 
 if __name__ == "__main__":
