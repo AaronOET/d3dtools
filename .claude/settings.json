@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m d3dtools.describe -h)",
+      "Bash(python -m d3dtools.describe rsgrid)",
+      "Bash(python -m d3dtools.describe -v)"
+    ]
+  }
+}

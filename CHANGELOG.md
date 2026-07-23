@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.1
+
+- `d3dtools`/`d3dtools-info`: Added the missing **rsgrid** entry to the `d3dtools -h` tool listing and `d3dtools rsgrid` detailed description (it was omitted when rsgrid was added in 0.25.0).
+
 ## 0.25.0
 
 - Added **rsgrid**: restores the 2D computational mesh (including `Mesh2d_face_z` bed levels) into a D-Flow FM `.dsproj` project by cloning it from a source project's net file, while preserving the target's own 1D network. This is the inverse of `rmgrid`.

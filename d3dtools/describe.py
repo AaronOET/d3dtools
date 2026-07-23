@@ -270,6 +270,19 @@ TOOL_DESCRIPTIONS = {
             rmgrid -i MyProject.dsproj --restore
             rmgrid -i MyProject.dsproj --force-backup
     """,
+    'rsgrid':
+    """
+        Restore the 2D computational mesh into a D-Flow FM .dsproj project from a source.
+
+        This tool restores the 2D mesh (including Mesh2d_face_z bed levels) into a
+        target project's NetCDF net file by cloning it from a source project's net
+        file, while preserving the target's existing 1D network.
+
+        Examples:
+            rsgrid -s Intact.dsproj
+            rsgrid -i Stripped.dsproj -s Intact.dsproj
+            rsgrid -i target_net.nc -s source_net.nc
+    """,
 }
 
 
