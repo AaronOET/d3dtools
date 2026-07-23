@@ -35,6 +35,7 @@ This package provides several utilities for converting shapefiles to various for
 - **pol2shp**: Convert Delft3D/D-Flow FM `.pol` polygon files to ESRI Shapefiles
 - **xyz2shp**: Convert XYZ point files (`.xyz`/`.csv`) to ESRI Shapefiles
 - **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
+- **rsgrid**: Restore the 2D computational mesh (including `Mesh2d_face_z` bed levels) into a D-Flow FM `.dsproj` project by cloning it from a source project, while preserving the target's 1D network. The inverse of `rmgrid`
 
 ## Usage Examples
 
@@ -388,6 +389,20 @@ The tool empties the 2D mesh in the project's UGRID NetCDF net file while preser
 1D network (pipes/branches), strips 2D-specific blocks from the `IniFieldFile`, and creates
 a `<name>.nc.bak` backup so the change can be reverted with `--restore`.
 
+### Restore the 2D mesh into a D-Flow FM project
+
+```python
+# Recommended usage via the command line (operates on .dsproj projects)
+# rsgrid -s Intact.dsproj                   # Restore into first .dsproj in cwd
+# rsgrid -i Stripped.dsproj -s Intact.dsproj
+# rsgrid -i target_net.nc -s source_net.nc
+```
+
+The tool clones the 2D mesh (including `Mesh2d_face_z` bed levels) from a source project's
+net file into the target's net file, keeping the target's own 1D network, coordinate system,
+and other settings intact. It backs up the target net file with a timestamped copy before
+overwriting. This is the inverse of `rmgrid`.
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -445,6 +460,7 @@ d3dtools-info pli2shp
 d3dtools-info pol2shp
 d3dtools-info xyz2shp
 d3dtools-info rmgrid
+d3dtools-info rsgrid
 
 # Display help for specific tools
 ncrain --help
@@ -470,6 +486,7 @@ pli2shp --help
 pol2shp --help
 xyz2shp --help
 rmgrid --help
+rsgrid --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -579,6 +596,11 @@ rmgrid                                # Auto-detect the .dsproj in the current f
 rmgrid -i MyProject.dsproj            # Specify the project explicitly
 rmgrid -i MyProject.dsproj --force-backup  # Overwrite an existing .nc.bak
 rmgrid -i MyProject.dsproj --restore  # Restore the original net file from .nc.bak
+
+# Restore the 2D computational mesh into a D-Flow FM .dsproj project
+rsgrid -s Intact.dsproj                   # Restore into first .dsproj in cwd
+rsgrid -i Stripped.dsproj -s Intact.dsproj # Specify target and source explicitly
+rsgrid -i target_net.nc -s source_net.nc  # Operate directly on net files
 ```
 
 ## Changelog

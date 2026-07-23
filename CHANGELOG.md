@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.0
+
+- Added **rsgrid**: restores the 2D computational mesh (including `Mesh2d_face_z` bed levels) into a D-Flow FM `.dsproj` project by cloning it from a source project's net file, while preserving the target's own 1D network. This is the inverse of `rmgrid`.
+
 ## 0.24.3
 
 - `pli2shp` / `pliz2shp` / `pol2shp` / `xyz2shp`: Corrected the `-of`/`--output-folder` example in the CLI help text, which showed a lowercase `output` placeholder inconsistent with the `OUTPUT_DIR` placeholder used elsewhere.

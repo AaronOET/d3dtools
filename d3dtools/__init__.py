@@ -2,7 +2,7 @@
 D3DTOOLS - A collection of tools for working with shapefiles and converting them for Delft3D modeling.
 """
 
-__version__ = '0.24.3'
+__version__ = '0.25.0'
 
 # Define all modules that should be exposed when using "from d3dtools import *"
 __all__ = [
@@ -29,6 +29,7 @@ __all__ = [
     'pol2shp',
     'xyz2shp',
     'rmgrid',
+    'rsgrid',
 ]
 
 from . import ncrain
@@ -54,3 +55,4 @@ from . import pli2shp
 from . import pol2shp
 from . import xyz2shp
 from . import rmgrid
+from . import rsgrid

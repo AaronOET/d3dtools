@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.24.3",
+    version="0.25.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -51,6 +51,7 @@ setup(
             "pol2shp=d3dtools.pol2shp:main",  # Tool for converting Delft3D POL polygon files to shapefiles
             "xyz2shp=d3dtools.xyz2shp:main",  # Tool for converting XYZ/CSV point files to shapefiles
             "rmgrid=d3dtools.rmgrid:main",  # Tool for removing the 2D mesh from a D-Flow FM .dsproj project
+            "rsgrid=d3dtools.rsgrid:main",  # Tool for restoring the 2D mesh into a D-Flow FM .dsproj project from a source
         ],
     },
 )
