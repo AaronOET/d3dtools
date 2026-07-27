@@ -292,7 +292,14 @@ def extract_mesh2d_face_z(nc_file,
 
     for i in range(len(obs)):
         face_index = int(matched_face_idx[i])
-        face_z_value = mesh2d_face_z[face_index] if face_index >= 0 else np.nan
+        if face_index >= 0:
+            face_z_value = mesh2d_face_z[face_index]
+            if np.ma.is_masked(face_z_value):
+                face_z_value = np.nan
+            else:
+                face_z_value = float(face_z_value)
+        else:
+            face_z_value = np.nan
 
         results.append({
             (obs_name_field or 'Point_ID'): obs_names[i],
