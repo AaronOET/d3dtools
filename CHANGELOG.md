@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.2
+
+- `getfacez`: Fixed `extract_mesh2d_face_z` to handle masked values in `Mesh2d_face_z` (now returns `NaN` instead of a masked value) and ensure extracted values are converted to plain `float`.
+
 ## 0.25.1
 
 - `d3dtools`/`d3dtools-info`: Added the missing **rsgrid** entry to the `d3dtools -h` tool listing and `d3dtools rsgrid` detailed description (it was omitted when rsgrid was added in 0.25.0).
