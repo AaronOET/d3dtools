@@ -20,12 +20,105 @@ import geopandas as gpd
 import pandas as pd
 from netCDF4 import Dataset
 import os
+import re
 import sys
+from pathlib import Path
 from shapely.geometry import Point, Polygon
 from shapely.strtree import STRtree
 from scipy.spatial import cKDTree
 import argparse
 import time
+
+
+def find_mdu(dsproj_path):
+    """Return the path to the .mdu file inside the project's dsproj_data directory."""
+    dsproj_path = Path(dsproj_path)
+    data_dir = dsproj_path.with_suffix("").with_name(
+        dsproj_path.stem + ".dsproj_data"
+    )
+    if not data_dir.is_dir():
+        raise ValueError(f"Project data directory not found: {data_dir}")
+
+    candidates = sorted(data_dir.rglob("*.mdu"))
+    if not candidates:
+        raise ValueError(f"No .mdu file found under {data_dir}")
+    if len(candidates) > 1:
+        print(f"Warning: multiple .mdu files found; using {candidates[0]}")
+    return candidates[0]
+
+
+def read_net_file_from_mdu(mdu_path):
+    """Parse [geometry] NetFile from an MDU file and return the absolute path."""
+    net_file = None
+    in_geometry = False
+    with open(mdu_path, encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            stripped = line.strip()
+            if re.match(r"^\[geometry\]", stripped, re.IGNORECASE):
+                in_geometry = True
+                continue
+            if in_geometry and stripped.startswith("["):
+                break
+            if in_geometry:
+                m = re.match(r"^\s*NetFile\s*=\s*(.+)", stripped, re.IGNORECASE)
+                if m:
+                    net_file = m.group(1).split("#")[0].strip()
+                    break
+
+    if not net_file:
+        raise ValueError(
+            f"NetFile not found in the [geometry] section of {mdu_path}")
+
+    net_path = Path(net_file)
+    if not net_path.is_absolute():
+        net_path = Path(mdu_path).parent / net_path
+    return net_path.resolve()
+
+
+def resolve_nc_from_project(project, verbose=False):
+    """Resolve the mesh NetCDF file belonging to a D-Flow FM project.
+
+    Accepts a ``.dsproj`` path, a project name without the extension, or a
+    directory containing exactly one ``.dsproj`` file. The net file is located
+    the same way rmgrid/rsgrid do it: find the .mdu under
+    ``<project>.dsproj_data/`` and read ``NetFile`` from its [geometry] section.
+    """
+    p = Path(project)
+
+    if p.is_dir():
+        matches = sorted(p.glob("*.dsproj"))
+        if not matches:
+            raise ValueError(f"No .dsproj file found in directory: {p}")
+        if len(matches) > 1:
+            names = ", ".join(m.name for m in matches)
+            raise ValueError(
+                f"Multiple .dsproj files found in {p} ({names}). "
+                "Specify one explicitly.")
+        dsproj_path = matches[0]
+    elif p.suffix.lower() == ".dsproj":
+        dsproj_path = p
+    else:
+        # Bare project name: accept it as long as the .dsproj_data directory exists,
+        # since the .dsproj file itself is not needed to locate the net file.
+        dsproj_path = p.with_name(p.name + ".dsproj")
+
+    dsproj_path = dsproj_path.resolve()
+
+    if verbose:
+        print(f"Project: {dsproj_path}")
+
+    mdu_path = find_mdu(dsproj_path)
+    if verbose:
+        print(f"MDU    : {mdu_path}")
+
+    net_path = read_net_file_from_mdu(mdu_path)
+    if not net_path.exists():
+        raise ValueError(f"Net file referenced by the MDU does not exist: {net_path}")
+
+    if verbose:
+        print(f"NetFile: {net_path}")
+
+    return str(net_path)
 
 
 def _build_face_polygons(x_bnd, y_bnd, verbose=False):
@@ -151,12 +244,13 @@ def _print_safe(message):
     print(message.encode(encoding, errors='replace').decode(encoding))
 
 
-def extract_mesh2d_face_z(nc_file,
-                         obs_shp,
+def extract_mesh2d_face_z(nc_file=None,
+                         obs_shp=None,
                          output_csv='mesh2d_face_z.csv',
                          output_excel='mesh2d_face_z.xlsx',
                          id_field=None,
                          encoding=None,
+                         project=None,
                          verbose=False):
     """
     Extract Mesh2d_face_z values at observation points from a Delft3D FM NetCDF file.
@@ -166,8 +260,11 @@ def extract_mesh2d_face_z(nc_file,
 
     Parameters:
     -----------
-    nc_file : str (required)
+    nc_file : str (required unless `project` is given)
         Path to the NetCDF file containing model results
+    project : str (optional, default: None)
+        Path or name of a D-Flow FM project (.dsproj). The NetCDF file is resolved from
+        the NetFile entry of the project's MDU. Mutually exclusive with `nc_file`.
     obs_shp : str (required)
         Path to the shapefile containing observation points
     output_csv : str (required, default: 'mesh2d_face_z.csv')
@@ -188,6 +285,15 @@ def extract_mesh2d_face_z(nc_file,
     pandas.DataFrame
         DataFrame containing Mesh2d_face_z values at observation points
     """
+
+    if nc_file and project:
+        raise ValueError("Specify either nc_file or project, not both")
+    if project:
+        nc_file = resolve_nc_from_project(project, verbose=verbose)
+    if not nc_file:
+        raise ValueError("Either nc_file or project must be given")
+    if not obs_shp:
+        raise ValueError("obs_shp is required")
 
     if verbose:
         print(f"Reading observation points from: {obs_shp}")
@@ -357,13 +463,17 @@ def main():
     Command line entry point for the Mesh2d_face_z extraction tool (spatial-index accelerated).
 
     Example usage:
-        python getfacez2.py --nc-file path/to/file.nc --obs-shp path/to/observations.shp
-        python getfacez2.py --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv --verbose
+        python getfacez.py --nc-file path/to/file.nc --obs-shp path/to/observations.shp
+        python getfacez.py --project MyProject.dsproj --obs-shp path/to/observations.shp
+        python getfacez.py --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv --verbose
     """
     parser = argparse.ArgumentParser(
         description="Extract Mesh2d_face_z values from Delft3D FM NetCDF files at observation points (spatial-index accelerated)",
         epilog='''
 examples:
+  %(prog)s --obs-shp points.shp                            # auto-detect .dsproj in cwd
+  %(prog)s -p MyProject.dsproj --obs-shp points.shp
+  %(prog)s -p MyProject --obs-shp points.shp               # project name, no extension
   %(prog)s --nc-file results.nc --obs-shp observation_points.shp
   %(prog)s --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv
   %(prog)s --nc-file results.nc --obs-shp points.shp --output-excel bathymetry.xlsx --verbose
@@ -372,8 +482,14 @@ examples:
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('--nc-file', dest='nc_file', required=True,
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument('--nc-file', dest='nc_file', default=None,
                         help='Path to the NetCDF file containing model results')
+    source.add_argument('-p', '--project', dest='project', default=None,
+                        help='D-Flow FM project (.dsproj path, project name, or a directory '
+                             'containing one). The NetCDF file is taken from the NetFile entry '
+                             "of the project's MDU. If neither --nc-file nor --project is given, "
+                             'a single .dsproj in the current directory is used.')
     parser.add_argument('--obs-shp', dest='obs_shp', required=True,
                         help='Path to the shapefile containing observation points')
     parser.add_argument('--output-csv', dest='output_csv', default='mesh2d_face_z.csv',
@@ -390,6 +506,30 @@ examples:
                         help='Display additional information during processing')
 
     args = parser.parse_args()
+
+    # Neither source given: fall back to a single .dsproj in the current directory,
+    # matching the behaviour of rmgrid/rsgrid.
+    if not args.nc_file and not args.project:
+        matches = sorted(Path('.').glob('*.dsproj'))
+        if not matches:
+            print("Error: no .dsproj file found in current directory. "
+                  "Specify --nc-file or --project.")
+            return 1
+        if len(matches) > 1:
+            names = ", ".join(m.name for m in matches)
+            print(f"Error: multiple .dsproj files found ({names}). "
+                  "Specify one explicitly with --project.")
+            return 1
+        args.project = str(matches[0])
+
+    # Resolve the NetCDF file from the project when one was given
+    if args.project:
+        try:
+            args.nc_file = resolve_nc_from_project(args.project, verbose=args.verbose)
+        except Exception as e:
+            print(f"Error resolving project: {e}")
+            return 1
+        print(f"Using NetCDF file from project: {args.nc_file}")
 
     # Validate input files
     if not os.path.exists(args.nc_file):

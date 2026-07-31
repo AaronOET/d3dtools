@@ -174,9 +174,15 @@ TOOL_DESCRIPTIONS = {
         Drop-in, spatial-index accelerated replacement for getfacez. Uses an STRtree for
         point-in-polygon matching and a cKDTree for nearest-neighbor matching instead of
         scanning every mesh face for every observation point, which speeds up processing
-        on large meshes. Same arguments and output format as getfacez.
+        on large meshes. Same output format as getfacez2.
+
+        The NetCDF file can be given directly with --nc-file, or resolved from a D-Flow FM
+        project with -p/--project (the NetFile entry of the project's MDU is used). If
+        neither is given, a single .dsproj in the current directory is used.
 
         Examples:
+            getfacez --obs-shp points.shp
+            getfacez -p MyProject.dsproj --obs-shp points.shp
             getfacez --nc-file results.nc --obs-shp observation_points.shp
             getfacez --nc-file results.nc --obs-shp points.shp --output-csv bathymetry.csv
             getfacez --nc-file results.nc --obs-shp points.shp --output-excel bathymetry.xlsx --verbose

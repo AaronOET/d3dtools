@@ -27,7 +27,7 @@ This package provides several utilities for converting shapefiles to various for
 - **evaluate_sensor**: Calculate flood simulation accuracy metrics by comparing simulated flood extents with point-based sensor data (with configurable buffer radius and depth threshold)
 - **evaluate_sensor2** (alias: **eval_iot**): Calculate flood simulation accuracy metrics using sensor data with dual-threshold shapefiles (separate low and high depth threshold simulations)
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
-- **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points. Uses a spatial index (shapely STRtree for point-in-polygon matching, scipy cKDTree for nearest-neighbor matching) instead of scanning every mesh face for every observation point, which is much faster on large meshes. Supports `-if`/`--id-field` to specify which shapefile field to use for point names
+- **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points. Uses a spatial index (shapely STRtree for point-in-polygon matching, scipy cKDTree for nearest-neighbor matching) instead of scanning every mesh face for every observation point, which is much faster on large meshes. Supports `-if`/`--id-field` to specify which shapefile field to use for point names, and `-p`/`--project` to resolve the NetCDF file from a D-Flow FM `.dsproj` project instead of passing `--nc-file`
 - **getfacez2**: Original brute-force implementation of getfacez (no spatial index), kept as a fallback. Same CLI arguments, Python API, and output format as getfacez, including `-if`/`--id-field`
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<output-folder>_RM/`)
 - **pliz2shp**: Convert Delft3D/D-Flow FM `.pliz` weir/dike polyline files (with Z) to 3D ESRI Shapefiles
@@ -227,6 +227,17 @@ data = getfacez.extract_mesh2d_face_z(
     output_excel='bathymetry.xlsx',
     id_field='StationName',  # Optional; field to use for point names (default: auto-detect)
     verbose=True  # Display additional information during processing
+)
+
+# Alternatively, resolve the NetCDF file from a D-Flow FM project instead of
+# passing nc_file. The project's MDU is located under <project>.dsproj_data/ and
+# its [geometry] NetFile entry is used. nc_file and project are mutually exclusive.
+data = getfacez.extract_mesh2d_face_z(
+    project='path/to/MyProject.dsproj',  # Or 'path/to/MyProject', or a directory containing one .dsproj
+    obs_shp='path/to/observation_points.shp',
+    output_csv='bathymetry.csv',
+    output_excel='bathymetry.xlsx',
+    verbose=True
 )
 
 # Process the data further if needed
@@ -548,6 +559,9 @@ eval_iot --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/
 
 # Extract Mesh2d_face_z values at observation points (spatial-index accelerated)
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp
+getfacez --obs-shp path/to/observation_points.shp                    # Auto-detect a single .dsproj in the current directory
+getfacez -p MyProject.dsproj --obs-shp path/to/observation_points.shp  # Resolve the NetCDF from a project's MDU NetFile
+getfacez -p MyProject --obs-shp path/to/observation_points.shp         # Project name without the .dsproj extension
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp --output-csv bathymetry.csv --output-excel bathymetry.xlsx
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp -if StationName  # Specify custom id field
 getfacez --verbose  # Display additional processing information

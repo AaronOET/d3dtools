@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.3
+
+- `getfacez`: Added `-p`/`--project` to resolve the NetCDF file from a D-Flow FM project instead of passing `--nc-file` explicitly. The project's `.mdu` is located under `<project>.dsproj_data/` and its `[geometry] NetFile` entry is used, the same way `rmgrid`/`rsgrid` do. `--project` accepts a `.dsproj` path, a bare project name, or a directory containing one `.dsproj`. `--nc-file` and `--project` are mutually exclusive, and if neither is given a single `.dsproj` in the current directory is used automatically. `extract_mesh2d_face_z()` gained a matching `project=` keyword.
+
 ## 0.25.2
 
 - `getfacez`: Fixed `extract_mesh2d_face_z` to handle masked values in `Mesh2d_face_z` (now returns `NaN` instead of a masked value) and ensure extracted values are converted to plain `float`.
