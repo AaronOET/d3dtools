@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.4
+
+- `rsgrid`: Added `-f`/`--fields` to restore the 2D spatial fields (infiltration capacity, roughness) that are lost along with the 2D mesh. Copies `*.xyz` sample files (and any `initialFields.ini` / roughness `*.ini`) from a fields directory (`-d`/`--fields-dir`, default: current directory) into the model's input folder and re-registers them in the MDU (`IniFieldFile`, `FrictFile`, `Infiltrationmodel`). The project's `initialFields.ini` is created if it has none, or updated in place (only the `dataFile` entries) if it has one. Sample files are matched to an iniField quantity by name; `-q`/`--quantity NAME=FILE` maps oddly named files explicitly. `-s`/`--source` is no longer required, so `rsgrid` can restore fields, the mesh, or both in one run. New Python API: `restore_fields()`.
+
 ## 0.25.3
 
 - `getfacez`: Added `-p`/`--project` to resolve the NetCDF file from a D-Flow FM project instead of passing `--nc-file` explicitly. The project's `.mdu` is located under `<project>.dsproj_data/` and its `[geometry] NetFile` entry is used, the same way `rmgrid`/`rsgrid` do. `--project` accepts a `.dsproj` path, a bare project name, or a directory containing one `.dsproj`. `--nc-file` and `--project` are mutually exclusive, and if neither is given a single `.dsproj` in the current directory is used automatically. `extract_mesh2d_face_z()` gained a matching `project=` keyword.

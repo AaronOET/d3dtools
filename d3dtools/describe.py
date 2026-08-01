@@ -278,16 +278,29 @@ TOOL_DESCRIPTIONS = {
     """,
     'rsgrid':
     """
-        Restore the 2D computational mesh into a D-Flow FM .dsproj project from a source.
+        Restore the 2D computational mesh and/or 2D spatial fields into a D-Flow FM
+        .dsproj project.
 
-        This tool restores the 2D mesh (including Mesh2d_face_z bed levels) into a
-        target project's NetCDF net file by cloning it from a source project's net
-        file, while preserving the target's existing 1D network.
+        -s restores the 2D mesh (including Mesh2d_face_z bed levels) into a target
+        project's NetCDF net file by cloning it from a source project's net file,
+        while preserving the target's existing 1D network.
+
+        -f restores the 2D spatial fields (infiltration capacity, roughness) that
+        are lost along with the mesh: it copies the *.xyz sample files (and any
+        initialFields.ini / roughness *.ini) from a fields directory into the
+        model's input folder and re-registers them in the MDU (IniFieldFile,
+        FrictFile, Infiltrationmodel). The iniField file is created if the project
+        has none, or updated in place (only the dataFile entries) if it has one.
 
         Examples:
             rsgrid -s Intact.dsproj
             rsgrid -i Stripped.dsproj -s Intact.dsproj
+            rsgrid -s source_net.nc
             rsgrid -i target_net.nc -s source_net.nc
+            rsgrid -f                               # restore fields from cwd
+            rsgrid -i Target.dsproj -f -d fields/    # take the .xyz files from fields/
+            rsgrid -i Target.dsproj -s Intact.dsproj -f   # mesh first, then fields
+            rsgrid -f -q frictioncoefficient=rough2024.xyz
     """,
 }
 

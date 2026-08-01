@@ -35,7 +35,7 @@ This package provides several utilities for converting shapefiles to various for
 - **pol2shp**: Convert Delft3D/D-Flow FM `.pol` polygon files to ESRI Shapefiles
 - **xyz2shp**: Convert XYZ point files (`.xyz`/`.csv`) to ESRI Shapefiles
 - **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
-- **rsgrid**: Restore the 2D computational mesh (including `Mesh2d_face_z` bed levels) into a D-Flow FM `.dsproj` project by cloning it from a source project, while preserving the target's 1D network. The inverse of `rmgrid`
+- **rsgrid**: Restore the 2D computational mesh (including `Mesh2d_face_z` bed levels) into a D-Flow FM `.dsproj` project by cloning it from a source project, while preserving the target's 1D network. The inverse of `rmgrid`. Also restores the 2D spatial fields (infiltration capacity, roughness) that are lost along with the mesh, via `-f`/`--fields`
 
 ## Usage Examples
 
@@ -404,15 +404,33 @@ a `<name>.nc.bak` backup so the change can be reverted with `--restore`.
 
 ```python
 # Recommended usage via the command line (operates on .dsproj projects)
-# rsgrid -s Intact.dsproj                   # Restore into first .dsproj in cwd
+# rsgrid -s Intact.dsproj                   # Restore the mesh into first .dsproj in cwd
 # rsgrid -i Stripped.dsproj -s Intact.dsproj
+# rsgrid -s source_net.nc                   # Source given directly as a net file
 # rsgrid -i target_net.nc -s source_net.nc
+
+# Restore the 2D spatial fields (infiltration capacity, roughness) as well/instead
+# rsgrid -f                                 # Restore fields from the current directory
+# rsgrid -i Target.dsproj -f -d fields/     # Take the *.xyz files from fields/
+# rsgrid -i Target.dsproj -s Intact.dsproj -f   # Mesh first, then the fields
+# rsgrid -f -q frictioncoefficient=rough2024.xyz  # Map an oddly named sample file
 ```
 
 The tool clones the 2D mesh (including `Mesh2d_face_z` bed levels) from a source project's
 net file into the target's net file, keeping the target's own 1D network, coordinate system,
 and other settings intact. It backs up the target net file with a timestamped copy before
 overwriting. This is the inverse of `rmgrid`.
+
+Removing and re-adding a 2D grid also drops the *spatial fields* that live on it: the initial
+infiltration capacity and the 2D roughness (friction coefficient), which live in loose
+`*.xyz` sample files next to the MDU rather than in the net file. `-f`/`--fields` restores
+these: it copies the `*.xyz` sample files (default: from the current directory, or `-d DIR`)
+into the model's input folder and re-registers them in the MDU (`IniFieldFile`, `FrictFile`,
+and `Infiltrationmodel` when an infiltration field is present). The project's
+`initialFields.ini` is created if it doesn't have one, or updated in place (just the
+`dataFile` entries, leaving interpolation/averaging settings alone) if it does. Sample files
+are matched to a quantity by name; use `-q NAME=FILE` for files named something else, e.g.
+`-q frictioncoefficient=rough2024.xyz`.
 
 ### Calculate flood simulation accuracy
 
@@ -614,7 +632,14 @@ rmgrid -i MyProject.dsproj --restore  # Restore the original net file from .nc.b
 # Restore the 2D computational mesh into a D-Flow FM .dsproj project
 rsgrid -s Intact.dsproj                   # Restore into first .dsproj in cwd
 rsgrid -i Stripped.dsproj -s Intact.dsproj # Specify target and source explicitly
+rsgrid -s source_net.nc                   # Source given directly as a net file
 rsgrid -i target_net.nc -s source_net.nc  # Operate directly on net files
+
+# Restore the 2D spatial fields (infiltration capacity, roughness) too
+rsgrid -f                                 # Restore fields from the current directory
+rsgrid -i Target.dsproj -f -d fields/     # Take the *.xyz files from fields/
+rsgrid -i Target.dsproj -s Intact.dsproj -f    # Mesh first, then the fields
+rsgrid -f -q frictioncoefficient=rough2024.xyz # Map an oddly named sample file
 ```
 
 ## Changelog
