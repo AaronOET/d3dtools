@@ -1,22 +1,39 @@
 """
-Remove (clear) the 2D computational mesh and 1D2D links from a
-Deltares D-Flow FM (.dsproj) project while preserving 1D network data (pipes).
+Remove (clear) the 2D computational mesh and 1D2D links from a Deltares
+D-Flow FM model exported as a **DIMR run folder** (dimr.xml + dflowfm/),
+while preserving 1D network data (pipes).
+
+This is the DIMR-folder counterpart of ``rmgrid``: identical processing, but
+the model is located through the DIMR export layout instead of a ``.dsproj``
+project.
 
 What it does
 ------------
-1. Locates the FlowFM.mdu inside <project>.dsproj_data/FlowFM/input/
-2. Reads the NetFile path from the [geometry] section of the .mdu
+1. Locates the .mdu:
+     * ``dimr.xml``            -> reads <component> workingDir + inputFile
+     * a run folder            -> uses its dimr.xml, else its dflowfm/ folder
+     * the ``dflowfm`` folder  -> uses the single .mdu inside it
+     * an ``.mdu`` file        -> used directly
+2. Reads the NetFile path from the [geometry] section of the .mdu.
 3. If an IniFieldFile is referenced in the MDU, backs it up as <name>.ini.bak
    and removes any ini-field blocks that carry ``locationType = 2d`` (i.e.
-   interpolated roughness / infiltration data that is only meaningful when a
-   2D mesh is present).
-4. Backs up the original net file as <name>.nc.bak (skipped if already exists)
+   interpolated bed level / roughness / infiltration data that is only
+   meaningful when a 2D mesh is present).
+4. Backs up the original net file as <name>.nc.bak (skipped if already exists).
 5. Writes a new UGRID 1.0 NetCDF file in its place with the 2D mesh emptied
    and all 1D2D link variables removed, while preserving the 1D network.
 
 ``--restore`` reverses steps 3-5: both the net file and the iniField file(s)
 are copied back from their .bak backups, so the 2D roughness and infiltration
 definitions return.
+
+examples
+--------
+    rmgriddimr                         # run folder = current directory
+    rmgriddimr -i C:/models/PT01
+    rmgriddimr -i C:/models/PT01/dimr.xml
+    rmgriddimr -i C:/models/PT01/dflowfm
+    rmgriddimr -i C:/models/PT01 --restore
 """
 
 import argparse
@@ -25,6 +42,7 @@ import re
 import shutil
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 try:
@@ -48,19 +66,123 @@ _CONTACT_TOPOLOGY_ROLES = frozenset({
     "parent_mesh_topology",    # the `composite_mesh` variable
 })
 
+# DIMR configuration file name and the namespace its elements live in.
+DIMR_CONFIG_NAME = "dimr.xml"
+DIMR_NS = "{http://schemas.deltares.nl/dimr}"
 
-def find_mdu(dsproj_path):
-    """Return the path to the .mdu file inside the dsproj_data directory."""
-    dsproj_path = Path(dsproj_path)
-    data_dir = dsproj_path.with_suffix("").with_name(
-        dsproj_path.stem + ".dsproj_data"
-    )
-    candidates = sorted(data_dir.rglob("*.mdu"))
+# Conventional name of the D-Flow FM sub-folder inside a DIMR export.
+DFLOWFM_DIR_NAME = "dflowfm"
+
+
+# ---------------------------------------------------------------------------
+# DIMR model location
+# ---------------------------------------------------------------------------
+
+def find_mdu_in_dir(directory):
+    """Return the single .mdu file directly inside *directory*."""
+    directory = Path(directory)
+    candidates = sorted(directory.glob("*.mdu"))
     if not candidates:
-        sys.exit(f"Error: no .mdu file found under {data_dir}")
+        return None
     if len(candidates) > 1:
-        print(f"Warning: multiple .mdu files found; using {candidates[0]}")
+        print(f"Warning: multiple .mdu files found in {directory}; "
+              f"using {candidates[0].name}")
     return candidates[0]
+
+
+def read_dimr_config(dimr_path):
+    """Return the .mdu paths referenced by the D-Flow FM components in dimr.xml.
+
+    A DIMR component gives the model as ``<workingDir>`` (relative to the
+    dimr.xml) plus ``<inputFile>``. Components whose library is not dflowfm
+    (RTC, RR, wave, ...) are ignored -- they have no 2D mesh to clear.
+    """
+    dimr_path = Path(dimr_path)
+    try:
+        root = ET.parse(dimr_path).getroot()
+    except ET.ParseError as e:
+        sys.exit(f"Error: cannot parse {dimr_path}: {e}")
+
+    mdus = []
+    for tag in (f"{DIMR_NS}component", "component"):
+        for comp in root.findall(tag):
+            def text(child):
+                el = comp.find(f"{DIMR_NS}{child}")
+                if el is None:
+                    el = comp.find(child)
+                return (el.text or "").strip() if el is not None else ""
+
+            library = text("library").lower()
+            input_file = text("inputFile")
+            if not input_file or not input_file.lower().endswith(".mdu"):
+                continue
+            if library and "dflowfm" not in library:
+                continue
+            working_dir = text("workingDir") or "."
+            path = Path(working_dir) / input_file
+            if not path.is_absolute():
+                path = dimr_path.parent / path
+            mdus.append(path.resolve())
+        if mdus:
+            break
+    return mdus
+
+
+def find_mdu(target=None):
+    """Locate the D-Flow FM .mdu of a DIMR model.
+
+    *target* may be a dimr.xml, a run folder, a dflowfm folder, or an .mdu
+    file. ``None`` means "the current directory". Exits with a message when the
+    model cannot be located.
+    """
+    path = Path(target).resolve() if target else Path(".").resolve()
+
+    if not path.exists():
+        sys.exit(f"Error: path does not exist: {path}")
+
+    if path.is_file():
+        if path.suffix.lower() == ".mdu":
+            return path
+        if path.suffix.lower() == ".xml":
+            mdus = read_dimr_config(path)
+            if not mdus:
+                sys.exit(f"Error: no D-Flow FM component with an .mdu input "
+                         f"found in {path}")
+            if len(mdus) > 1:
+                print(f"Warning: {path.name} lists several D-Flow FM "
+                      f"components; using {mdus[0]}")
+            if not mdus[0].exists():
+                sys.exit(f"Error: {path.name} points at a missing .mdu: {mdus[0]}")
+            print(f"DIMR    : {path}")
+            return mdus[0]
+        sys.exit(f"Error: expected a dimr.xml, an .mdu, or a folder, got {path}")
+
+    # --- a directory ---------------------------------------------------------
+    dimr_path = path / DIMR_CONFIG_NAME
+    if dimr_path.exists():
+        return find_mdu(dimr_path)
+
+    mdu = find_mdu_in_dir(path)
+    if mdu:
+        return mdu
+
+    sub = path / DFLOWFM_DIR_NAME
+    if sub.is_dir():
+        mdu = find_mdu_in_dir(sub)
+        if mdu:
+            return mdu
+
+    # Any single sub-folder holding exactly one .mdu (non-standard layouts).
+    found = sorted(p for p in path.glob("*/*.mdu"))
+    if len(found) == 1:
+        return found[0]
+    if len(found) > 1:
+        names = ", ".join(str(p.relative_to(path)) for p in found)
+        sys.exit(f"Error: several .mdu files under {path} ({names}). "
+                 "Point -i at the one you mean.")
+
+    sys.exit(f"Error: no dimr.xml, {DFLOWFM_DIR_NAME}/ folder or .mdu file "
+             f"found in {path}")
 
 
 def read_net_file_from_mdu(mdu_path):
@@ -112,7 +234,7 @@ def read_key_from_mdu(mdu_path, section, key):
 def iter_ini_field_paths(mdu_path):
     """Yield the absolute path of every iniField file referenced by *mdu_path*.
 
-    The MDU may list several iniField files separated by ``;``.
+    A DIMR export may list several iniField files separated by ``;``.
     """
     ini_field_file = read_key_from_mdu(mdu_path, "geometry", "IniFieldFile")
     for entry in [p.strip() for p in (ini_field_file or "").split(";") if p.strip()]:
@@ -195,6 +317,10 @@ def _clean_one_ini_field_file(ini_path, force_backup=False):
         print(f"  IniFieldFile: removed 2D section {name}")
     print(f"  IniFieldFile updated -> {ini_path}")
 
+
+# ---------------------------------------------------------------------------
+# Net file processing
+# ---------------------------------------------------------------------------
 
 def create_empty_mesh(src_path, dst_path):
     """
@@ -294,29 +420,33 @@ def restore_mesh(net_path, mdu_path=None):
             print(f"  Restored {ini_path}  (from {ini_bak.name})")
             continue
 
-        # No backup: the 2D blocks were stripped by a version of rmgrid that
-        # did not back the iniField file up, or the .bak was deleted. Say so
-        # loudly - otherwise the user sees a "restored" message for the net
+        # No backup: the 2D blocks were stripped by a version of rmgriddimr
+        # that did not back the iniField file up, or the .bak was deleted. Say
+        # so loudly - otherwise the user sees a "restored" message for the net
         # file and wrongly assumes the 2D fields came back with it.
         print(f"  Warning: no backup for {ini_path.name} ({ini_bak.name} not found).")
         if _has_2d_section(ini_path):
             print("           The file still has its 2D blocks - nothing to restore.")
         else:
             print("           2D roughness / infiltration blocks CANNOT be restored.")
-            print("           Re-add them in the GUI, or use rsgrid to re-import "
-                  "the sample files.")
+            print("           Re-add them in the GUI, or use rsgriddimr -f to "
+                  "re-import the coverage files.")
 
 
 def main():
     """Main function for the command line interface."""
     parser = argparse.ArgumentParser(
         prog=os.path.splitext(os.path.basename(sys.argv[0]))[0],
-        description="Remove (clear) the 2D computational mesh from a D-Flow FM .dsproj project.",
+        description="Remove (clear) the 2D computational mesh from a D-Flow FM "
+                    "model in a DIMR run folder (dimr.xml + dflowfm/).",
         epilog="""
 examples:
-  %(prog)s -i MyProject.dsproj
-  %(prog)s -i MyProject.dsproj --restore
-  %(prog)s -i MyProject.dsproj --force-backup
+  %(prog)s                              # DIMR run folder = current directory
+  %(prog)s -i C:/models/PT01
+  %(prog)s -i C:/models/PT01/dimr.xml
+  %(prog)s -i C:/models/PT01/dflowfm
+  %(prog)s -i C:/models/PT01 --restore
+  %(prog)s -i C:/models/PT01 --force-backup
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -324,7 +454,8 @@ examples:
         "-i",
         "--input",
         default=None,
-        help="Path to the .dsproj file (default: first .dsproj found in current directory)",
+        help="DIMR run folder, dimr.xml, dflowfm folder or .mdu file "
+             "(default: current directory)",
     )
     parser.add_argument(
         "--restore",
@@ -340,29 +471,8 @@ examples:
     )
     args = parser.parse_args()
 
-    if args.input:
-        dsproj_path = Path(args.input).resolve()
-        if not dsproj_path.exists():
-            print(f"Error: .dsproj file does not exist: {dsproj_path}")
-            sys.exit(1)
-    else:
-        matches = list(Path(".").glob("*.dsproj"))
-        if not matches:
-            print("Error: no .dsproj file found in current directory.")
-            sys.exit(1)
-        if len(matches) > 1:
-            names = ", ".join(p.name for p in matches)
-            print(
-                f"Error: multiple .dsproj files found ({names}). "
-                "Specify one explicitly with -i."
-            )
-            sys.exit(1)
-        dsproj_path = matches[0].resolve()
-
-    print(f"Project : {dsproj_path}")
-
     try:
-        mdu_path = find_mdu(dsproj_path)
+        mdu_path = find_mdu(args.input)
         print(f"MDU     : {mdu_path}")
 
         net_path = read_net_file_from_mdu(mdu_path)
@@ -428,7 +538,7 @@ examples:
     except SystemExit:
         raise
     except Exception as e:
-        print(f"Error processing project: {str(e)}")
+        print(f"Error processing model: {str(e)}")
         sys.exit(1)
 
 

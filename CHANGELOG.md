@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.26.0
+
+- Added **rmgriddimr** and **rsgriddimr**: DIMR-run-folder counterparts of `rmgrid` and `rsgrid`, for models exported as `dimr.xml` + `dflowfm/` rather than saved as a `.dsproj` project. Processing is identical; only model location differs. `-i` (and `rsgriddimr -s`) accept a run folder, a `dimr.xml`, a `dflowfm` folder or an `.mdu` file, defaulting to the current directory; `rsgriddimr -s` also accepts a `.nc` net file directly. `rsgriddimr -f` restores GeoTIFF coverages as well as `*.xyz` samples, and resolves the quantity of an uninformatively named coverage (e.g. `RHI.tif`) from the iniField files of the model, of the backups `rmgriddimr` left behind, and of the `-s` source model.
+- `rmgrid`: `--restore` now also restores the `IniFieldFile`, so the 2D roughness and infiltration blocks come back with the mesh. `rmgrid` backs the iniField file up as `<name>.ini.bak` before stripping its `locationType = 2d` blocks, and a `;`-separated list of iniField files in the MDU is now handled (previously only the first entry was read).
+- `rmgrid`: `--restore` warns when an iniField backup is missing instead of silently restoring only the net file. It distinguishes a file whose 2D blocks were stripped without a backup (unrecoverable) from one that never had them removed (nothing to restore).
+- `rmgrid`: `--force-backup` now refreshes the iniField `.bak` as well as the net file `.bak`; previously a stale iniField backup could never be updated. Without the flag an existing backup is kept and reported, since it holds the pre-removal state.
+- `rmgrid`: Stripping the iniField file preserves its original line endings. A CRLF file written by D-HYDRO is no longer rewritten as LF.
+
 ## 0.25.4
 
 - `rsgrid`: Added `-f`/`--fields` to restore the 2D spatial fields (infiltration capacity, roughness) that are lost along with the 2D mesh. Copies `*.xyz` sample files (and any `initialFields.ini` / roughness `*.ini`) from a fields directory (`-d`/`--fields-dir`, default: current directory) into the model's input folder and re-registers them in the MDU (`IniFieldFile`, `FrictFile`, `Infiltrationmodel`). The project's `initialFields.ini` is created if it has none, or updated in place (only the `dataFile` entries) if it has one. Sample files are matched to an iniField quantity by name; `-q`/`--quantity NAME=FILE` maps oddly named files explicitly. `-s`/`--source` is no longer required, so `rsgrid` can restore fields, the mesh, or both in one run. New Python API: `restore_fields()`.

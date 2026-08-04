@@ -36,6 +36,8 @@ This package provides several utilities for converting shapefiles to various for
 - **xyz2shp**: Convert XYZ point files (`.xyz`/`.csv`) to ESRI Shapefiles
 - **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
 - **rsgrid**: Restore the 2D computational mesh (including `Mesh2d_face_z` bed levels) into a D-Flow FM `.dsproj` project by cloning it from a source project, while preserving the target's 1D network. The inverse of `rmgrid`. Also restores the 2D spatial fields (infiltration capacity, roughness) that are lost along with the mesh, via `-f`/`--fields`
+- **rmgriddimr**: `rmgrid` for a model exported as a DIMR run folder (`dimr.xml` + `dflowfm/`) instead of a `.dsproj` project
+- **rsgriddimr**: `rsgrid` for a model exported as a DIMR run folder; restores the 2D mesh and/or the 2D spatial fields, handling GeoTIFF coverages as well as `*.xyz` samples
 
 ## Usage Examples
 
@@ -432,6 +434,42 @@ and `Infiltrationmodel` when an infiltration field is present). The project's
 are matched to a quantity by name; use `-q NAME=FILE` for files named something else, e.g.
 `-q frictioncoefficient=rough2024.xyz`.
 
+### Remove / restore the 2D mesh in a DIMR run folder
+
+`rmgrid` and `rsgrid` work on a D-HYDRO `.dsproj` project. When the model has been exported
+as a **DIMR run folder** (`dimr.xml` + `dflowfm/`) there is no `.dsproj` to point at, so use
+`rmgriddimr` and `rsgriddimr` instead. The processing is identical; only the way the model is
+located differs.
+
+```python
+# Clear the 2D mesh (operates on a DIMR run folder)
+# rmgriddimr                                # Run folder = current directory
+# rmgriddimr -i C:/models/PT01              # A run folder
+# rmgriddimr -i C:/models/PT01/dimr.xml     # The DIMR config directly
+# rmgriddimr -i C:/models/PT01/dflowfm      # The dflowfm folder
+# rmgriddimr -i C:/models/PT01 --restore    # Restore mesh + iniField from the .bak files
+# rmgriddimr -i C:/models/PT01 --force-backup
+
+# Restore the 2D mesh and/or the 2D spatial fields
+# rsgriddimr -s C:/models/Intact            # Clone the mesh into the cwd's model
+# rsgriddimr -i C:/models/PT01 -s C:/models/Intact
+# rsgriddimr -i C:/models/PT01 -s source_net.nc
+# rsgriddimr -i C:/models/PT01 -f -d fields/    # Coverage files from fields/
+# rsgriddimr -i C:/models/PT01 -s Intact -f     # Mesh first, then the fields
+# rsgriddimr -f -q frictioncoefficient=RHI.tif  # Map an oddly named coverage
+```
+
+`-i`/`-s` accept a run folder, a `dimr.xml`, a `dflowfm` folder or an `.mdu` file (and, for
+`rsgriddimr -s`, a `.nc` net file). A DIMR export normally carries its 2D coverages as
+GeoTIFFs rather than `*.xyz` samples, so `rsgriddimr -f` handles both. Because a name like
+`RHI.tif` says nothing about its quantity, it consults the iniField files of the model, of the
+backups `rmgriddimr` left behind, and of the `-s` source model to work out which quantity a
+coverage belongs to; `-q NAME=FILE` settles anything left over.
+
+`rmgriddimr` backs up the net file as `<name>.nc.bak` and the iniField file as
+`<name>.ini.bak`, so `--restore` brings back the 2D mesh together with the 2D roughness and
+infiltration blocks.
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -490,6 +528,8 @@ d3dtools-info pol2shp
 d3dtools-info xyz2shp
 d3dtools-info rmgrid
 d3dtools-info rsgrid
+d3dtools-info rmgriddimr
+d3dtools-info rsgriddimr
 
 # Display help for specific tools
 ncrain --help
@@ -516,6 +556,8 @@ pol2shp --help
 xyz2shp --help
 rmgrid --help
 rsgrid --help
+rmgriddimr --help
+rsgriddimr --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -640,6 +682,21 @@ rsgrid -f                                 # Restore fields from the current dire
 rsgrid -i Target.dsproj -f -d fields/     # Take the *.xyz files from fields/
 rsgrid -i Target.dsproj -s Intact.dsproj -f    # Mesh first, then the fields
 rsgrid -f -q frictioncoefficient=rough2024.xyz # Map an oddly named sample file
+
+# Same two operations on a DIMR run folder (dimr.xml + dflowfm/) instead of a .dsproj
+rmgriddimr                                # Run folder = current directory
+rmgriddimr -i C:/models/PT01              # A run folder
+rmgriddimr -i C:/models/PT01/dimr.xml     # The DIMR config directly
+rmgriddimr -i C:/models/PT01/dflowfm      # The dflowfm folder
+rmgriddimr -i C:/models/PT01 --restore    # Restore mesh + iniField from the .bak files
+rmgriddimr -i C:/models/PT01 --force-backup
+
+rsgriddimr -s C:/models/Intact            # Clone the mesh into the cwd's model
+rsgriddimr -i C:/models/PT01 -s C:/models/Intact
+rsgriddimr -i C:/models/PT01 -s source_net.nc
+rsgriddimr -i C:/models/PT01 -f -d fields/     # Coverage files (*.xyz, *.tif) from fields/
+rsgriddimr -i C:/models/PT01 -s Intact -f      # Mesh first, then the fields
+rsgriddimr -f -q frictioncoefficient=RHI.tif   # Map an oddly named GeoTIFF coverage
 ```
 
 ## Changelog

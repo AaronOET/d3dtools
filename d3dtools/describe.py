@@ -302,6 +302,53 @@ TOOL_DESCRIPTIONS = {
             rsgrid -i Target.dsproj -s Intact.dsproj -f   # mesh first, then fields
             rsgrid -f -q frictioncoefficient=rough2024.xyz
     """,
+    'rmgriddimr':
+    """
+        Remove (clear) the 2D mesh and 1D2D links from a DIMR run folder (dimr.xml + dflowfm/).
+
+        The DIMR-folder counterpart of rmgrid: identical processing, but the model is
+        located through the DIMR export layout instead of a .dsproj project. The target
+        may be a run folder, a dimr.xml, a dflowfm folder or an .mdu file; the current
+        directory is used when -i is omitted.
+
+        The net file is backed up as <name>.nc.bak and the IniFieldFile as
+        <name>.ini.bak, so --restore brings back both the 2D mesh and the 2D
+        roughness / infiltration blocks.
+
+        Examples:
+            rmgriddimr                              # run folder = current directory
+            rmgriddimr -i C:/models/PT01
+            rmgriddimr -i C:/models/PT01/dimr.xml
+            rmgriddimr -i C:/models/PT01/dflowfm
+            rmgriddimr -i C:/models/PT01 --restore
+            rmgriddimr -i C:/models/PT01 --force-backup
+    """,
+    'rsgriddimr':
+    """
+        Restore the 2D mesh and/or 2D spatial fields into a DIMR run folder (dimr.xml + dflowfm/).
+
+        The DIMR-folder counterpart of rsgrid, and the inverse of rmgriddimr.
+
+        -s clones the 2D mesh (including Mesh2d_face_z bed levels) from a source model
+        into the target's net file, preserving the target's own 1D network. The source
+        may be a run folder, a dimr.xml, a dflowfm folder, an .mdu or a .nc net file.
+
+        -f restores the 2D spatial fields that are lost with the mesh: it copies the
+        coverage files (*.xyz samples, *.tif GeoTIFFs) and any roughness *.ini from a
+        fields directory into the model's dflowfm folder and re-registers them in the
+        MDU (IniFieldFile, FrictFile, Infiltrationmodel). Each coverage is checked
+        against the restored mesh extent. An existing iniField file is updated in place
+        (only the dataFile entries) so the D-HYDRO interpolation settings survive; one
+        is created when the model has none.
+
+        Examples:
+            rsgriddimr -s C:/models/Intact          # restore mesh into cwd's model
+            rsgriddimr -i C:/models/PT01 -s C:/models/Intact
+            rsgriddimr -i C:/models/PT01 -s source_net.nc
+            rsgriddimr -i C:/models/PT01 -f -d fields/
+            rsgriddimr -i C:/models/PT01 -s Intact -f    # mesh first, then the fields
+            rsgriddimr -f -q frictioncoefficient=RHI.tif
+    """,
 }
 
 

@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.25.4",
+    version="0.26.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -52,6 +52,8 @@ setup(
             "xyz2shp=d3dtools.xyz2shp:main",  # Tool for converting XYZ/CSV point files to shapefiles
             "rmgrid=d3dtools.rmgrid:main",  # Tool for removing the 2D mesh from a D-Flow FM .dsproj project
             "rsgrid=d3dtools.rsgrid:main",  # Tool for restoring the 2D mesh into a D-Flow FM .dsproj project from a source
+            "rmgriddimr=d3dtools.rmgriddimr:main",  # rmgrid for a DIMR run folder (dimr.xml + dflowfm/)
+            "rsgriddimr=d3dtools.rsgriddimr:main",  # rsgrid for a DIMR run folder (dimr.xml + dflowfm/)
         ],
     },
 )
