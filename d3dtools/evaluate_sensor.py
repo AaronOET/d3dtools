@@ -124,8 +124,8 @@ def main():
         epilog='''
 examples:
   %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp
-  %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --buffer 50 --threshold 20
-  %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --buffer 0 --threshold 30
+  %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --buffer 50 --thresh-iot 20
+  %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --buffer 0 --thresh-iot 30
   %(prog)s --sim SHP/SIM.shp --obs SHP/sensor_points.shp --output results.csv
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -135,7 +135,7 @@ examples:
                         help='Path to observed sensor point shapefile')
     parser.add_argument('--buffer', type=float, default=30,
                         help='Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 30)')
-    parser.add_argument('--threshold', type=float, default=30,
+    parser.add_argument('--thresh-iot', type=float, default=30,
                         help='Water depth threshold in cm (default: 30)')
     parser.add_argument('--output', help='Path to output CSV file (optional)')
 
@@ -150,7 +150,7 @@ examples:
     try:
         # Run the confusion matrix calculation (output is already handled in the function)
         confusion_matrix(args.sim, args.obs, args.buffer,
-                         args.threshold, args.output)
+                         args.thresh_iot, args.output)
     except Exception as e:
         print(f"Error processing sensor evaluation: {str(e)}")
         sys.exit(1)

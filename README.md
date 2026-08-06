@@ -609,13 +609,13 @@ evaluate --sim path/to/simulated_flood.shp --obs path/to/observed_flood.shp --ou
 
 # Calculate flood simulation accuracy using sensor data
 evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.shp
-evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.shp --buffer 30 --threshold 30 --output sensor_accuracy.csv
+evaluate_sensor --sim path/to/simulated_flood.shp --obs path/to/sensor_points.shp --buffer 30 --thresh-iot 30 --output sensor_accuracy.csv
 
 # Calculate flood simulation accuracy using sensor data with dual-threshold shapefiles
 evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp
-evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --threshold 20 --output sensor_accuracy2.csv
+evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --thresh-iot 20 --output sensor_accuracy2.csv
 eval_iot --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp  # Alias for evaluate_sensor2
-eval_iot --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 30 --threshold 20 --output sensor_accuracy2.csv
+eval_iot --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 30 --thresh-iot 20 --output sensor_accuracy2.csv
 
 # Extract Mesh2d_face_z values at observation points (spatial-index accelerated)
 getfacez --nc-file path/to/model_output.nc --obs-shp path/to/observation_points.shp

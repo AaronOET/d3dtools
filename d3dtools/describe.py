@@ -31,7 +31,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             evaluate_sensor --sim SHP/SIM.shp --obs SHP/OBS.shp
-            evaluate_sensor --sim SHP/SIM.shp --obs SHP/OBS.shp --buffer 50 --threshold 20
+            evaluate_sensor --sim SHP/SIM.shp --obs SHP/OBS.shp --buffer 50 --thresh-iot 20
             evaluate_sensor --sim SHP/SIM.shp --obs SHP/OBS.shp --output results.csv
     """,
     'evaluate_sensor2':
@@ -44,7 +44,7 @@ TOOL_DESCRIPTIONS = {
 
         Examples:
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp
-            evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --threshold 20
+            evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --thresh-iot 20
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --output results.csv
     """,
     'sensor':

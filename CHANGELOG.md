@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.26.1
+
+- `evaluate_sensor` / `evaluate_sensor2`: Renamed the `--threshold` CLI flag to `--thresh-iot` for both tools. Not backward compatible with the previous `--threshold` flag; the Python API (`confusion_matrix`'s `depth_threshold` parameter) is unchanged.
+- `evaluate_sensor2`: The source field lookup now also matches `通報類型` in addition to `來源說` (whichever is present in the observation data). The depth field is now resolved dynamically to any column whose name starts with `最大深`, instead of requiring an exact `最大深` column name. Observation data in EPSG:4326 is now automatically reprojected to EPSG:3826 before use. `--obs` and `--output-buffer` now also accept GeoPackage (`*.gpkg`) files, chosen by file extension.
+
 ## 0.26.0
 
 - Added **rmgriddimr** and **rsgriddimr**: DIMR-run-folder counterparts of `rmgrid` and `rsgrid`, for models exported as `dimr.xml` + `dflowfm/` rather than saved as a `.dsproj` project. Processing is identical; only model location differs. `-i` (and `rsgriddimr -s`) accept a run folder, a `dimr.xml`, a `dflowfm` folder or an `.mdu` file, defaulting to the current directory; `rsgriddimr -s` also accepts a `.nc` net file directly. `rsgriddimr -f` restores GeoTIFF coverages as well as `*.xyz` samples, and resolves the quantity of an uninformatively named coverage (e.g. `RHI.tif`) from the iniField files of the model, of the backups `rmgriddimr` left behind, and of the `-s` source model.
