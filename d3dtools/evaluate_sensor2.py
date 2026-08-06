@@ -76,7 +76,9 @@ def confusion_matrix(
     output_buffer_shp : str, optional
         Path to a shapefile or GeoPackage (``*.gpkg``) where the buffered
         sensor geometries (with the applied radius and computed area) will
-        be written. The format is chosen from the file extension.
+        be written. The format is chosen from the file extension. If
+        ``obs_path`` is a GeoPackage (``*.gpkg``), the file is written into
+        a ``GPKG`` folder (created if missing) instead of its own directory.
 
     Returns
     -------
@@ -121,6 +123,11 @@ def confusion_matrix(
 
     # Export buffered geometries if requested
     if output_buffer_shp:
+        # GeoPackage observation input goes to a dedicated GPKG folder
+        if os.path.splitext(obs_path)[1].lower() == ".gpkg":
+            output_buffer_shp = os.path.join(
+                "GPKG", os.path.basename(output_buffer_shp)
+            )
         out_dir = os.path.dirname(output_buffer_shp)
         if out_dir:
             os.makedirs(out_dir, exist_ok=True)
@@ -284,7 +291,12 @@ examples:
     parser.add_argument(
         "--output-buffer",
         default=os.path.join("SHP", "IOT_BUFFER.gpkg"),
-        help="Path to output shapefile or GeoPackage (*.gpkg) of the buffered sensor geometries (default: SHP/IOT_BUFFER.gpkg). Use '' to disable.",
+        help=(
+            "Path to output shapefile or GeoPackage (*.gpkg) of the "
+            "buffered sensor geometries (default: SHP/IOT_BUFFER.gpkg). "
+            "If --obs is a GeoPackage, the file is written into a GPKG "
+            "folder (created if missing) instead. Use '' to disable."
+        ),
     )
 
     args = parser.parse_args()

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.2
+
+- `evaluate_sensor2`: When `--obs`/`obs_path` is a GeoPackage (`*.gpkg`), the buffer output is now written into a `GPKG` folder (created automatically if missing) instead of the directory given in `--output-buffer`/`output_buffer_shp`; only the output file's basename is kept.
+
 ## 0.26.1
 
 - `evaluate_sensor` / `evaluate_sensor2`: Renamed the `--threshold` CLI flag to `--thresh-iot` for both tools. Not backward compatible with the previous `--threshold` flag; the Python API (`confusion_matrix`'s `depth_threshold` parameter) is unchanged.
