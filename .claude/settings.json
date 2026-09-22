@@ -3,7 +3,10 @@
     "allow": [
       "Bash(python -m d3dtools.describe -h)",
       "Bash(python -m d3dtools.describe rsgrid)",
-      "Bash(python -m d3dtools.describe -v)"
+      "Bash(python -m d3dtools.describe -v)",
+      "Bash(python -c \"import d3dtools; print\\(d3dtools.__version__\\)\")",
+      "Bash(python -m d3dtools.makedimr --help)",
+      "Bash(python -c ' *)"
     ]
   }
 }

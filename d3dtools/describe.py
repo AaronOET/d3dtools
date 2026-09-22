@@ -349,6 +349,20 @@ TOOL_DESCRIPTIONS = {
             rsgriddimr -i C:/models/PT01 -s Intact -f    # mesh first, then the fields
             rsgriddimr -f -q frictioncoefficient=RHI.tif
     """,
+    'makedimr':
+    """
+        Build a DIMR run folder (dimr_config.xml + dflowfm/) from a Delft3D FM Suite project (.dsproj).
+
+        Reads the FM model name and its data folder straight from the .dsproj file (a SQLite
+        database), copies <project>.dsproj_data/<FM model>/input into <out>/dflowfm, and writes
+        a dimr_config.xml pointing at it. The counterpart of rmgriddimr/rsgriddimr, which operate
+        on a DIMR run folder once it exists -- makedimr is what creates it in the first place.
+
+        Examples:
+            makedimr 2DOF_KS.dsproj
+            makedimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
+            makedimr 2DOF_KS.dsproj --model FlowFM1
+    """,
 }
 
 

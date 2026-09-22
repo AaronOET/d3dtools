@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.3
+
+- Added **makedimr**: builds a DIMR run folder (`dimr_config.xml` + `dflowfm/`) from a Delft3D FM Suite project (`.dsproj`), reading the FM model name and its data folder directly from the project file. The counterpart of `rmgriddimr`/`rsgriddimr`, which is what creates the run folder those tools operate on. `--model` picks a model when the project has several; `--out`/`--threads`/`--force` control the output folder, the `dimr_config.xml` threads setting, and whether an existing output folder is overwritten.
+
 ## 0.26.2
 
 - `evaluate_sensor2`: When `--obs`/`obs_path` is a GeoPackage (`*.gpkg`), the buffer output is now written into a `GPKG` folder (created automatically if missing) instead of the directory given in `--output-buffer`/`output_buffer_shp`; only the output file's basename is kept.

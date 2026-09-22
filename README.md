@@ -38,6 +38,7 @@ This package provides several utilities for converting shapefiles to various for
 - **rsgrid**: Restore the 2D computational mesh (including `Mesh2d_face_z` bed levels) into a D-Flow FM `.dsproj` project by cloning it from a source project, while preserving the target's 1D network. The inverse of `rmgrid`. Also restores the 2D spatial fields (infiltration capacity, roughness) that are lost along with the mesh, via `-f`/`--fields`
 - **rmgriddimr**: `rmgrid` for a model exported as a DIMR run folder (`dimr.xml` + `dflowfm/`) instead of a `.dsproj` project
 - **rsgriddimr**: `rsgrid` for a model exported as a DIMR run folder; restores the 2D mesh and/or the 2D spatial fields, handling GeoTIFF coverages as well as `*.xyz` samples
+- **makedimr**: Build a DIMR run folder (`dimr_config.xml` + `dflowfm/`) from a Delft3D FM Suite project (`.dsproj`), reading the FM model name and its data folder from the project itself. The counterpart of `rmgriddimr`/`rsgriddimr`, which is what creates the run folder those tools operate on
 
 ## Usage Examples
 
@@ -470,6 +471,22 @@ coverage belongs to; `-q NAME=FILE` settles anything left over.
 `<name>.ini.bak`, so `--restore` brings back the 2D mesh together with the 2D roughness and
 infiltration blocks.
 
+### Build a DIMR run folder from a .dsproj project
+
+`makedimr` creates the DIMR run folder that `rmgriddimr`/`rsgriddimr` operate on, from a
+Delft3D FM Suite project (`.dsproj`). It reads the FM model name and its data folder directly
+from the `.dsproj` file (a SQLite database), so it works for any project with one D-Flow FM
+model (`--model` picks one when there are several).
+
+```python
+# makedimr 2DOF_KS.dsproj                          # Output: DIMR/ next to the .dsproj
+# makedimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
+# makedimr 2DOF_KS.dsproj --model FlowFM1           # Project has several FM models
+```
+
+The output folder gets a `dimr_config.xml` (with `creationDate` set to the time the tool is
+run) and a `dflowfm/` folder holding a copy of `<project>.dsproj_data/<FM model>/input`.
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -530,6 +547,7 @@ d3dtools-info rmgrid
 d3dtools-info rsgrid
 d3dtools-info rmgriddimr
 d3dtools-info rsgriddimr
+d3dtools-info makedimr
 
 # Display help for specific tools
 ncrain --help
@@ -558,6 +576,7 @@ rmgrid --help
 rsgrid --help
 rmgriddimr --help
 rsgriddimr --help
+makedimr --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -697,6 +716,11 @@ rsgriddimr -i C:/models/PT01 -s source_net.nc
 rsgriddimr -i C:/models/PT01 -f -d fields/     # Coverage files (*.xyz, *.tif) from fields/
 rsgriddimr -i C:/models/PT01 -s Intact -f      # Mesh first, then the fields
 rsgriddimr -f -q frictioncoefficient=RHI.tif   # Map an oddly named GeoTIFF coverage
+
+# Build a DIMR run folder from a .dsproj project
+makedimr 2DOF_KS.dsproj                          # Output: DIMR/ next to the .dsproj
+makedimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
+makedimr 2DOF_KS.dsproj --model FlowFM1          # Project has several FM models
 ```
 
 ## Changelog
