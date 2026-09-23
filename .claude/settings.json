@@ -6,7 +6,12 @@
       "Bash(python -m d3dtools.describe -v)",
       "Bash(python -c \"import d3dtools; print\\(d3dtools.__version__\\)\")",
       "Bash(python -m d3dtools.makedimr --help)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(cat /tmp/diff_code.txt)",
+      "Read(//tmp/**)",
+      "Bash(where makedimr *)",
+      "Bash(where rm1dch *)",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")"
     ]
   }
 }

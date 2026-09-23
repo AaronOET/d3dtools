@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.26.4
+
+- Added **rm1dch**, **rm1dsw** and **mk2d**: split a Delft3D FM (D-HYDRO / FM Suite) 1D2D model by removing one part of the 1D network (and everything anchored on it - structures, cross sections, 1D2D links, boundary/lateral blocks, forcing records) while leaving the rest and the 2D grid intact. `rm1dch` removes the open 1D channels, `rm1dsw` removes the sewer system (pipes, sewer connections, manholes), and `mk2d` removes the entire 1D network for a 2D-only model; all three run the same engine and accept `--target {channel,sewer,all}` to switch direction. Where a kept sewer branch ran into a removed branch, a manhole is added automatically so the sewer keeps a proper outfall (`--no-outfall-manholes`, `--manhole-levels`, and related `--manhole-*` flags control this). `--check` reports what a model still contains without writing; `--dry-run` reports the plan; every rewritten file is first backed up to `<name>.bak`.
+- Added **rmlinks**: removes only the 1D2D links from a Delft3D FM net file, leaving the 1D network, mesh1d, Mesh2d and every other input file untouched. `--type` restricts removal to specific link kinds (`lateral`, `longitudinal`, `street_inlet`, `roof_gutter`, `embedded`); `--check` lists the links present without writing.
+
 ## 0.26.3
 
 - Added **makedimr**: builds a DIMR run folder (`dimr_config.xml` + `dflowfm/`) from a Delft3D FM Suite project (`.dsproj`), reading the FM model name and its data folder directly from the project file. The counterpart of `rmgriddimr`/`rsgriddimr`, which is what creates the run folder those tools operate on. `--model` picks a model when the project has several; `--out`/`--threads`/`--force` control the output folder, the `dimr_config.xml` threads setting, and whether an existing output folder is overwritten.

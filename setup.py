@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.26.3",
+    version="0.26.4",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -55,6 +55,10 @@ setup(
             "rmgriddimr=d3dtools.rmgriddimr:main",  # rmgrid for a DIMR run folder (dimr.xml + dflowfm/)
             "rsgriddimr=d3dtools.rsgriddimr:main",  # rsgrid for a DIMR run folder (dimr.xml + dflowfm/)
             "makedimr=d3dtools.makedimr:main",  # Build a DIMR run folder from a .dsproj project
+            "rm1dch=d3dtools.rm1dch:main",  # Remove the 1D channels from a D-Flow FM model
+            "rm1dsw=d3dtools.rm1dsw:main",  # Remove the 1D sewer system from a D-Flow FM model
+            "mk2d=d3dtools.mk2d:main",  # Turn a D-Flow FM 1D2D model into a 2D-only model
+            "rmlinks=d3dtools.rmlinks:main",  # Remove 1D2D links from a D-Flow FM model
         ],
     },
 )

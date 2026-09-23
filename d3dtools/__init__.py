@@ -2,7 +2,7 @@
 D3DTOOLS - A collection of tools for working with shapefiles and converting them for Delft3D modeling.
 """
 
-__version__ = '0.26.3'
+__version__ = '0.26.4'
 
 # Define all modules that should be exposed when using "from d3dtools import *"
 __all__ = [
@@ -33,6 +33,10 @@ __all__ = [
     'rmgriddimr',
     'rsgriddimr',
     'makedimr',
+    'rm1dch',
+    'rm1dsw',
+    'mk2d',
+    'rmlinks',
 ]
 
 from . import ncrain
@@ -62,3 +66,7 @@ from . import rsgrid
 from . import rmgriddimr
 from . import rsgriddimr
 from . import makedimr
+from . import rm1dch
+from . import rm1dsw
+from . import mk2d
+from . import rmlinks

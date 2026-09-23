@@ -363,6 +363,70 @@ TOOL_DESCRIPTIONS = {
             makedimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
             makedimr 2DOF_KS.dsproj --model FlowFM1
     """,
+    'rm1dch':
+    """
+        Remove the open 1D channels from a Delft3D FM (D-HYDRO / FM Suite) model.
+
+        Removes the 1D channels and everything anchored on them (structures, cross
+        sections, 1D2D links, boundary/lateral blocks, forcing records), keeping the
+        sewer system (pipes, sewer connections, manholes) and the 2D grid intact. Where
+        a kept sewer branch ran into a removed channel, a manhole is added automatically
+        so the sewer keeps a proper outfall (--no-outfall-manholes to disable). Every
+        rewritten file is first backed up to <name>.bak. Same engine as rm1dsw/mk2d;
+        --target switches what is removed.
+
+        Examples:
+            rm1dch <input-folder-or-mdu> --check
+            rm1dch <input-folder-or-mdu> --dry-run
+            rm1dch <input-folder-or-mdu>
+            rm1dch <input-folder-or-mdu> --no-outfall-manholes
+    """,
+    'rm1dsw':
+    """
+        Remove the 1D sewer system from a Delft3D FM (D-HYDRO / FM Suite) model.
+
+        Removes the sewer system (pipes, sewer connections, manholes) and everything
+        anchored on it, keeping the 1D channels and the 2D grid intact. Same engine as
+        rm1dch, opposite default direction; --target switches what is removed.
+
+        Examples:
+            rm1dsw <input-folder-or-mdu> --check
+            rm1dsw <input-folder-or-mdu> --dry-run
+            rm1dsw <input-folder-or-mdu>
+            rm1dsw <input-folder-or-mdu> --target channel
+    """,
+    'mk2d':
+    """
+        Turn a Delft3D FM (D-HYDRO / FM Suite) 1D2D model into a 2D-only model.
+
+        Removes the entire 1D network - channels, sewers, manholes and every 1D
+        structure - together with the 1D-only .mdu entries, leaving the 2D grid, fixed
+        weirs, 2D boundaries, laterals, meteo and 2D fields untouched. Refuses to run
+        when the net file has no 2D grid (--allow-empty-2d to continue anyway). Same
+        engine as rm1dch/rm1dsw, with --target all.
+
+        Examples:
+            mk2d <input-folder-or-mdu> --check
+            mk2d <input-folder-or-mdu> --dry-run
+            mk2d <input-folder-or-mdu>
+            mk2d <input-folder-or-mdu> --keep-1d-mdu-keys
+    """,
+    'rmlinks':
+    """
+        Remove only the 1D2D links from a Delft3D FM (D-HYDRO / FM Suite) net file.
+
+        The 1D network, mesh1d, Mesh2d and every other input file are left untouched;
+        only the mesh-contact block of the net file is removed. --type restricts removal
+        to specific link kinds (lateral, longitudinal, street_inlet, roof_gutter,
+        embedded); default is every link. If the .mdu has a non-empty 1D2DLinkFile key
+        and every link is removed, that key is blanked too (--keep-linkfile to disable).
+
+        Examples:
+            rmlinks <input-folder | model.mdu | *_net.nc> --check
+            rmlinks <input-folder | model.mdu | *_net.nc> --dry-run
+            rmlinks <input-folder | model.mdu | *_net.nc>
+            rmlinks <input-folder> --type street_inlet roof_gutter
+    """,
 }
 
 

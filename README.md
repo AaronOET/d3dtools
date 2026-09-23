@@ -39,6 +39,10 @@ This package provides several utilities for converting shapefiles to various for
 - **rmgriddimr**: `rmgrid` for a model exported as a DIMR run folder (`dimr.xml` + `dflowfm/`) instead of a `.dsproj` project
 - **rsgriddimr**: `rsgrid` for a model exported as a DIMR run folder; restores the 2D mesh and/or the 2D spatial fields, handling GeoTIFF coverages as well as `*.xyz` samples
 - **makedimr**: Build a DIMR run folder (`dimr_config.xml` + `dflowfm/`) from a Delft3D FM Suite project (`.dsproj`), reading the FM model name and its data folder from the project itself. The counterpart of `rmgriddimr`/`rsgriddimr`, which is what creates the run folder those tools operate on
+- **rm1dch**: Remove the open 1D channels (and everything anchored on them - structures, cross sections, 1D2D links, boundary/lateral blocks) from a Delft3D FM model, keeping the sewer system (pipes, sewer connections, manholes) and the 2D grid intact. A kept sewer branch that ran into a removed channel gets a new outfall manhole automatically
+- **rm1dsw**: Remove the 1D sewer system (pipes, sewer connections, manholes) from a Delft3D FM model, keeping the 1D channels and the 2D grid intact. Same engine as `rm1dch`, opposite direction
+- **mk2d**: Turn a Delft3D FM 1D2D model into a 2D-only model by removing the entire 1D network - channels, sewers, manholes, and every 1D structure. Same engine as `rm1dch`/`rm1dsw`, with `--target all`
+- **rmlinks**: Remove only the 1D2D links from a Delft3D FM net file, leaving the 1D network, mesh1d, Mesh2d and every other input file untouched. `--type` restricts removal to specific link kinds (lateral, longitudinal, street_inlet, roof_gutter, embedded)
 
 ## Usage Examples
 
@@ -487,6 +491,47 @@ model (`--model` picks one when there are several).
 The output folder gets a `dimr_config.xml` (with `creationDate` set to the time the tool is
 run) and a `dflowfm/` folder holding a copy of `<project>.dsproj_data/<FM model>/input`.
 
+### Split a 1D2D model: remove channels, sewers, or the whole 1D network
+
+`rm1dch`, `rm1dsw` and `mk2d` remove one part of the 1D network - and everything anchored on
+it (structures, cross sections, 1D2D links, boundary/lateral blocks, forcing records) - from a
+Delft3D FM (D-HYDRO / FM Suite) model, leaving the rest and the 2D grid intact. All three run
+the same engine and only differ in what `--target` removes by default:
+
+```python
+# rm1dch <input-folder-or-mdu>                 # Remove the open 1D channels (default)
+# rm1dch <input-folder-or-mdu> --check         # Report what is still there, write nothing
+# rm1dch <input-folder-or-mdu> --dry-run       # Report the plan, write nothing
+# rm1dsw <input-folder-or-mdu>                 # Remove the sewer system (pipes, connections, manholes)
+# mk2d <input-folder-or-mdu>                   # Remove the entire 1D network -> 2D-only model
+# rm1dch <input-folder-or-mdu> --target sewer  # Any of the three also takes --target directly
+```
+
+Where a kept sewer branch ran into a branch that is removed, a manhole is added automatically
+so the sewer keeps a proper outfall compartment instead of a pipe ending in mid-air; its
+levels follow the sewer branch it closes off (`--manhole-levels`), and it can be switched off
+with `--no-outfall-manholes`. `mk2d` (`--target all`) additionally blanks the `.mdu` keys that
+only 1D used (`--keep-1d-mdu-keys` to leave them) and refuses to run when the net file has no
+2D grid, since the result would be an empty model (`--allow-empty-2d` to continue anyway).
+Every file that is rewritten is first backed up to `<name>.bak` (or `.bak2`, `.bak3` ... so an
+existing backup is never lost). **Close the project in the FM Suite before running** - a
+loaded project holds the network in memory and the next Save writes it straight back.
+
+### Remove only the 1D2D links
+
+`rmlinks` removes just the 1D2D links (mesh contacts) from a Delft3D FM net file; the 1D
+network, mesh1d, Mesh2d and every other input file are left untouched.
+
+```python
+# rmlinks <input-folder | model.mdu | *_net.nc>                    # Remove every 1D2D link
+# rmlinks <input-folder | model.mdu | *_net.nc> --check            # List the links, write nothing
+# rmlinks <input-folder> --type street_inlet roof_gutter           # Remove only these kinds
+```
+
+`--type` accepts `lateral`, `longitudinal`, `street_inlet`, `roof_gutter` and `embedded`
+(default: `all`). If the `.mdu` has a non-empty `1D2DLinkFile` key and every link is removed,
+that key is blanked as well, unless `--keep-linkfile` is given.
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -548,6 +593,10 @@ d3dtools-info rsgrid
 d3dtools-info rmgriddimr
 d3dtools-info rsgriddimr
 d3dtools-info makedimr
+d3dtools-info rm1dch
+d3dtools-info rm1dsw
+d3dtools-info mk2d
+d3dtools-info rmlinks
 
 # Display help for specific tools
 ncrain --help
@@ -577,6 +626,10 @@ rsgrid --help
 rmgriddimr --help
 rsgriddimr --help
 makedimr --help
+rm1dch --help
+rm1dsw --help
+mk2d --help
+rmlinks --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -721,6 +774,26 @@ rsgriddimr -f -q frictioncoefficient=RHI.tif   # Map an oddly named GeoTIFF cove
 makedimr 2DOF_KS.dsproj                          # Output: DIMR/ next to the .dsproj
 makedimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
 makedimr 2DOF_KS.dsproj --model FlowFM1          # Project has several FM models
+
+# Remove the open 1D channels from a Delft3D FM model (keeps sewer + 2D grid)
+rm1dch <input-folder-or-mdu>
+rm1dch <input-folder-or-mdu> --check             # Report what is still there, write nothing
+rm1dch <input-folder-or-mdu> --dry-run           # Report the plan, write nothing
+rm1dch <input-folder-or-mdu> --no-outfall-manholes
+
+# Remove the 1D sewer system from a Delft3D FM model (keeps channels + 2D grid)
+rm1dsw <input-folder-or-mdu>
+rm1dsw <input-folder-or-mdu> --target channel    # Every rm1d*/mk2d command also takes --target
+
+# Turn a Delft3D FM 1D2D model into a 2D-only model
+mk2d <input-folder-or-mdu>
+mk2d <input-folder-or-mdu> --keep-1d-mdu-keys    # Leave FrictFile / 1dField keys in place
+mk2d <input-folder-or-mdu> --allow-empty-2d      # Continue even without a 2D grid
+
+# Remove only the 1D2D links from a Delft3D FM net file
+rmlinks <input-folder | model.mdu | *_net.nc>
+rmlinks <input-folder | model.mdu | *_net.nc> --check
+rmlinks <input-folder> --type street_inlet roof_gutter   # Remove only these link kinds
 ```
 
 ## Changelog
