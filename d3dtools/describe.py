@@ -427,6 +427,26 @@ TOOL_DESCRIPTIONS = {
             rmlinks <input-folder | model.mdu | *_net.nc>
             rmlinks <input-folder> --type street_inlet roof_gutter
     """,
+    'orthochk':
+    """
+        Locate non-orthogonal / problematic 2D cells in a D-Flow FM net file and export
+        them as a polygon shapefile.
+
+        Orthogonality per internal edge is |cos| of the angle between the net link and
+        the flow link joining the two cell circumcentres (as in RGFGRID / D-Flow FM):
+        < 0.02 good, 0.02-0.1 acceptable, > 0.1 poor. Also flags the defects behind
+        "network is not orthogonal": coincident circumcentres (ZERO_LINK), flow link
+        missing the edge (SAMESIDE), circumcentre outside the cell (CC_OUT), non-convex
+        or zero-area cells (NONCONVX), and edges shared by more than 2 cells (OVERLAP).
+        Accepts a model input folder, a .mdu or the *_net.nc itself. Output defaults to
+        <netfile>_nonortho_cells.shp; --edges adds a polyline shapefile of bad edges.
+
+        Examples:
+            orthochk <input-folder | model.mdu | *_net.nc>
+            orthochk FlowFM_net.nc -t 0.05 -o bad_cells.shp --edges
+            orthochk FlowFM_net.nc --check
+            orthochk FlowFM_net.nc --all
+    """,
 }
 
 

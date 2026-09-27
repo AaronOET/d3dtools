@@ -43,6 +43,7 @@ This package provides several utilities for converting shapefiles to various for
 - **rm1dsw**: Remove the 1D sewer system (pipes, sewer connections, manholes) from a Delft3D FM model, keeping the 1D channels and the 2D grid intact. Same engine as `rm1dch`, opposite direction
 - **mk2d**: Turn a Delft3D FM 1D2D model into a 2D-only model by removing the entire 1D network - channels, sewers, manholes, and every 1D structure. Same engine as `rm1dch`/`rm1dsw`, with `--target all`
 - **rmlinks**: Remove only the 1D2D links from a Delft3D FM net file, leaving the 1D network, mesh1d, Mesh2d and every other input file untouched. `--type` restricts removal to specific link kinds (lateral, longitudinal, street_inlet, roof_gutter, embedded)
+- **orthochk**: Locate non-orthogonal / problematic 2D cells in a Delft3D FM net file and export them as a polygon shapefile. Computes the RGFGRID / D-Flow FM orthogonality per edge and flags the defects behind "network is not orthogonal" (coincident circumcentres, flow link missing the edge, circumcentre outside the cell, non-convex cells, edges shared by more than 2 cells)
 
 ## Usage Examples
 
@@ -532,6 +533,29 @@ network, mesh1d, Mesh2d and every other input file are left untouched.
 (default: `all`). If the `.mdu` has a non-empty `1D2DLinkFile` key and every link is removed,
 that key is blanked as well, unless `--keep-linkfile` is given.
 
+### Find non-orthogonal 2D cells
+
+`orthochk` checks the 2D mesh of a Delft3D FM net file and writes the problem cells to a
+polygon shapefile (default `<netfile>_nonortho_cells.shp`), with the worst cells and a
+summary printed to the console.
+
+```python
+# orthochk <input-folder | model.mdu | *_net.nc>                 # Cells with ortho > 0.1 or a defect
+# orthochk FlowFM_net.nc -t 0.05 -o bad_cells.shp --edges        # Stricter threshold + bad-edge lines
+# orthochk FlowFM_net.nc --check                                 # Summary only, write nothing
+# orthochk FlowFM_net.nc --all                                   # Every cell with its attributes
+
+from d3dtools import orthochk
+res = orthochk.check_orthogonality("FlowFM_net.nc", threshold=0.1)
+print(res["flagged"].sum(), res["ortho"].max())
+```
+
+Orthogonality is `|cos|` of the angle between a net link and the flow link joining the two
+cell circumcentres: `< 0.02` good, `0.02-0.1` acceptable, `> 0.1` poor. Each cell record
+carries `FACE_ID` (0-based), `MAX_ORTHO`, `N_BAD_EDG`, the defect flags `ZERO_LINK`,
+`SAMESIDE`, `CC_OUT`, `NONCONVX`, `OVERLAP`, plus `AREA_M2` and circumcentre `CX`/`CY`.
+`--check` exits with code 1 when any cell is flagged.
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -597,6 +621,7 @@ d3dtools-info rm1dch
 d3dtools-info rm1dsw
 d3dtools-info mk2d
 d3dtools-info rmlinks
+d3dtools-info orthochk
 
 # Display help for specific tools
 ncrain --help
@@ -630,6 +655,7 @@ rm1dch --help
 rm1dsw --help
 mk2d --help
 rmlinks --help
+orthochk --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -794,6 +820,11 @@ mk2d <input-folder-or-mdu> --allow-empty-2d      # Continue even without a 2D gr
 rmlinks <input-folder | model.mdu | *_net.nc>
 rmlinks <input-folder | model.mdu | *_net.nc> --check
 rmlinks <input-folder> --type street_inlet roof_gutter   # Remove only these link kinds
+
+# Find non-orthogonal / problematic 2D cells in a Delft3D FM net file
+orthochk <input-folder | model.mdu | *_net.nc>
+orthochk FlowFM_net.nc -t 0.05 --edges           # Stricter threshold + offending edges
+orthochk FlowFM_net.nc --check                   # Summary only, exit 1 if any cell flagged
 ```
 
 ## Changelog

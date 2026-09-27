@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.27.0
+
+- Added **orthochk**: locates non-orthogonal / problematic 2D cells in a Delft3D FM net file and exports them as a polygon shapefile (default `<netfile>_nonortho_cells.shp`). Orthogonality per internal edge uses the RGFGRID / D-Flow FM definition (`|cos|` of the angle between net link and flow link); cells are also flagged for the defects behind "network is not orthogonal" - coincident circumcentres, a flow link that misses its edge, a circumcentre outside its cell, non-convex / zero-area cells, and edges shared by more than 2 cells. Accepts a model input folder, a `.mdu` or the `*_net.nc`; `-t` sets the threshold (default 0.1), `--edges` adds a polyline shapefile of the offending edges, `--all` exports every cell, `--check` prints the summary only. New Python API: `check_orthogonality()`.
+- Added `pyshp` to `requirements.txt` (already needed by `fou2shp`, now also by `orthochk`).
+
 ## 0.26.4
 
 - Added **rm1dch**, **rm1dsw** and **mk2d**: split a Delft3D FM (D-HYDRO / FM Suite) 1D2D model by removing one part of the 1D network (and everything anchored on it - structures, cross sections, 1D2D links, boundary/lateral blocks, forcing records) while leaving the rest and the 2D grid intact. `rm1dch` removes the open 1D channels, `rm1dsw` removes the sewer system (pipes, sewer connections, manholes), and `mk2d` removes the entire 1D network for a 2D-only model; all three run the same engine and accept `--target {channel,sewer,all}` to switch direction. Where a kept sewer branch ran into a removed branch, a manhole is added automatically so the sewer keeps a proper outfall (`--no-outfall-manholes`, `--manhole-levels`, and related `--manhole-*` flags control this). `--check` reports what a model still contains without writing; `--dry-run` reports the plan; every rewritten file is first backed up to `<name>.bak`.

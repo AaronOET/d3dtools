@@ -8,3 +8,4 @@ shapely>=2.0.0
 scipy>=1.7.0
 matplotlib>=3.4.0
 openpyxl>=3.0.0
+pyshp>=2.0.0

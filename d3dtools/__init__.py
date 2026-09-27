@@ -2,7 +2,7 @@
 D3DTOOLS - A collection of tools for working with shapefiles and converting them for Delft3D modeling.
 """
 
-__version__ = '0.26.4'
+__version__ = '0.27.0'
 
 # Define all modules that should be exposed when using "from d3dtools import *"
 __all__ = [
@@ -37,6 +37,7 @@ __all__ = [
     'rm1dsw',
     'mk2d',
     'rmlinks',
+    'orthochk',
 ]
 
 from . import ncrain
@@ -70,3 +71,4 @@ from . import rm1dch
 from . import rm1dsw
 from . import mk2d
 from . import rmlinks
+from . import orthochk
