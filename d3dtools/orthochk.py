@@ -424,17 +424,32 @@ def main(argv=None):
         prog=SCRIPT,
         description="Locate non-orthogonal / problematic 2D cells in a D-Flow FM "
                     "net file and export them as a polygon shapefile.",
-        epilog="Flags per cell: ZERO_LINK (coincident circumcentres), SAMESIDE "
-               "(flow link misses the edge), CC_OUT (circumcentre outside cell), "
-               "NONCONVX (non-convex / clockwise / zero area), OVERLAP (edge "
-               "shared by >2 cells). FACE_ID is 0-based.")
+        epilog="""
+flags per cell:
+  ZERO_LINK  coincident circumcentres (zero-length flow link)
+  SAMESIDE   flow link misses the edge
+  CC_OUT     circumcentre outside its cell
+  NONCONVX   non-convex / clockwise / zero-area cell
+  OVERLAP    edge shared by more than 2 cells
+  FACE_ID is 0-based.
+
+examples:
+  %(prog)s dflowfm                      (input folder; output ./<netfile>_orthochk/)
+  %(prog)s dflowfm/FlowFM.mdu
+  %(prog)s FlowFM_net.nc -t 0.05 --edges
+  %(prog)s FlowFM_net.nc -o bad_cells.shp
+  %(prog)s FlowFM_net.nc --all          (all cells + attributes)
+  %(prog)s FlowFM_net.nc --check        (summary only, write nothing)
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("model",
                     help="model input folder, the .mdu, or the *_net.nc itself")
     ap.add_argument("-t", "--threshold", type=float, default=0.1,
                     help="orthogonality threshold |cos| (default 0.1)")
     ap.add_argument("-o", "--output", default=None,
                     help="output polygon shapefile "
-                         "(default <netfile>_nonortho_cells.shp)")
+                         "(default ./<netfile>_orthochk/"
+                         "<netfile>_nonortho_cells.shp in the current directory)")
     ap.add_argument("--edges", action="store_true",
                     help="also write a polyline shapefile of the offending edges")
     ap.add_argument("--all", action="store_true",
@@ -448,7 +463,12 @@ def main(argv=None):
         netfile = resolve_netfile(args.model)
     except (ValueError, FileNotFoundError) as exc:
         ap.error(str(exc))
-    out = args.output or os.path.splitext(netfile)[0] + "_nonortho_cells.shp"
+    if args.output:
+        out = args.output
+    else:
+        stem = os.path.splitext(os.path.basename(netfile))[0]
+        out = os.path.join(os.getcwd(), stem + "_orthochk",
+                           stem + "_nonortho_cells.shp")
 
     print("Reading", netfile)
     res = check_orthogonality(netfile, args.threshold)
@@ -465,6 +485,8 @@ def main(argv=None):
         print("\nNo cells flagged - nothing written.")
         return 0
 
+    outdir = os.path.dirname(os.path.abspath(out))
+    os.makedirs(outdir, exist_ok=True)
     print("\nWriting %d cells -> %s" % (len(sel), out))
     write_cells(out, res, sel)
 

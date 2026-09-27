@@ -536,8 +536,9 @@ that key is blanked as well, unless `--keep-linkfile` is given.
 ### Find non-orthogonal 2D cells
 
 `orthochk` checks the 2D mesh of a Delft3D FM net file and writes the problem cells to a
-polygon shapefile (default `<netfile>_nonortho_cells.shp`), with the worst cells and a
-summary printed to the console.
+polygon shapefile (default `./<netfile>_orthochk/<netfile>_nonortho_cells.shp`, i.e. a
+folder in the directory the command is run from), with the worst cells and a summary
+printed to the console.
 
 ```python
 # orthochk <input-folder | model.mdu | *_net.nc>                 # Cells with ortho > 0.1 or a defect

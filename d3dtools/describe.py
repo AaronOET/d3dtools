@@ -439,7 +439,8 @@ TOOL_DESCRIPTIONS = {
         missing the edge (SAMESIDE), circumcentre outside the cell (CC_OUT), non-convex
         or zero-area cells (NONCONVX), and edges shared by more than 2 cells (OVERLAP).
         Accepts a model input folder, a .mdu or the *_net.nc itself. Output defaults to
-        <netfile>_nonortho_cells.shp; --edges adds a polyline shapefile of bad edges.
+        ./<netfile>_orthochk/<netfile>_nonortho_cells.shp (a folder in the
+        current directory); --edges adds a polyline shapefile of bad edges.
 
         Examples:
             orthochk <input-folder | model.mdu | *_net.nc>
