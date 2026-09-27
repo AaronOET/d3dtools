@@ -36,6 +36,20 @@ def main(argv=None):
         "Remove the open 1D channels from a Delft3D FM model, keeping "
         "pipes, sewer connections, manholes and the 2D grid intact.  "
         "See --target to remove something else instead.")
+    _engine.EPILOG = """
+examples:
+  %(prog)s dflowfm --check                (does the model still contain 1D channels?)
+  %(prog)s dflowfm/FlowFM.mdu --dry-run   (report the plan, write nothing)
+  %(prog)s dflowfm                        (remove the channels, add outfall manholes)
+  %(prog)s dflowfm --no-outfall-manholes
+  %(prog)s dflowfm --manhole-levels invert --manhole-depth 1.5
+  %(prog)s dflowfm --manhole-id-prefix OUT_ --manhole-csv C:/temp/added.csv
+  %(prog)s dflowfm --keep-ids keep_branches.txt
+  %(prog)s dflowfm --unknown-as channel   (also remove unclassified branches)
+
+Every rewritten file is first backed up to <name>.bak.  Close the project in
+the FM Suite before running, and reopen it WITHOUT saving.
+"""
     return _engine.main(argv)
 
 

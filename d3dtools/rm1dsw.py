@@ -35,6 +35,19 @@ def main(argv=None):
         "Remove the 1D sewer system (pipes, sewer connections and manholes) "
         "from a Delft3D FM model, keeping the 1D channels and the 2D grid "
         "intact.  See --target to remove something else instead.")
+    _engine.EPILOG = """
+examples:
+  %(prog)s dflowfm --check                (does the model still contain sewers?)
+  %(prog)s dflowfm/FlowFM.mdu --dry-run   (report the plan, write nothing)
+  %(prog)s dflowfm                        (remove pipes, sewer connections, manholes)
+  %(prog)s dflowfm --remove-ids extra_branches.txt
+  %(prog)s dflowfm --keep-ids keep_branches.txt
+  %(prog)s dflowfm --unknown-as sewer     (also remove unclassified branches)
+  %(prog)s dflowfm --keep-crsdef          (keep unused cross-section definitions)
+
+Every rewritten file is first backed up to <name>.bak.  Close the project in
+the FM Suite before running, and reopen it WITHOUT saving.
+"""
     return _engine.main(argv)
 
 

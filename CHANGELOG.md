@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.4
+
+- **mk2d**, **rm1dch**, **rm1dsw**: `-h` now ends with example commands for each tool (check, dry run, and the options most often used with that tool) and a reminder to close the project in the FM Suite before running.
+
 ## 0.27.3
 
 - **rmlinks**: `-h` now ends with example commands (check, dry run, net-file-only, `--type`, `--log`, `--keep-linkfile`) and a reminder to close the project in the FM Suite before running.

@@ -101,6 +101,7 @@ import re
 import shutil
 import sqlite3
 import sys
+import textwrap
 from collections import Counter, OrderedDict
 from datetime import datetime
 
@@ -340,6 +341,10 @@ SCRIPT = "rm1dch"
 DESCRIPTION = ("Remove the open 1D channels from a Delft3D FM model, keeping "
               "pipes, sewer connections, manholes and the 2D grid intact.  "
               "See --target to remove something else instead.")
+
+# argparse epilog (example commands, shown verbatim). Overridden by the
+# wrapper modules.
+EPILOG = None
 
 WORDS = {
     CHANNEL: ("1D channel", "1D channels", "pipes, sewer connections and manholes"),
@@ -1628,7 +1633,9 @@ def main(argv=None):
     # a fresh run, even if main() is called again in the same process
     del LOG_LINES[:]
     BACKED_UP.clear()
-    ap = argparse.ArgumentParser(prog=SCRIPT, description=DESCRIPTION)
+    ap = argparse.ArgumentParser(
+        prog=SCRIPT, description=textwrap.fill(DESCRIPTION, 79),
+        epilog=EPILOG, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("model", help="model input folder, or the .mdu file itself")
     ap.add_argument("--dry-run", action="store_true",
                     help="report what would change, write nothing")

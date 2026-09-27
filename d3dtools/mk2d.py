@@ -37,6 +37,19 @@ def main(argv=None):
         "entire 1D network (channels, sewers, manholes and every 1D "
         "structure).  See --target to remove only channels or only the "
         "sewer system instead.")
+    _engine.EPILOG = """
+examples:
+  %(prog)s dflowfm --check                (does the model still contain 1D?)
+  %(prog)s dflowfm/FlowFM.mdu --dry-run   (report the plan, write nothing)
+  %(prog)s dflowfm                        (remove the entire 1D network)
+  %(prog)s dflowfm --keep-1d-mdu-keys     (keep FrictFile / 1dField entries in the .mdu)
+  %(prog)s dflowfm --target channel       (same as rm1dch)
+  %(prog)s dflowfm --target sewer         (same as rm1dsw)
+  %(prog)s dflowfm --log C:/temp/mk2d.log
+
+Every rewritten file is first backed up to <name>.bak.  Close the project in
+the FM Suite before running, and reopen it WITHOUT saving.
+"""
     return _engine.main(argv)
 
 
