@@ -312,7 +312,20 @@ def main(argv=None):
         prog=SCRIPT,
         description="Remove only the 1D2D links from a Delft3D FM net file; "
                     "the 1D network, mesh1d, Mesh2d and all other input files "
-                    "are left untouched.")
+                    "are left untouched.",
+        epilog="""
+examples:
+  %(prog)s dflowfm --check                  (list the 1D2D links, write nothing)
+  %(prog)s dflowfm/FlowFM.mdu --dry-run     (report the plan, write nothing)
+  %(prog)s dflowfm                          (remove every 1D2D link)
+  %(prog)s FlowFM_net.nc                    (net file directly; .mdu untouched)
+  %(prog)s dflowfm --type street_inlet roof_gutter
+  %(prog)s dflowfm --type lateral --log C:/temp/rmlinks.log
+  %(prog)s dflowfm --keep-linkfile          (keep the 1D2DLinkFile key in the .mdu)
+
+Close the project in the FM Suite before running, and reopen it WITHOUT saving.
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("model",
                     help="model input folder, the .mdu, or the *_net.nc itself")
     ap.add_argument("--type", nargs="+", default=["all"],

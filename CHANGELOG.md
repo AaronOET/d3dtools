@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.3
+
+- **rmlinks**: `-h` now ends with example commands (check, dry run, net-file-only, `--type`, `--log`, `--keep-linkfile`) and a reminder to close the project in the FM Suite before running.
+
 ## 0.27.2
 
 - **orthochk**: default output now goes to a `<netfile>_orthochk/` folder in the current working directory (created if needed) instead of next to the net file. An explicit `-o` path is still honoured, and its parent folder is created if missing.
