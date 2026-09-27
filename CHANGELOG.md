@@ -1,10 +1,13 @@
 # Changelog
 
+## 0.27.2
+
+- **orthochk**: default output now goes to a `<netfile>_orthochk/` folder in the current working directory (created if needed) instead of next to the net file. An explicit `-o` path is still honoured, and its parent folder is created if missing.
+
 ## 0.27.0
 
 - Added **orthochk**: locates non-orthogonal / problematic 2D cells in a Delft3D FM net file and exports them as a polygon shapefile (default `<netfile>_nonortho_cells.shp`). Orthogonality per internal edge uses the RGFGRID / D-Flow FM definition (`|cos|` of the angle between net link and flow link); cells are also flagged for the defects behind "network is not orthogonal" - coincident circumcentres, a flow link that misses its edge, a circumcentre outside its cell, non-convex / zero-area cells, and edges shared by more than 2 cells. Accepts a model input folder, a `.mdu` or the `*_net.nc`; `-t` sets the threshold (default 0.1), `--edges` adds a polyline shapefile of the offending edges, `--all` exports every cell, `--check` prints the summary only. New Python API: `check_orthogonality()`.
 - Added `pyshp` to `requirements.txt` (already needed by `fou2shp`, now also by `orthochk`).
-- **orthochk**: default output now goes to a `<netfile>_orthochk/` folder in the current working directory (created if needed) instead of next to the net file. An explicit `-o` path is still honoured, and its parent folder is created if missing.
 
 ## 0.26.4
 
