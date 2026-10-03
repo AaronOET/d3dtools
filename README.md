@@ -45,7 +45,7 @@ This package provides several utilities for converting shapefiles to various for
 - **rmlinks**: Remove only the 1D2D links from a Delft3D FM net file, leaving the 1D network, mesh1d, Mesh2d and every other input file untouched. `--type` restricts removal to specific link kinds (lateral, longitudinal, street_inlet, roof_gutter, embedded)
 - **orthochk**: Locate non-orthogonal / problematic 2D cells in a Delft3D FM net file and export them as a polygon shapefile. Computes the RGFGRID / D-Flow FM orthogonality per edge and flags the defects behind "network is not orthogonal" (coincident circumcentres, flow link missing the edge, circumcentre outside the cell, non-convex cells, edges shared by more than 2 cells)
 - **expgrid**: Export the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file, dropping the 1D network, mesh1d, the 1D2D links and the composite mesh. The input file is never modified
-- **alignncrain**: Align the simulation period (RefDate, TStart, TStop) of a Delft3D FM `.mdu` with a NetCDF rainfall file, and point the rainfall `[Meteo]` block of the external forcing file to it
+- **alignncrain**: Align the simulation period (RefDate, TStart, TStop) and map output interval (MapInterval) of a Delft3D FM `.mdu` with a NetCDF rainfall file, and point the rainfall `[Meteo]` block of the external forcing file to it
 - **otstep**: Show or change the output time step of the his file (`HisInterval`) and map file (`MapInterval`) of a Delft3D FM `.mdu`
 - **itstep**: Show or change the user time step (`DtUser`), initial time step (`DtInit`) and maximum time step (`DtMax`) of a Delft3D FM `.mdu`
 
@@ -585,18 +585,24 @@ print(res["kept"], res["dropped"])
 `alignncrain` sets `RefDate`, `TStart` and `TStop` in the `[time]` section of the `.mdu`
 (and `StartDateTime` / `StopDateTime` when filled in) so the run starts at the first
 rainfall time stamp and stops one rainfall time step after the last one (`--pad-end` to
-change). It also points the rainfall `[Meteo]` block of `ExtForceFileNew` to the NetCDF
-file, using `rainfall` for depth units (mm) and `rainfall_rate` for rate units. Changed
-files are backed up as `<file>.bak`.
+change), and sets `MapInterval` in `[output]` to the rainfall time step so a map is
+written at every rainfall time stamp (`--map-step` to change, `--no-map` to keep it). It
+also points the rainfall `[Meteo]` block of `ExtForceFileNew` to the NetCDF
+file, using `rainfall` for depth units (mm) and `rainfall_rate` for rate units. If the
+`.mdu` has no `ExtForceFileNew`, it is set to `<mdu name>_bnd.ext` (e.g. `FM_model_bnd.ext`),
+and a missing ext file is created next to the `.mdu`. Changed files are backed up as
+`<file>.bak`.
 
 ```python
 # alignncrain <input-folder | model.mdu> rain.nc
 # alignncrain FlowFM.mdu rain.nc --pad-end 3600                   # Stop 1 h after the last stamp
-# alignncrain FlowFM.mdu rain.nc --no-ext                         # Only the [time] section
+# alignncrain FlowFM.mdu rain.nc --map-step 1h                    # Map output every hour
+# alignncrain FlowFM.mdu rain.nc --no-map                         # Keep MapInterval
+# alignncrain FlowFM.mdu rain.nc --no-ext                         # Do not touch the ext file
 # alignncrain FlowFM.mdu rain.nc --check                          # Show the changes, write nothing
 
 from d3dtools import alignncrain
-res = alignncrain.align("FlowFM.mdu", "rain.nc", pad_end=None)
+res = alignncrain.align("FlowFM.mdu", "rain.nc", pad_end=None, map_interval=None)
 print(res["start"], res["stop"], res["mdu_changes"], res["ext_changes"])
 ```
 
@@ -925,6 +931,7 @@ expgrid FlowFM_net.nc --check                    # List kept / dropped variables
 # Align the .mdu simulation period with a NetCDF rainfall file
 alignncrain <input-folder | model.mdu> rain.nc
 alignncrain FlowFM.mdu rain.nc --pad-end 3600    # Simulate 1 h after the last rainfall stamp
+alignncrain FlowFM.mdu rain.nc --map-step 1h     # Map output every hour instead of every rainfall step
 alignncrain FlowFM.mdu rain.nc --check           # Show the changes, write nothing
 
 # Show or change the his / map output time step

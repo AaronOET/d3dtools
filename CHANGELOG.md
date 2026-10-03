@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.31.1
+
+- **alignncrain**: now also aligns the map output with the rainfall file: `MapInterval` in the `[output]` section is set to the rainfall time step, so a map is written at every rainfall time stamp. An output start / stop after the interval is dropped (it refers to the old period); a missing `MapInterval` is added after `HisInterval`. `--map-step` sets another interval (`600`, `10m`, `1h`), `--no-map` leaves `MapInterval` alone. New `align()` arguments: `map_interval`, `update_map`.
+- `mduutils.insert_key()`: a new key is lined up with the `=` of the line it is inserted after.
+- **alignncrain**: if the external forcing file does not exist, it is now created (with a `[General]` header and the rainfall `[Meteo]` block) instead of stopping with an error. If the `.mdu` has no `ExtForceFileNew` (empty, absent, or no `[external forcing]` section), it is set to `<mdu name>_bnd.ext` (e.g. `FM_model.mdu` -> `FM_model_bnd.ext`) and the ext file is created next to the `.mdu`; previously the ext step was skipped. `align()` returns a new `ext_created` flag. `--check` reports the new file without writing it.
+- `mduutils.set_key()`: filling in a key whose value was empty (e.g. `ExtForceFileNew =        # comment`) now puts the value right after the `=` instead of just before the comment, so `alignncrain` writes `ExtForceFileNew = FM_model_bnd.ext` in the usual column. Applies to `otstep` and `itstep` too.
+- Moved `insert_key()` out of `itstep` into `d3dtools.mduutils`; `itstep` and `alignncrain` both import it from there.
+
 ## 0.31.0
 
 - Added **itstep**: shows or changes the user time step (`DtUser`), initial time step (`DtInit`) and maximum time step (`DtMax`) in the `[time]` section of a Delft3D FM `.mdu`. Without options it prints the three values (or the D-Flow FM default when a key is absent) and warns when `DtMax` > `DtUser`, `DtInit` > `DtMax`, or `HisInterval` / `MapInterval` is not a multiple of `DtUser`; `--user` / `--init` / `--max` set new values in seconds or with a unit (`60`, `1m`, `30s`). A key missing from the `.mdu` is added to `[time]`. Accepts a model input folder or a `.mdu`; `--check` shows the change without writing, `--no-backup` skips the `<file>.bak` copy. New Python API: `get_steps()`, `set_steps()`.
