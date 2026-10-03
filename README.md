@@ -44,6 +44,7 @@ This package provides several utilities for converting shapefiles to various for
 - **mk2d**: Turn a Delft3D FM 1D2D model into a 2D-only model by removing the entire 1D network - channels, sewers, manholes, and every 1D structure. Same engine as `rm1dch`/`rm1dsw`, with `--target all`
 - **rmlinks**: Remove only the 1D2D links from a Delft3D FM net file, leaving the 1D network, mesh1d, Mesh2d and every other input file untouched. `--type` restricts removal to specific link kinds (lateral, longitudinal, street_inlet, roof_gutter, embedded)
 - **orthochk**: Locate non-orthogonal / problematic 2D cells in a Delft3D FM net file and export them as a polygon shapefile. Computes the RGFGRID / D-Flow FM orthogonality per edge and flags the defects behind "network is not orthogonal" (coincident circumcentres, flow link missing the edge, circumcentre outside the cell, non-convex cells, edges shared by more than 2 cells)
+- **expgrid**: Export the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file, dropping the 1D network, mesh1d, the 1D2D links and the composite mesh. The input file is never modified
 
 ## Usage Examples
 
@@ -557,6 +558,25 @@ carries `FACE_ID` (0-based), `MAX_ORTHO`, `N_BAD_EDG`, the defect flags `ZERO_LI
 `SAMESIDE`, `CC_OUT`, `NONCONVX`, `OVERLAP`, plus `AREA_M2` and circumcentre `CX`/`CY`.
 `--check` exits with code 1 when any cell is flagged.
 
+### Export the 2D grid of a net file
+
+`expgrid` copies the Mesh2d part of a Delft3D FM net file (plus the coordinate system and
+global attributes) to a new 2D-only net file (default `./<netfile>_2d.nc`, e.g.
+`FlowFM_net.nc` -> `FlowFM_net_2d.nc`). The 1D network, mesh1d, 1D2D links and composite
+mesh are dropped, and so are the cell bed levels (`Mesh2d_face_z`) unless `-z`/`--face-z`
+is given; the input is left untouched.
+
+```python
+# expgrid <input-folder | model.mdu | *_net.nc>                  # -> ./FlowFM_net_2d.nc
+# expgrid FlowFM_net.nc -o grid.nc -f                             # Explicit output, overwrite
+# expgrid FlowFM_net.nc --face-z                                  # Keep the Mesh2d_face_z bed levels
+# expgrid FlowFM_net.nc --check                                   # List kept / dropped variables
+
+from d3dtools import expgrid
+res = expgrid.export_grid("FlowFM_net.nc", "FlowFM_net_2d.nc", face_z=False)
+print(res["kept"], res["dropped"])
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -623,6 +643,7 @@ d3dtools-info rm1dsw
 d3dtools-info mk2d
 d3dtools-info rmlinks
 d3dtools-info orthochk
+d3dtools-info expgrid
 
 # Display help for specific tools
 ncrain --help
@@ -657,6 +678,7 @@ rm1dsw --help
 mk2d --help
 rmlinks --help
 orthochk --help
+expgrid --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -826,6 +848,11 @@ rmlinks <input-folder> --type street_inlet roof_gutter   # Remove only these lin
 orthochk <input-folder | model.mdu | *_net.nc>
 orthochk FlowFM_net.nc -t 0.05 --edges           # Stricter threshold + offending edges
 orthochk FlowFM_net.nc --check                   # Summary only, exit 1 if any cell flagged
+
+# Export the 2D grid of a Delft3D FM net file to a 2D-only net file
+expgrid <input-folder | model.mdu | *_net.nc>
+expgrid FlowFM_net.nc --face-z                   # Keep the Mesh2d_face_z bed levels
+expgrid FlowFM_net.nc --check                    # List kept / dropped variables, write nothing
 ```
 
 ## Changelog

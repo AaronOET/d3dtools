@@ -59,10 +59,7 @@ from datetime import datetime
 
 import numpy as np
 
-try:
-    import netCDF4 as nc
-except ImportError:  # pragma: no cover
-    sys.exit("netCDF4 is required:  pip install netCDF4")
+from .ncutils import open_nc
 
 SCRIPT = "rmlinks"
 
@@ -101,25 +98,6 @@ def backup(path, dry=False):
     if not dry:
         shutil.copy2(path, cand)
     return cand
-
-
-def open_nc(path, mode="r", **kw):
-    """nc.Dataset() that also works for non-ASCII paths on Windows.
-
-    The netCDF-C library cannot open paths containing e.g. Chinese
-    characters (OSError Errno 22), so open such a file by its bare name
-    from inside its folder.  The handle stays valid after chdir back.
-    """
-    path = os.path.abspath(path)
-    folder, name = os.path.split(path)
-    if path.isascii() or not name.isascii():
-        return nc.Dataset(path, mode, **kw)
-    cwd = os.getcwd()
-    os.chdir(folder)
-    try:
-        return nc.Dataset(name, mode, **kw)
-    finally:
-        os.chdir(cwd)
 
 
 def is_writable(path):

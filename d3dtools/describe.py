@@ -448,6 +448,24 @@ TOOL_DESCRIPTIONS = {
             orthochk FlowFM_net.nc --check
             orthochk FlowFM_net.nc --all
     """,
+    'expgrid':
+    """
+        Export the 2D grid (Mesh2d) of a D-Flow FM net file to a new 2D-only net file.
+
+        Copies the Mesh2d variables (nodes, edges, faces, ...), the coordinate-system
+        variable and the global attributes; drops the 1D network, mesh1d, the 1D2D
+        links and the composite mesh. The cell bed levels (Mesh2d_face_z) are cleared
+        unless -z/--face-z is given. The input file is never
+        modified. Accepts a model input folder, a .mdu or the *_net.nc itself. Output
+        defaults to ./<netfile>_2d.nc in the current directory
+        (FlowFM_net.nc -> FlowFM_net_2d.nc); an existing output needs -f.
+
+        Examples:
+            expgrid <input-folder | model.mdu | *_net.nc>
+            expgrid FlowFM_net.nc -o grid.nc
+            expgrid FlowFM_net.nc --face-z
+            expgrid FlowFM_net.nc --check
+    """,
 }
 
 

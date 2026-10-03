@@ -51,60 +51,14 @@ try:
 except ImportError:  # pragma: no cover
     sys.exit("Missing package: pip install pyshp")
 
+from .ncutils import find_mesh2d, resolve_netfile
+
 SCRIPT = "orthochk"
-
-
-# --------------------------------------------------------------------------- #
-# Input resolution
-# --------------------------------------------------------------------------- #
-def resolve_netfile(target):
-    """Return the net file for a model folder, a .mdu or a *_net.nc path."""
-    target = os.path.abspath(target)
-    mdu = None
-    if os.path.isdir(target):
-        mdus = [f for f in sorted(os.listdir(target))
-                if f.lower().endswith(".mdu")]
-        if len(mdus) != 1:
-            raise ValueError("expected exactly one .mdu in %s, found %d"
-                             % (target, len(mdus)))
-        mdu = os.path.join(target, mdus[0])
-    elif target.lower().endswith(".mdu"):
-        mdu = target
-    elif target.lower().endswith(".nc"):
-        net = target
-    else:
-        raise ValueError("give a model input folder, a .mdu or a *_net.nc file")
-
-    if mdu:
-        if not os.path.isfile(mdu):
-            raise FileNotFoundError("mdu not found: %s" % mdu)
-        netfile = None
-        with open(mdu, encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                key, sep, val = line.partition("=")
-                if sep and key.strip().lower() == "netfile":
-                    netfile = val.split("#")[0].strip()
-                    break
-        if not netfile:
-            raise ValueError("NetFile is empty in %s" % mdu)
-        net = os.path.join(os.path.dirname(mdu), netfile)
-    if not os.path.isfile(net):
-        raise FileNotFoundError("net file not found: %s" % net)
-    return net
 
 
 # --------------------------------------------------------------------------- #
 # Reading
 # --------------------------------------------------------------------------- #
-def find_mesh2d(ds):
-    """Return the name of the 2D mesh_topology variable."""
-    for name, var in ds.variables.items():
-        if getattr(var, "cf_role", "") == "mesh_topology" and \
-                int(getattr(var, "topology_dimension", 2)) == 2:
-            return name
-    raise RuntimeError("No 2D mesh_topology variable found in file.")
-
-
 def read_mesh(path):
     """Return node x, y, 0-based face_node table (-1 padded), WKT, mesh name."""
     with nc.Dataset(path) as ds:

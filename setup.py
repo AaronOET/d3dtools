@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.27.5",
+    version="0.28.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -60,6 +60,7 @@ setup(
             "mk2d=d3dtools.mk2d:main",  # Turn a D-Flow FM 1D2D model into a 2D-only model
             "rmlinks=d3dtools.rmlinks:main",  # Remove 1D2D links from a D-Flow FM model
             "orthochk=d3dtools.orthochk:main",  # Find non-orthogonal 2D cells in a D-Flow FM net file
+            "expgrid=d3dtools.expgrid:main",  # Export the 2D grid of a D-Flow FM net file to a 2D-only net file
         ],
     },
 )

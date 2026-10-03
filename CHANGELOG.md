@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.28.0
+
+- Added **expgrid**: exports the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file (default `./<netfile>_2d.nc`, e.g. `FlowFM_net.nc` -> `FlowFM_net_2d.nc`). The Mesh2d variables, the coordinate-system variable and the global attributes are copied as-is, except the cell bed levels (`Mesh2d_face_z`), which are cleared unless `-z`/`--face-z` is given; the 1D network, mesh1d, 1D2D links and composite mesh are dropped. The input is never modified. Accepts a model input folder, a `.mdu` or the `*_net.nc`; `-o` sets the output, `-f` overwrites it, `--mesh` names the 2D mesh variable, `--check` lists what would be kept / dropped. Works with non-ASCII folder paths. New Python API: `export_grid()`.
+- Moved `open_nc()` (non-ASCII-safe `netCDF4.Dataset`) out of `rmlinks` into a new shared module `d3dtools.ncutils`; `rmlinks` and `expgrid` both import it from there.
+- Moved `resolve_netfile()` and `find_mesh2d()` out of `orthochk` into `d3dtools.ncutils`; `orthochk` and `expgrid` both import them from there, so `expgrid` no longer depends on `orthochk`.
+
 ## 0.27.5
 
 - **rmlinks**: net files whose folder path contains non-ASCII characters (e.g. Chinese) can now be opened and rewritten. netCDF-C cannot open such paths on Windows (`OSError: [Errno 22]`), so the file is opened by its bare name from inside its folder.
