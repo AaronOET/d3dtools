@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.5
+
+- **rmlinks**: net files whose folder path contains non-ASCII characters (e.g. Chinese) can now be opened and rewritten. netCDF-C cannot open such paths on Windows (`OSError: [Errno 22]`), so the file is opened by its bare name from inside its folder.
+
 ## 0.27.4
 
 - **mk2d**, **rm1dch**, **rm1dsw**: `-h` now ends with example commands for each tool (check, dry run, and the options most often used with that tool) and a reminder to close the project in the FM Suite before running.
