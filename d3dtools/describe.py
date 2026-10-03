@@ -466,6 +466,25 @@ TOOL_DESCRIPTIONS = {
             expgrid FlowFM_net.nc --face-z
             expgrid FlowFM_net.nc --check
     """,
+    'alignncrain':
+    """
+        Align the simulation period of a D-Flow FM model with a NetCDF rainfall file.
+
+        Sets RefDate, TStart and TStop in the [time] section of the .mdu (and
+        StartDateTime / StopDateTime when they are filled in) so the run covers the
+        rainfall from its first time stamp to its last one plus --pad-end seconds
+        (default: one rainfall time step). TStart/TStop are written in the mdu's Tunit.
+        Also points the rainfall [Meteo] block of ExtForceFileNew to the NetCDF file
+        (quantity, forcingFile, forcingFileType=netcdf), appending one if missing; the
+        quantity is 'rainfall' for depth units (mm) and 'rainfall_rate' for rate units
+        (mm/day). Changed files are backed up as <file>.bak.
+
+        Examples:
+            alignncrain <input-folder | model.mdu> rain.nc
+            alignncrain FlowFM.mdu rain.nc --pad-end 3600
+            alignncrain FlowFM.mdu rain.nc --no-ext
+            alignncrain FlowFM.mdu rain.nc --check
+    """,
 }
 
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.0
+
+- Added **alignncrain** (from `prototype/align_mdu_time.py`): aligns the simulation period of a Delft3D FM model with a NetCDF rainfall file (e.g. from `ncrain`). Sets `RefDate`, `TStart` and `TStop` in the `[time]` section of the `.mdu` (in its `Tunit`), plus `StartDateTime` / `StopDateTime` when they are filled in; the stop time is the last rainfall time stamp plus `--pad-end` seconds (default one rainfall time step). Also points the rainfall `[Meteo]` block of `ExtForceFileNew` to the NetCDF file (`quantity`, `forcingFile`, `forcingFileType=netcdf`), appending a block if none exists; the quantity follows the rainfall units (`rainfall` for mm, `rainfall_rate` for rates) unless `--quantity` is given. Accepts a model input folder or a `.mdu`; `--no-ext` leaves the ext file alone, `--no-backup` skips the `<file>.bak` copies, `--check` shows the changes without writing. Works with non-ASCII folder paths. New Python API: `align()`.
+
 ## 0.28.0
 
 - Added **expgrid**: exports the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file (default `./<netfile>_2d.nc`, e.g. `FlowFM_net.nc` -> `FlowFM_net_2d.nc`). The Mesh2d variables, the coordinate-system variable and the global attributes are copied as-is, except the cell bed levels (`Mesh2d_face_z`), which are cleared unless `-z`/`--face-z` is given; the 1D network, mesh1d, 1D2D links and composite mesh are dropped. The input is never modified. Accepts a model input folder, a `.mdu` or the `*_net.nc`; `-o` sets the output, `-f` overwrites it, `--mesh` names the 2D mesh variable, `--check` lists what would be kept / dropped. Works with non-ASCII folder paths. New Python API: `export_grid()`.

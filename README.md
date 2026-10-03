@@ -45,6 +45,7 @@ This package provides several utilities for converting shapefiles to various for
 - **rmlinks**: Remove only the 1D2D links from a Delft3D FM net file, leaving the 1D network, mesh1d, Mesh2d and every other input file untouched. `--type` restricts removal to specific link kinds (lateral, longitudinal, street_inlet, roof_gutter, embedded)
 - **orthochk**: Locate non-orthogonal / problematic 2D cells in a Delft3D FM net file and export them as a polygon shapefile. Computes the RGFGRID / D-Flow FM orthogonality per edge and flags the defects behind "network is not orthogonal" (coincident circumcentres, flow link missing the edge, circumcentre outside the cell, non-convex cells, edges shared by more than 2 cells)
 - **expgrid**: Export the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file, dropping the 1D network, mesh1d, the 1D2D links and the composite mesh. The input file is never modified
+- **alignncrain**: Align the simulation period (RefDate, TStart, TStop) of a Delft3D FM `.mdu` with a NetCDF rainfall file, and point the rainfall `[Meteo]` block of the external forcing file to it
 
 ## Usage Examples
 
@@ -577,6 +578,26 @@ res = expgrid.export_grid("FlowFM_net.nc", "FlowFM_net_2d.nc", face_z=False)
 print(res["kept"], res["dropped"])
 ```
 
+### Align the simulation period with a rainfall file
+
+`alignncrain` sets `RefDate`, `TStart` and `TStop` in the `[time]` section of the `.mdu`
+(and `StartDateTime` / `StopDateTime` when filled in) so the run starts at the first
+rainfall time stamp and stops one rainfall time step after the last one (`--pad-end` to
+change). It also points the rainfall `[Meteo]` block of `ExtForceFileNew` to the NetCDF
+file, using `rainfall` for depth units (mm) and `rainfall_rate` for rate units. Changed
+files are backed up as `<file>.bak`.
+
+```python
+# alignncrain <input-folder | model.mdu> rain.nc
+# alignncrain FlowFM.mdu rain.nc --pad-end 3600                   # Stop 1 h after the last stamp
+# alignncrain FlowFM.mdu rain.nc --no-ext                         # Only the [time] section
+# alignncrain FlowFM.mdu rain.nc --check                          # Show the changes, write nothing
+
+from d3dtools import alignncrain
+res = alignncrain.align("FlowFM.mdu", "rain.nc", pad_end=None)
+print(res["start"], res["stop"], res["mdu_changes"], res["ext_changes"])
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -644,6 +665,7 @@ d3dtools-info mk2d
 d3dtools-info rmlinks
 d3dtools-info orthochk
 d3dtools-info expgrid
+d3dtools-info alignncrain
 
 # Display help for specific tools
 ncrain --help
@@ -679,6 +701,7 @@ mk2d --help
 rmlinks --help
 orthochk --help
 expgrid --help
+alignncrain --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -853,6 +876,11 @@ orthochk FlowFM_net.nc --check                   # Summary only, exit 1 if any c
 expgrid <input-folder | model.mdu | *_net.nc>
 expgrid FlowFM_net.nc --face-z                   # Keep the Mesh2d_face_z bed levels
 expgrid FlowFM_net.nc --check                    # List kept / dropped variables, write nothing
+
+# Align the .mdu simulation period with a NetCDF rainfall file
+alignncrain <input-folder | model.mdu> rain.nc
+alignncrain FlowFM.mdu rain.nc --pad-end 3600    # Simulate 1 h after the last rainfall stamp
+alignncrain FlowFM.mdu rain.nc --check           # Show the changes, write nothing
 ```
 
 ## Changelog
