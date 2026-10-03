@@ -31,17 +31,16 @@ from __future__ import annotations
 
 import argparse
 import os
-import re
-import shutil
 import sys
 from datetime import datetime, timedelta
 
 import netCDF4
 
+from .mduutils import (TUNIT_SECONDS, fmt_num, get_key, read_lines, resolve_mdu,
+                       set_key, write_lines)
 from .ncutils import open_nc
 
 SCRIPT = "alignncrain"
-TUNIT_SECONDS = {"D": 86400, "H": 3600, "M": 60, "S": 1}
 
 
 # --------------------------------------------------------------------------- #
@@ -77,78 +76,8 @@ def rainfall_quantity(nc_path, rain_var="rainfall"):
 
 
 # --------------------------------------------------------------------------- #
-# Text files (.mdu / .ext)
+# External forcing file (.ext)
 # --------------------------------------------------------------------------- #
-def read_lines(path):
-    """Read a text file as lines (keeping line endings); return (lines, encoding)."""
-    with open(path, "rb") as fh:
-        raw = fh.read()
-    for encoding in ("utf-8", "cp950"):
-        try:
-            return raw.decode(encoding).splitlines(keepends=True), encoding
-        except UnicodeDecodeError:
-            continue
-    raise ValueError("cannot decode %s (tried utf-8, cp950)" % path)
-
-
-def write_lines(path, lines, encoding, backup=True):
-    if backup:
-        shutil.copy2(path, path + ".bak")
-    with open(path, "wb") as fh:
-        fh.write("".join(lines).encode(encoding))
-
-
-def fmt_num(value):
-    """Write integers without decimals, otherwise keep a compact float."""
-    return str(int(round(value))) if abs(value - round(value)) < 1e-9 else "%g" % value
-
-
-def get_key(lines, section, key):
-    """Return the value of `key` in `section` (comment stripped), or None."""
-    current = None
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith("[") and stripped.endswith("]"):
-            current = stripped[1:-1].strip().lower()
-            continue
-        if current == section.lower() and "=" in line:
-            k, v = line.split("=", 1)
-            if k.strip().lower() == key.lower():
-                return v.split("#", 1)[0].strip()
-    return None
-
-
-def set_key(lines, section, key, value):
-    """
-    Replace the value of `key` in `section`, preserving the column alignment
-    and the trailing comment.  Return the old value, or None if not found.
-    """
-    current = None
-    pattern = re.compile(r"^(\s*%s\s*=\s*)(.*?)(\s*)(#.*)?$" % re.escape(key),
-                         re.IGNORECASE)
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if stripped.startswith("[") and stripped.endswith("]"):
-            current = stripped[1:-1].strip().lower()
-            continue
-        if current != section.lower():
-            continue
-        body = line.rstrip("\r\n")
-        m = pattern.match(body)
-        if not m:
-            continue
-        prefix, old, _, comment = m.groups()
-        if comment:
-            # keep the comment at the same column if possible
-            width = len(m.group(0)) - len(comment) - len(prefix)
-            new = "%s%s%s" % (prefix, value.ljust(max(width, len(value) + 1)), comment)
-        else:
-            new = prefix + value
-        lines[i] = new + line[len(body):]
-        return old.strip()
-    return None
-
-
 def update_ext_lines(lines, forcing_file, quantity):
     """
     Point the rainfall [Meteo] block of new-format *.ext lines to `forcing_file`.
@@ -206,22 +135,6 @@ def update_ext_lines(lines, forcing_file, quantity):
         insert_at += 1
         changes.append((k, None, v))
     return changes
-
-
-def resolve_mdu(target):
-    """Return the .mdu for a model input folder or a .mdu path."""
-    target = os.path.abspath(target)
-    if os.path.isdir(target):
-        mdus = [f for f in sorted(os.listdir(target)) if f.lower().endswith(".mdu")]
-        if len(mdus) != 1:
-            raise ValueError("expected exactly one .mdu in %s, found %d"
-                             % (target, len(mdus)))
-        target = os.path.join(target, mdus[0])
-    elif not target.lower().endswith(".mdu"):
-        raise ValueError("give a model input folder or a .mdu file")
-    if not os.path.isfile(target):
-        raise FileNotFoundError("mdu not found: %s" % target)
-    return target
 
 
 # --------------------------------------------------------------------------- #

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.31.0
+
+- Added **itstep**: shows or changes the user time step (`DtUser`), initial time step (`DtInit`) and maximum time step (`DtMax`) in the `[time]` section of a Delft3D FM `.mdu`. Without options it prints the three values (or the D-Flow FM default when a key is absent) and warns when `DtMax` > `DtUser`, `DtInit` > `DtMax`, or `HisInterval` / `MapInterval` is not a multiple of `DtUser`; `--user` / `--init` / `--max` set new values in seconds or with a unit (`60`, `1m`, `30s`). A key missing from the `.mdu` is added to `[time]`. Accepts a model input folder or a `.mdu`; `--check` shows the change without writing, `--no-backup` skips the `<file>.bak` copy. New Python API: `get_steps()`, `set_steps()`.
+- Moved the `.mdu` helpers (`resolve_mdu()`, `read_lines()`, `write_lines()`, `get_key()`, `set_key()`, `fmt_num()`, `TUNIT_SECONDS`) out of `alignncrain`, and `parse_interval()` / `fmt_duration()` out of `otstep`, into a new shared module `d3dtools.mduutils`. `alignncrain`, `otstep` and `itstep` all import them from there, so `otstep` and `itstep` no longer depend on `alignncrain` (and `itstep` no longer depends on `otstep`).
+
 ## 0.30.0
 
 - Added **otstep**: shows or changes the output time step of the his file (`HisInterval`) and the map file (`MapInterval`) in the `[output]` section of a Delft3D FM `.mdu`. Without options it prints both intervals, the simulation length and the number of output steps; `--his` / `--map` set new intervals in seconds or with a unit (`300`, `5m`, `1h`, `1d`; `0` = no output). Only the interval is replaced, an output start / stop after it is kept. Accepts a model input folder or a `.mdu`; `--check` shows the change without writing, `--no-backup` skips the `<file>.bak` copy. New Python API: `get_steps()`, `set_steps()`.

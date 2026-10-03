@@ -47,6 +47,7 @@ This package provides several utilities for converting shapefiles to various for
 - **expgrid**: Export the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file, dropping the 1D network, mesh1d, the 1D2D links and the composite mesh. The input file is never modified
 - **alignncrain**: Align the simulation period (RefDate, TStart, TStop) of a Delft3D FM `.mdu` with a NetCDF rainfall file, and point the rainfall `[Meteo]` block of the external forcing file to it
 - **otstep**: Show or change the output time step of the his file (`HisInterval`) and map file (`MapInterval`) of a Delft3D FM `.mdu`
+- **itstep**: Show or change the user time step (`DtUser`), initial time step (`DtInit`) and maximum time step (`DtMax`) of a Delft3D FM `.mdu`
 
 ## Usage Examples
 
@@ -618,6 +619,26 @@ print(otstep.get_steps("FlowFM.mdu"))
 otstep.set_steps("FlowFM.mdu", his=60, map=3600)
 ```
 
+### Show or change the user / initial / max time step
+
+`itstep` reads and writes `DtUser`, `DtInit` and `DtMax` in the `[time]` section of the
+`.mdu`. Without `--user` / `--init` / `--max` it prints the current values (or the D-Flow FM
+default when a key is absent) and warns when `DtMax` > `DtUser`, `DtInit` > `DtMax`, or the
+his / map output interval is not a multiple of `DtUser`. New steps are given in seconds or
+with a unit (`s`, `m`, `h`, `d`); a key missing from the `.mdu` is added. The `.mdu` is
+backed up as `<file>.bak`.
+
+```python
+# itstep <input-folder | model.mdu>                                # Show the current steps
+# itstep FlowFM.mdu --user 60 --max 30 --init 1                    # Set, in seconds
+# itstep FlowFM.mdu --user 1m --max 30s                            # Set, with a unit
+# itstep FlowFM.mdu --max 10 --check                               # Show the change, write nothing
+
+from d3dtools import itstep
+print(itstep.get_steps("FlowFM.mdu"))
+itstep.set_steps("FlowFM.mdu", user=60, init=1, max=30)
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -687,6 +708,7 @@ d3dtools-info orthochk
 d3dtools-info expgrid
 d3dtools-info alignncrain
 d3dtools-info otstep
+d3dtools-info itstep
 
 # Display help for specific tools
 ncrain --help
@@ -724,6 +746,7 @@ orthochk --help
 expgrid --help
 alignncrain --help
 otstep --help
+itstep --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -907,6 +930,10 @@ alignncrain FlowFM.mdu rain.nc --check           # Show the changes, write nothi
 # Show or change the his / map output time step
 otstep <input-folder | model.mdu>                # Show the current steps
 otstep FlowFM.mdu --his 1m --map 1h              # Set (seconds or with a unit s/m/h/d)
+
+# Show or change the user / initial / max time step
+itstep <input-folder | model.mdu>                # Show DtUser, DtInit, DtMax
+itstep FlowFM.mdu --user 60 --max 30 --init 1    # Set (seconds or with a unit s/m/h/d)
 ```
 
 ## Changelog

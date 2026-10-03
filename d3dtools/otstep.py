@@ -25,8 +25,9 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .alignncrain import (TUNIT_SECONDS, fmt_num, get_key, read_lines,
-                          resolve_mdu, set_key, write_lines)
+from .mduutils import (TUNIT_SECONDS, fmt_duration, fmt_num, get_key,
+                       parse_interval, read_lines, resolve_mdu, set_key,
+                       write_lines)
 
 SCRIPT = "otstep"
 KEYS = {"his": "HisInterval", "map": "MapInterval"}
@@ -35,31 +36,6 @@ KEYS = {"his": "HisInterval", "map": "MapInterval"}
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
-def parse_interval(text):
-    """Return seconds for '300', '300s', '5m', '1.5h' or '1d'."""
-    original = str(text).strip()
-    text = original.lower()
-    scale = 1
-    if text and text[-1] in "smhd":
-        scale = TUNIT_SECONDS[text[-1].upper()]
-        text = text[:-1]
-    try:
-        value = float(text) * scale
-    except ValueError:
-        raise ValueError("invalid interval '%s' (e.g. 300, 5m, 1h, 1d)" % original)
-    if value < 0:
-        raise ValueError("interval must be >= 0")
-    return value
-
-
-def fmt_duration(seconds):
-    """Human-readable duration, e.g. 3600 -> '1 h', 90 -> '1.5 min'."""
-    for unit, size in (("d", 86400), ("h", 3600), ("min", 60)):
-        if seconds >= size:
-            return "%g %s" % (seconds / size, unit)
-    return "%g s" % seconds
-
-
 def simulation_seconds(lines):
     """Return the simulation length in seconds, or None if it cannot be read."""
     try:

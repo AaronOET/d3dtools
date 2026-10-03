@@ -502,6 +502,24 @@ TOOL_DESCRIPTIONS = {
             otstep FlowFM.mdu --his 1m --map 1h
             otstep FlowFM.mdu --map 30m --check
     """,
+    'itstep':
+    """
+        Show or change the user, initial and maximum time step of a D-Flow FM model.
+
+        Reads / writes DtUser (user time step), DtInit (initial time step) and DtMax
+        (maximum time step) in the [time] section of the .mdu (seconds). Without
+        --user / --init / --max it prints the current values (or the D-Flow FM default
+        when a key is absent) and warns when DtMax > DtUser, DtInit > DtMax, or the
+        his / map output interval is not a multiple of DtUser. Steps can be given in
+        seconds or with a unit (s, m, h, d). A missing key is added to [time]. The .mdu
+        is backed up as <file>.bak.
+
+        Examples:
+            itstep <input-folder | model.mdu>
+            itstep FlowFM.mdu --user 60 --max 30 --init 1
+            itstep FlowFM.mdu --user 1m --max 30s
+            itstep FlowFM.mdu --max 10 --check
+    """,
 }
 
 
