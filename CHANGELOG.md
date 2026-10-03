@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.32.0
+
+- Added **clrbak**: removes the backup files (`*.bak`, `*.bak2`, `*.bak3`, ...) that the tools leave in a Delft3D FM model input folder. Accepts a model input folder, a `.mdu` (its folder) or a `.dsproj` (its `.dsproj_data` folder, searched recursively); `-r` includes subfolders, `--check` lists the backups and their size without removing them. Files that cannot be removed (e.g. open in the FM Suite) are reported and give exit code 1. New Python API: `clear_backups()`.
+
 ## 0.31.1
 
 - **alignncrain**: now also aligns the map output with the rainfall file: `MapInterval` in the `[output]` section is set to the rainfall time step, so a map is written at every rainfall time stamp. An output start / stop after the interval is dropped (it refers to the old period); a missing `MapInterval` is added after `HisInterval`. `--map-step` sets another interval (`600`, `10m`, `1h`), `--no-map` leaves `MapInterval` alone. New `align()` arguments: `map_interval`, `update_map`.

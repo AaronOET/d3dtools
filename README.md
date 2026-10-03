@@ -48,6 +48,7 @@ This package provides several utilities for converting shapefiles to various for
 - **alignncrain**: Align the simulation period (RefDate, TStart, TStop) and map output interval (MapInterval) of a Delft3D FM `.mdu` with a NetCDF rainfall file, and point the rainfall `[Meteo]` block of the external forcing file to it
 - **otstep**: Show or change the output time step of the his file (`HisInterval`) and map file (`MapInterval`) of a Delft3D FM `.mdu`
 - **itstep**: Show or change the user time step (`DtUser`), initial time step (`DtInit`) and maximum time step (`DtMax`) of a Delft3D FM `.mdu`
+- **clrbak**: Remove the backup files (`*.bak`, `*.bak2`, ...) from a Delft3D FM model input folder
 
 ## Usage Examples
 
@@ -645,6 +646,24 @@ print(itstep.get_steps("FlowFM.mdu"))
 itstep.set_steps("FlowFM.mdu", user=60, init=1, max=30)
 ```
 
+### Remove backup files from a model input folder
+
+`clrbak` deletes the backups the tools above leave next to the files they change: every
+file whose name ends in `.bak` or `.bak<number>` (`FlowFM.mdu.bak`, `FlowFM_net.nc.bak2`, ...).
+Give a model input folder, the `.mdu` in it, or a `.dsproj` (its `.dsproj_data` folder is
+searched recursively). Removed files cannot be recovered, and `rmgrid --restore` needs the
+`*_net.nc.bak`, so run with `--check` first to see what goes.
+
+```python
+# clrbak <input-folder | model.mdu | project.dsproj>
+# clrbak dflowfm --check                                          # List the backups, remove nothing
+# clrbak models -r                                                # Include subfolders
+
+from d3dtools import clrbak
+res = clrbak.clear_backups("dflowfm", write=False)
+print(res["files"])
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -715,6 +734,7 @@ d3dtools-info expgrid
 d3dtools-info alignncrain
 d3dtools-info otstep
 d3dtools-info itstep
+d3dtools-info clrbak
 
 # Display help for specific tools
 ncrain --help
@@ -753,6 +773,7 @@ expgrid --help
 alignncrain --help
 otstep --help
 itstep --help
+clrbak --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -941,6 +962,10 @@ otstep FlowFM.mdu --his 1m --map 1h              # Set (seconds or with a unit s
 # Show or change the user / initial / max time step
 itstep <input-folder | model.mdu>                # Show DtUser, DtInit, DtMax
 itstep FlowFM.mdu --user 60 --max 30 --init 1    # Set (seconds or with a unit s/m/h/d)
+
+# Remove the backup files from a model input folder
+clrbak <input-folder | model.mdu | project.dsproj>
+clrbak dflowfm --check                           # List the backups, remove nothing
 ```
 
 ## Changelog
