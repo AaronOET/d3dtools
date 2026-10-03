@@ -103,6 +103,25 @@ def backup(path, dry=False):
     return cand
 
 
+def open_nc(path, mode="r", **kw):
+    """nc.Dataset() that also works for non-ASCII paths on Windows.
+
+    The netCDF-C library cannot open paths containing e.g. Chinese
+    characters (OSError Errno 22), so open such a file by its bare name
+    from inside its folder.  The handle stays valid after chdir back.
+    """
+    path = os.path.abspath(path)
+    folder, name = os.path.split(path)
+    if path.isascii() or not name.isascii():
+        return nc.Dataset(path, mode, **kw)
+    cwd = os.getcwd()
+    os.chdir(folder)
+    try:
+        return nc.Dataset(name, mode, **kw)
+    finally:
+        os.chdir(cwd)
+
+
 def is_writable(path):
     try:
         with open(path, "r+b"):
@@ -228,7 +247,7 @@ def describe(ds, sets):
 
 def rebuild_net(src, dst, remove_codes):
     """Write src -> dst without the selected 1D2D links.  Returns stats."""
-    ds = nc.Dataset(src, "r")
+    ds = open_nc(src, "r")
     ds.set_auto_maskandscale(False)
     ds.set_auto_chartostring(False)
     stats = []
@@ -250,7 +269,7 @@ def rebuild_net(src, dst, remove_codes):
             elif keep.size < types.size:
                 sel[cs["dim"]] = keep
 
-        out = nc.Dataset(dst, "w", format=ds.file_format)
+        out = open_nc(dst, "w", format=ds.file_format)
         out.set_auto_maskandscale(False)
         out.set_auto_chartostring(False)
         try:
@@ -401,7 +420,7 @@ Close the project in the FM Suite before running, and reopen it WITHOUT saving.
     # ---- current state ---------------------------------------------------
     log()
     log("1D2D links in the net file")
-    with nc.Dataset(net_path) as ds:
+    with open_nc(net_path) as ds:
         sets = find_contacts(ds)
         total = describe(ds, sets)
         to_remove = 0
@@ -476,7 +495,7 @@ Close the project in the FM Suite before running, and reopen it WITHOUT saving.
     # ---- verify ----------------------------------------------------------
     log()
     log("verification")
-    with nc.Dataset(net_path) as ds:
+    with open_nc(net_path) as ds:
         left = 0
         for cs in find_contacts(ds):
             t = contact_types(ds, cs)
@@ -492,7 +511,7 @@ Close the project in the FM Suite before running, and reopen it WITHOUT saving.
     log("  OK - targeted 1D2D links removed.")
     log()
     log("Reopen the project in the FM Suite WITHOUT saving it first.")
-    with nc.Dataset(net_path) as ds:
+    with open_nc(net_path) as ds:
         if not find_contacts(ds):
             log("Note: with no 1D2D links the 1D and 2D parts no longer "
                 "exchange water.")
