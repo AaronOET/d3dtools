@@ -46,6 +46,7 @@ This package provides several utilities for converting shapefiles to various for
 - **orthochk**: Locate non-orthogonal / problematic 2D cells in a Delft3D FM net file and export them as a polygon shapefile. Computes the RGFGRID / D-Flow FM orthogonality per edge and flags the defects behind "network is not orthogonal" (coincident circumcentres, flow link missing the edge, circumcentre outside the cell, non-convex cells, edges shared by more than 2 cells)
 - **expgrid**: Export the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file, dropping the 1D network, mesh1d, the 1D2D links and the composite mesh. The input file is never modified
 - **alignncrain**: Align the simulation period (RefDate, TStart, TStop) of a Delft3D FM `.mdu` with a NetCDF rainfall file, and point the rainfall `[Meteo]` block of the external forcing file to it
+- **otstep**: Show or change the output time step of the his file (`HisInterval`) and map file (`MapInterval`) of a Delft3D FM `.mdu`
 
 ## Usage Examples
 
@@ -598,6 +599,25 @@ res = alignncrain.align("FlowFM.mdu", "rain.nc", pad_end=None)
 print(res["start"], res["stop"], res["mdu_changes"], res["ext_changes"])
 ```
 
+### Show or change the his / map output time step
+
+`otstep` reads and writes `HisInterval` and `MapInterval` in the `[output]` section of the
+`.mdu`. Without `--his` / `--map` it prints the current intervals, the simulation length and
+the resulting number of output steps. New steps are given in seconds or with a unit
+(`s`, `m`, `h`, `d`); `0` switches the output off. Only the interval is replaced, so an
+output start / stop after it is kept. The `.mdu` is backed up as `<file>.bak`.
+
+```python
+# otstep <input-folder | model.mdu>                                # Show the current steps
+# otstep FlowFM.mdu --his 60 --map 3600                            # Set, in seconds
+# otstep FlowFM.mdu --his 1m --map 1h                              # Set, with a unit
+# otstep FlowFM.mdu --map 30m --check                              # Show the change, write nothing
+
+from d3dtools import otstep
+print(otstep.get_steps("FlowFM.mdu"))
+otstep.set_steps("FlowFM.mdu", his=60, map=3600)
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -666,6 +686,7 @@ d3dtools-info rmlinks
 d3dtools-info orthochk
 d3dtools-info expgrid
 d3dtools-info alignncrain
+d3dtools-info otstep
 
 # Display help for specific tools
 ncrain --help
@@ -702,6 +723,7 @@ rmlinks --help
 orthochk --help
 expgrid --help
 alignncrain --help
+otstep --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -881,6 +903,10 @@ expgrid FlowFM_net.nc --check                    # List kept / dropped variables
 alignncrain <input-folder | model.mdu> rain.nc
 alignncrain FlowFM.mdu rain.nc --pad-end 3600    # Simulate 1 h after the last rainfall stamp
 alignncrain FlowFM.mdu rain.nc --check           # Show the changes, write nothing
+
+# Show or change the his / map output time step
+otstep <input-folder | model.mdu>                # Show the current steps
+otstep FlowFM.mdu --his 1m --map 1h              # Set (seconds or with a unit s/m/h/d)
 ```
 
 ## Changelog

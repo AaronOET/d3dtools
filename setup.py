@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.29.0",
+    version="0.30.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -62,6 +62,7 @@ setup(
             "orthochk=d3dtools.orthochk:main",  # Find non-orthogonal 2D cells in a D-Flow FM net file
             "expgrid=d3dtools.expgrid:main",  # Export the 2D grid of a D-Flow FM net file to a 2D-only net file
             "alignncrain=d3dtools.alignncrain:main",  # Align the .mdu simulation period with a NetCDF rainfall file
+            "otstep=d3dtools.otstep:main",  # Show or change the his / map output time step of a .mdu
         ],
     },
 )

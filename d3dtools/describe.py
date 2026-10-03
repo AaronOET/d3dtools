@@ -485,6 +485,23 @@ TOOL_DESCRIPTIONS = {
             alignncrain FlowFM.mdu rain.nc --no-ext
             alignncrain FlowFM.mdu rain.nc --check
     """,
+    'otstep':
+    """
+        Show or change the output time step of the his file and the map file.
+
+        Reads / writes HisInterval and MapInterval in the [output] section of the
+        .mdu (seconds). Without --his / --map it prints the current intervals, the
+        simulation length and the number of output steps. Steps can be given in
+        seconds or with a unit (s, m, h, d); 0 switches the output off. Only the
+        interval is replaced - an output start / stop after it is kept. The .mdu
+        is backed up as <file>.bak.
+
+        Examples:
+            otstep <input-folder | model.mdu>
+            otstep FlowFM.mdu --his 60 --map 3600
+            otstep FlowFM.mdu --his 1m --map 1h
+            otstep FlowFM.mdu --map 30m --check
+    """,
 }
 
 

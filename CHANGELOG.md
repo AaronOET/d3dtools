@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.30.0
+
+- Added **otstep**: shows or changes the output time step of the his file (`HisInterval`) and the map file (`MapInterval`) in the `[output]` section of a Delft3D FM `.mdu`. Without options it prints both intervals, the simulation length and the number of output steps; `--his` / `--map` set new intervals in seconds or with a unit (`300`, `5m`, `1h`, `1d`; `0` = no output). Only the interval is replaced, an output start / stop after it is kept. Accepts a model input folder or a `.mdu`; `--check` shows the change without writing, `--no-backup` skips the `<file>.bak` copy. New Python API: `get_steps()`, `set_steps()`.
+
 ## 0.29.0
 
 - Added **alignncrain** (from `prototype/align_mdu_time.py`): aligns the simulation period of a Delft3D FM model with a NetCDF rainfall file (e.g. from `ncrain`). Sets `RefDate`, `TStart` and `TStop` in the `[time]` section of the `.mdu` (in its `Tunit`), plus `StartDateTime` / `StopDateTime` when they are filled in; the stop time is the last rainfall time stamp plus `--pad-end` seconds (default one rainfall time step). Also points the rainfall `[Meteo]` block of `ExtForceFileNew` to the NetCDF file (`quantity`, `forcingFile`, `forcingFileType=netcdf`), appending a block if none exists; the quantity follows the rainfall units (`rainfall` for mm, `rainfall_rate` for rates) unless `--quantity` is given. Accepts a model input folder or a `.mdu`; `--no-ext` leaves the ext file alone, `--no-backup` skips the `<file>.bak` copies, `--check` shows the changes without writing. Works with non-ASCII folder paths. New Python API: `align()`.
