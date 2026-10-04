@@ -404,9 +404,9 @@ xyz2shp.xyz_to_shp(
 ```python
 # Recommended usage via the command line (operates on a .dsproj project)
 # rmgrid                                  # Auto-detect the .dsproj in the current folder
-# rmgrid -i MyProject.dsproj              # Specify the project explicitly
-# rmgrid -i MyProject.dsproj --force-backup  # Overwrite an existing .nc.bak
-# rmgrid -i MyProject.dsproj --restore    # Restore the original net file from .nc.bak
+# rmgrid MyProject.dsproj                 # Specify the project explicitly
+# rmgrid MyProject.dsproj --force-backup # Overwrite an existing .nc.bak
+# rmgrid MyProject.dsproj --restore       # Restore the original net file from .nc.bak
 ```
 
 The tool empties the 2D mesh in the project's UGRID NetCDF net file while preserving the
@@ -455,11 +455,11 @@ located differs.
 ```python
 # Clear the 2D mesh (operates on a DIMR run folder)
 # rmgriddimr                                # Run folder = current directory
-# rmgriddimr -i C:/models/PT01              # A run folder
-# rmgriddimr -i C:/models/PT01/dimr.xml     # The DIMR config directly
-# rmgriddimr -i C:/models/PT01/dflowfm      # The dflowfm folder
-# rmgriddimr -i C:/models/PT01 --restore    # Restore mesh + iniField from the .bak files
-# rmgriddimr -i C:/models/PT01 --force-backup
+# rmgriddimr C:/models/PT01                 # A run folder
+# rmgriddimr C:/models/PT01/dimr.xml        # The DIMR config directly
+# rmgriddimr C:/models/PT01/dflowfm         # The dflowfm folder
+# rmgriddimr C:/models/PT01 --restore       # Restore mesh + iniField from the .bak files
+# rmgriddimr C:/models/PT01 --force-backup
 
 # Restore the 2D mesh and/or the 2D spatial fields
 # rsgriddimr -s C:/models/Intact            # Clone the mesh into the cwd's model
@@ -883,9 +883,9 @@ xyz2shp --help
 
 # Remove the 2D computational mesh from a D-Flow FM .dsproj project
 rmgrid                                # Auto-detect the .dsproj in the current folder
-rmgrid -i MyProject.dsproj            # Specify the project explicitly
-rmgrid -i MyProject.dsproj --force-backup  # Overwrite an existing .nc.bak
-rmgrid -i MyProject.dsproj --restore  # Restore the original net file from .nc.bak
+rmgrid MyProject.dsproj               # Specify the project explicitly
+rmgrid MyProject.dsproj --force-backup # Overwrite an existing .nc.bak
+rmgrid MyProject.dsproj --restore     # Restore the original net file from .nc.bak
 
 # Restore the 2D computational mesh into a D-Flow FM .dsproj project
 rsgrid -s Intact.dsproj                   # Restore into first .dsproj in cwd
@@ -901,11 +901,11 @@ rsgrid -f -q frictioncoefficient=rough2024.xyz # Map an oddly named sample file
 
 # Same two operations on a DIMR run folder (dimr.xml + dflowfm/) instead of a .dsproj
 rmgriddimr                                # Run folder = current directory
-rmgriddimr -i C:/models/PT01              # A run folder
-rmgriddimr -i C:/models/PT01/dimr.xml     # The DIMR config directly
-rmgriddimr -i C:/models/PT01/dflowfm      # The dflowfm folder
-rmgriddimr -i C:/models/PT01 --restore    # Restore mesh + iniField from the .bak files
-rmgriddimr -i C:/models/PT01 --force-backup
+rmgriddimr C:/models/PT01                 # A run folder
+rmgriddimr C:/models/PT01/dimr.xml        # The DIMR config directly
+rmgriddimr C:/models/PT01/dflowfm         # The dflowfm folder
+rmgriddimr C:/models/PT01 --restore       # Restore mesh + iniField from the .bak files
+rmgriddimr C:/models/PT01 --force-backup
 
 rsgriddimr -s C:/models/Intact            # Clone the mesh into the cwd's model
 rsgriddimr -i C:/models/PT01 -s C:/models/Intact

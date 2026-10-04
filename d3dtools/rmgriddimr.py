@@ -30,10 +30,10 @@ definitions return.
 examples
 --------
     rmgriddimr                         # run folder = current directory
-    rmgriddimr -i C:/models/PT01
-    rmgriddimr -i C:/models/PT01/dimr.xml
-    rmgriddimr -i C:/models/PT01/dflowfm
-    rmgriddimr -i C:/models/PT01 --restore
+    rmgriddimr C:/models/PT01
+    rmgriddimr C:/models/PT01/dimr.xml
+    rmgriddimr C:/models/PT01/dflowfm
+    rmgriddimr C:/models/PT01 --restore
 """
 
 import argparse
@@ -179,7 +179,7 @@ def find_mdu(target=None):
     if len(found) > 1:
         names = ", ".join(str(p.relative_to(path)) for p in found)
         sys.exit(f"Error: several .mdu files under {path} ({names}). "
-                 "Point -i at the one you mean.")
+                 "Point the path at the one you mean.")
 
     sys.exit(f"Error: no dimr.xml, {DFLOWFM_DIR_NAME}/ folder or .mdu file "
              f"found in {path}")
@@ -442,20 +442,25 @@ def main():
         epilog="""
 examples:
   %(prog)s                              # DIMR run folder = current directory
-  %(prog)s -i C:/models/PT01
-  %(prog)s -i C:/models/PT01/dimr.xml
-  %(prog)s -i C:/models/PT01/dflowfm
-  %(prog)s -i C:/models/PT01 --restore
-  %(prog)s -i C:/models/PT01 --force-backup
+  %(prog)s C:/models/PT01
+  %(prog)s C:/models/PT01/dimr.xml
+  %(prog)s C:/models/PT01/dflowfm
+  %(prog)s C:/models/PT01 --restore
+  %(prog)s C:/models/PT01 --force-backup
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=None,
+        help="DIMR run folder, dimr.xml, dflowfm folder or .mdu file (default: current directory)",
     )
     parser.add_argument(
         "-i",
         "--input",
         default=None,
-        help="DIMR run folder, dimr.xml, dflowfm folder or .mdu file "
-             "(default: current directory)",
+        help="Same as the positional path (kept for backwards compatibility)",
     )
     parser.add_argument(
         "--restore",
@@ -470,6 +475,9 @@ examples:
              "with their current contents before processing.",
     )
     args = parser.parse_args()
+    if args.path and args.input and args.path != args.input:
+        parser.error("give the path either positionally or with -i, not both")
+    args.input = args.input or args.path
 
     try:
         mdu_path = find_mdu(args.input)

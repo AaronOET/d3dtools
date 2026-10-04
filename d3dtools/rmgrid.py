@@ -314,17 +314,23 @@ def main():
         description="Remove (clear) the 2D computational mesh from a D-Flow FM .dsproj project.",
         epilog="""
 examples:
-  %(prog)s -i MyProject.dsproj
-  %(prog)s -i MyProject.dsproj --restore
-  %(prog)s -i MyProject.dsproj --force-backup
+  %(prog)s MyProject.dsproj
+  %(prog)s MyProject.dsproj --restore
+  %(prog)s MyProject.dsproj --force-backup
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=None,
+        help="Path to the .dsproj file (default: first .dsproj found in current directory)",
     )
     parser.add_argument(
         "-i",
         "--input",
         default=None,
-        help="Path to the .dsproj file (default: first .dsproj found in current directory)",
+        help="Same as the positional path (kept for backwards compatibility)",
     )
     parser.add_argument(
         "--restore",
@@ -339,6 +345,9 @@ examples:
              "with their current contents before processing.",
     )
     args = parser.parse_args()
+    if args.path and args.input and args.path != args.input:
+        parser.error("give the path either positionally or with -i, not both")
+    args.input = args.input or args.path
 
     if args.input:
         dsproj_path = Path(args.input).resolve()
@@ -354,7 +363,7 @@ examples:
             names = ", ".join(p.name for p in matches)
             print(
                 f"Error: multiple .dsproj files found ({names}). "
-                "Specify one explicitly with -i."
+                "Specify one explicitly."
             )
             sys.exit(1)
         dsproj_path = matches[0].resolve()
