@@ -119,19 +119,26 @@ def main():
         description="Reconstruct FlowFM 2D mesh faces as polygons in threshold shapefiles.",
         epilog="""
 examples:
-  %(prog)s -i NC/FlowFM_fou.nc (default output dir: SHP)
-  %(prog)s --input NC/FlowFM_fou.nc -of SHP
-  %(prog)s --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
-  %(prog)s -i NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
-  %(prog)s -i NC/FlowFM_fou.nc -r SHP/*.shp
-  %(prog)s -i NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp
+  %(prog)s                                  (NC/FlowFM_fou.nc -> SHP)
+  %(prog)s NC/FlowFM_fou.nc
+  %(prog)s NC/FlowFM_fou.nc -of SHP
+  %(prog)s NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
+  %(prog)s NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
+  %(prog)s NC/FlowFM_fou.nc -r SHP/*.shp
+  %(prog)s NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
+        "path",
+        nargs="?",
+        default=None,
+        help=f"Path to the input NetCDF file (default: {NC_FILE})",
+    )
+    parser.add_argument(
         "-i", "--input",
-        required=True,
-        help="Path to the input NetCDF file (e.g., NC/FlowFM_fou.nc)",
+        default=None,
+        help="Same as the positional path (kept for backwards compatibility)",
     )
     parser.add_argument(
         "-of", "--output-folder",
@@ -157,6 +164,9 @@ examples:
     )
 
     args = parser.parse_args()
+    if args.path and args.input and args.path != args.input:
+        parser.error("give the input file either positionally or with -i, not both")
+    args.input = args.input or args.path or NC_FILE
 
     if not os.path.exists(args.input):
         print(f"Error: Input NetCDF file does not exist: {args.input}")

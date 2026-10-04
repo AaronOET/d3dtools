@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.32.3
+
+- **fou2shp**: the input NetCDF file can now be given positionally (`fou2shp NC/FlowFM_fou.nc`) and `-i` / `--input` is no longer required; without either it uses `NC/FlowFM_fou.nc`, as the README already said. Giving both with different paths is an error.
+
 ## 0.32.2
 
 - **rmgrid**, **rmgriddimr**: the input path can now be given positionally (`rmgrid MyProject.dsproj`, `rmgriddimr C:/models/PT01`); `-i` / `--input` still works. Giving both with different paths is an error.

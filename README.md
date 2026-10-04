@@ -321,13 +321,13 @@ print(f"Recall (Catch Rate): {results['recall']:.2f}%")
 
 ```python
 # Run via command line (recommended)
-# fou2shp --input NC/FlowFM_fou.nc -of SHP
-# fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
+# fou2shp NC/FlowFM_fou.nc -of SHP
+# fou2shp NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
 
 # Remove polygons intersecting a mask shapefile; filtered copies go to SHP_RM/
-# fou2shp --input NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
-# fou2shp --input NC/FlowFM_fou.nc -r SHP/*.shp
-# fou2shp --input NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp
+# fou2shp NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
+# fou2shp NC/FlowFM_fou.nc -r SHP/*.shp
+# fou2shp NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp
 ```
 
 ### Convert PLIZ files to Shapefiles
@@ -850,11 +850,11 @@ getfacez2 --verbose  # Display additional processing information
 
 # Reconstruct FOU mesh faces as threshold-filtered shapefiles
 fou2shp                                         # Use defaults (NC/FlowFM_fou.nc -> SHP/)
-fou2shp --input NC/FlowFM_fou.nc -of SHP        # Specify input and output directory
-fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
-fou2shp --input NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp             # Remove polygons intersecting a mask; output -> SHP_RM/
-fou2shp --input NC/FlowFM_fou.nc -r SHP/*.shp                   # Glob pattern for multiple masks
-fou2shp --input NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp  # Multiple explicit masks
+fou2shp NC/FlowFM_fou.nc -of SHP                # Specify input and output directory
+fou2shp NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
+fou2shp NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp                      # Remove polygons intersecting a mask; output -> SHP_RM/
+fou2shp NC/FlowFM_fou.nc -r SHP/*.shp                            # Glob pattern for multiple masks
+fou2shp NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp  # Multiple explicit masks
 
 # Convert a Delft3D/D-Flow FM .pliz file (weir/dike polyline with Z) to a 3D ESRI Shapefile
 pliz2shp -i Dike001.pliz
