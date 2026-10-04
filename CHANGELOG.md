@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.32.1
+
+- README: GDAL installation note now says to pick the wheel that matches your Python version and platform (e.g. `cp312`, `win_amd64`) and how to install it with `pip`.
+
 ## 0.32.0
 
 - Added **clrbak**: removes the backup files (`*.bak`, `*.bak2`, `*.bak3`, ...) that the tools leave in a Delft3D FM model input folder. Accepts a model input folder, a `.mdu` (its folder) or a `.dsproj` (its `.dsproj_data` folder, searched recursively); `-r` includes subfolders, `--check` lists the backups and their size without removing them. Files that cannot be removed (e.g. open in the FM Suite) are reported and give exit code 1. New Python API: `clear_backups()`.

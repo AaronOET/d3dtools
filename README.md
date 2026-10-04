@@ -4,7 +4,7 @@ A collection of Python tools for working with shapefiles and converting them for
 
 > **CAUTION**: The ncrain function currently only works for Taiwan data in EPSG:3826 projection.
 
-> **GDAL Installation**: GDAL is required for this package. For conda environments, use `conda install gdal` to install GDAL. For non-conda environments, download the appropriate wheel file from [https://github.com/cgohlke/geospatial-wheels/releases](https://github.com/cgohlke/geospatial-wheels/releases) to install GDAL.
+> **GDAL Installation**: GDAL is required for this package. For conda environments, use `conda install gdal` to install GDAL. For non-conda environments, download the GDAL wheel file from [https://github.com/cgohlke/geospatial-wheels/releases](https://github.com/cgohlke/geospatial-wheels/releases) that matches your Python version and platform (e.g., `cp312` for Python 3.12, `win_amd64` for 64-bit Windows), then install it with `pip install <wheel-file>.whl`.
 
 ## Installation
 
