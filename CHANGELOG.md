@@ -1,8 +1,11 @@
 # Changelog
 
-## 0.32.1
+## 0.32.2
 
 - **rmgrid**, **rmgriddimr**: the input path can now be given positionally (`rmgrid MyProject.dsproj`, `rmgriddimr C:/models/PT01`); `-i` / `--input` still works. Giving both with different paths is an error.
+
+## 0.32.1
+
 - README: GDAL installation note now says to pick the wheel that matches your Python version and platform (e.g. `cp312`, `win_amd64`) and how to install it with `pip`.
 
 ## 0.32.0
