@@ -520,6 +520,23 @@ TOOL_DESCRIPTIONS = {
             itstep FlowFM.mdu --user 1m --max 30s
             itstep FlowFM.mdu --max 10 --check
     """,
+    'clrbak':
+    """
+        Remove the backup files from a D-Flow FM model input folder.
+
+        Deletes the files whose name ends in .bak or .bak<number> (*.bak, *.bak2, ...)
+        that the D3D tools leave next to the files they change. The target can be a
+        model input folder, the .mdu in it (its folder is used) or a .dsproj (its
+        <project>.dsproj_data folder is searched recursively); -r includes subfolders.
+        --check lists the backups and their size without removing them. Note that
+        rmgrid / rmgriddimr --restore need the *_net.nc.bak.
+
+        Examples:
+            clrbak <input-folder | model.mdu | project.dsproj>
+            clrbak dflowfm --check
+            clrbak MyProject.dsproj
+            clrbak models -r
+    """,
     'setthreads':
     """
         Show or change the OpenMP threads and MPI processes in a DIMR config (dimr_config.xml).

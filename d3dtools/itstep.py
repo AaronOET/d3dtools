@@ -25,8 +25,9 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .mduutils import (fmt_duration, fmt_num, get_key, parse_interval,
-                       read_lines, resolve_mdu, set_key, write_lines)
+from .mduutils import (fmt_duration, fmt_num, get_key, insert_key,
+                       parse_interval, read_lines, resolve_mdu, set_key,
+                       write_lines)
 
 SCRIPT = "itstep"
 KEYS = {"user": "DtUser", "init": "DtInit", "max": "DtMax"}
@@ -44,30 +45,6 @@ def _first_float(raw):
         return float(raw.split()[0]) if raw else None
     except ValueError:
         return None
-
-
-def insert_key(lines, section, key, value, after=None):
-    """
-    Add `key = value` to `section`, right after the line of key `after` if it
-    exists, otherwise after the section header.  Return True if inserted.
-    """
-    eol = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
-    current, header, anchor = None, None, None
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-        if stripped.startswith("[") and stripped.endswith("]"):
-            current = stripped[1:-1].strip().lower()
-            if current == section.lower():
-                header = i
-            continue
-        if current == section.lower() and after and "=" in line and \
-                line.split("=", 1)[0].strip().lower() == after.lower():
-            anchor = i
-    pos = anchor if anchor is not None else header
-    if pos is None:
-        return False
-    lines.insert(pos + 1, "%-18s= %s%s" % (key, value, eol))
-    return True
 
 
 def check_steps(info):

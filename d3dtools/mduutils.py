@@ -89,6 +89,10 @@ def set_key(lines, section, key, value):
         if not m:
             continue
         prefix, old, _, comment = m.groups()
+        if not old:
+            # empty value: the prefix swallowed the padding up to the comment,
+            # so put the new value right after '= '
+            prefix = prefix.rstrip() + " "
         if comment:
             # keep the comment at the same column if possible
             width = len(m.group(0)) - len(comment) - len(prefix)
@@ -98,6 +102,32 @@ def set_key(lines, section, key, value):
         lines[i] = new + line[len(body):]
         return old.strip()
     return None
+
+
+def insert_key(lines, section, key, value, after=None):
+    """
+    Add `key = value` to `section`, right after the line of key `after` if it
+    exists, otherwise after the section header.  Return True if inserted.
+    """
+    eol = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
+    current, header, anchor = None, None, None
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            current = stripped[1:-1].strip().lower()
+            if current == section.lower():
+                header = i
+            continue
+        if current == section.lower() and after and "=" in line and \
+                line.split("=", 1)[0].strip().lower() == after.lower():
+            anchor = i
+    pos = anchor if anchor is not None else header
+    if pos is None:
+        return False
+    # line '=' up with the anchor line
+    width = len(lines[anchor].split("=", 1)[0]) if anchor is not None else 18
+    lines.insert(pos + 1, "%-*s= %s%s" % (width, key, value, eol))
+    return True
 
 
 # --------------------------------------------------------------------------- #

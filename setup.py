@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.32.0",
+    version="0.33.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -64,6 +64,7 @@ setup(
             "alignncrain=d3dtools.alignncrain:main",  # Align the .mdu simulation period with a NetCDF rainfall file
             "otstep=d3dtools.otstep:main",  # Show or change the his / map output time step of a .mdu
             "itstep=d3dtools.itstep:main",  # Show or change DtUser / DtInit / DtMax of a .mdu
+            "clrbak=d3dtools.clrbak:main",  # Remove the *.bak backup files from a model input folder
             "setthreads=d3dtools.setthreads:main",  # Set OpenMP threads / MPI processes in dimr_config.xml
             "clrmpi=d3dtools.clrmpi:main",  # Delete the partitioned (MPI) files of a DIMR run
         ],

@@ -1,10 +1,34 @@
 # Changelog
 
-## 0.32.0
+## 0.33.0
 
 - Added **setthreads** (from `prototype/DIMR/setthreads.py`): shows or changes the OpenMP threads and MPI processes of every `<component>` in a DIMR config. `-n` sets `<setting key="threads">` (inserted after `<workingDir>` when missing) and the `OMP_NUM_THREADS` user environment variable via `setx` (`--no-env` skips it); `-p` writes `<process>0 .. P-1</process>` and `<mpiCommunicator>` (`-c`, default `DFM_COMM_DFMWORLD`) after `<library>`, and without `-p` they are removed for a non-MPI run. Without `-n` / `-p` it prints the current settings. The file is edited as text (comments, BOM, layout kept) and written with CRLF line endings. Accepts a run folder (default: current folder) or the config file, also via `-f`; `--check` shows the change without writing, `--no-backup` skips the `<file>.bak` copy. New Python API: `get_settings()`, `set_threads()`, `set_omp_num_threads()`.
 - Added **clrmpi** (from `prototype/DIMR/clrmpi.py`): deletes the partitioned (MPI) input and output of the D-Flow FM models in a DIMR run — `<model>_NNNN.mdu`, `<net>_NNNN_net.nc`, `DFM_interpreted_idomain_<net>_net.nc` and any `<model>_NNNN*` output in the working directory tree. Lists the files and their size and asks for confirmation; `-y` deletes without asking, `--check` (alias `--dry-run`) only lists. Accepts a run folder (default: current folder) or the config file, also via `-f`. New Python API: `find_mpi_files()`, `delete_files()`.
 - New shared module `d3dtools.dimrutils` (`resolve_dimr()`, `read_dimr()`, `write_dimr()`, `tag_value()`, `dflowfm_models()`) used by `setthreads` and `clrmpi`. A run folder is searched for `dimr_config.xml`, then `dimr.xml`, then a single `.xml` with a `<dimrConfig>` root.
+
+## 0.32.3
+
+- **fou2shp**: the input NetCDF file can now be given positionally (`fou2shp NC/FlowFM_fou.nc`) and `-i` / `--input` is no longer required; without either it uses `NC/FlowFM_fou.nc`, as the README already said. Giving both with different paths is an error.
+
+## 0.32.2
+
+- **rmgrid**, **rmgriddimr**: the input path can now be given positionally (`rmgrid MyProject.dsproj`, `rmgriddimr C:/models/PT01`); `-i` / `--input` still works. Giving both with different paths is an error.
+
+## 0.32.1
+
+- README: GDAL installation note now says to pick the wheel that matches your Python version and platform (e.g. `cp312`, `win_amd64`) and how to install it with `pip`.
+
+## 0.32.0
+
+- Added **clrbak**: removes the backup files (`*.bak`, `*.bak2`, `*.bak3`, ...) that the tools leave in a Delft3D FM model input folder. Accepts a model input folder, a `.mdu` (its folder) or a `.dsproj` (its `.dsproj_data` folder, searched recursively); `-r` includes subfolders, `--check` lists the backups and their size without removing them. Files that cannot be removed (e.g. open in the FM Suite) are reported and give exit code 1. New Python API: `clear_backups()`.
+
+## 0.31.1
+
+- **alignncrain**: now also aligns the map output with the rainfall file: `MapInterval` in the `[output]` section is set to the rainfall time step, so a map is written at every rainfall time stamp. An output start / stop after the interval is dropped (it refers to the old period); a missing `MapInterval` is added after `HisInterval`. `--map-step` sets another interval (`600`, `10m`, `1h`), `--no-map` leaves `MapInterval` alone. New `align()` arguments: `map_interval`, `update_map`.
+- `mduutils.insert_key()`: a new key is lined up with the `=` of the line it is inserted after.
+- **alignncrain**: if the external forcing file does not exist, it is now created (with a `[General]` header and the rainfall `[Meteo]` block) instead of stopping with an error. If the `.mdu` has no `ExtForceFileNew` (empty, absent, or no `[external forcing]` section), it is set to `<mdu name>_bnd.ext` (e.g. `FM_model.mdu` -> `FM_model_bnd.ext`) and the ext file is created next to the `.mdu`; previously the ext step was skipped. `align()` returns a new `ext_created` flag. `--check` reports the new file without writing it.
+- `mduutils.set_key()`: filling in a key whose value was empty (e.g. `ExtForceFileNew =        # comment`) now puts the value right after the `=` instead of just before the comment, so `alignncrain` writes `ExtForceFileNew = FM_model_bnd.ext` in the usual column. Applies to `otstep` and `itstep` too.
+- Moved `insert_key()` out of `itstep` into `d3dtools.mduutils`; `itstep` and `alignncrain` both import it from there.
 
 ## 0.31.0
 

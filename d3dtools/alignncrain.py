@@ -13,9 +13,15 @@ and, if they are filled in, StartDateTime / StopDateTime (yyyymmddHHMMSS).
 By default pad-end is one rainfall time step, so the last rainfall interval
 is fully simulated.
 
+In the [output] section it sets MapInterval to the rainfall time step, so a
+map is written at every rainfall time stamp (--map-step to change, --no-map
+to keep it).  An output start / stop after the interval is dropped.
+
 It also points the rainfall [Meteo] block of the mdu's ExtForceFileNew to the
 NetCDF file (quantity, forcingFile, forcingFileType=netcdf); a new [Meteo]
-block is appended if there is none.  The quantity is 'rainfall' for depth
+block is appended if there is none.  If the mdu has no ExtForceFileNew, it is
+set to <mdu name>_bnd.ext (e.g. FM_model.mdu -> FM_model_bnd.ext); if the ext
+file does not exist, it is created next to the mdu.  The quantity is 'rainfall' for depth
 units (mm per time step) and 'rainfall_rate' for rate units (mm/day).
 
 Usage
@@ -36,8 +42,9 @@ from datetime import datetime, timedelta
 
 import netCDF4
 
-from .mduutils import (TUNIT_SECONDS, fmt_num, get_key, read_lines, resolve_mdu,
-                       set_key, write_lines)
+from .mduutils import (TUNIT_SECONDS, fmt_num, get_key, insert_key,
+                       parse_interval, read_lines, resolve_mdu, set_key,
+                       write_lines)
 from .ncutils import open_nc
 
 SCRIPT = "alignncrain"
@@ -137,14 +144,43 @@ def update_ext_lines(lines, forcing_file, quantity):
     return changes
 
 
+EXT_HEADER = ["[General]", "fileVersion=2.02", "fileType=extForce"]
+
+
+def default_ext_name(mdu):
+    """Default ExtForceFileNew for `mdu`: <mdu name>_bnd.ext."""
+    return os.path.splitext(os.path.basename(mdu))[0] + "_bnd.ext"
+
+
+def set_ext_key(lines, ext_name):
+    """
+    Set ExtForceFileNew in the [external forcing] section of the mdu `lines`,
+    adding the key (or the section) if absent.  Return the old value or None.
+    """
+    key, section = "ExtForceFileNew", "external forcing"
+    old = set_key(lines, section, key, ext_name)
+    if old is not None:
+        return old
+    if not insert_key(lines, section, key, ext_name, after="ExtForceFile"):
+        eol = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
+        if lines and not lines[-1].endswith(("\n", "\r")):
+            lines[-1] += eol
+        if lines and lines[-1].strip():
+            lines.append(eol)
+        lines += ["[%s]%s" % (section, eol), "%-18s= %s%s" % (key, ext_name, eol)]
+    return None
+
+
 # --------------------------------------------------------------------------- #
 # Python API
 # --------------------------------------------------------------------------- #
 def align(mdu, nc_path, pad_end=None, time_var="time", rain_var="rainfall",
-          quantity=None, update_ext=True, backup=True, write=True):
+          quantity=None, update_ext=True, map_interval=None, update_map=True,
+          backup=True, write=True):
     """
-    Align the [time] section of `mdu` with the NetCDF rainfall file `nc_path`
-    and point the rainfall [Meteo] block of its ExtForceFileNew to it.
+    Align the [time] section and the map output interval of `mdu` with the
+    NetCDF rainfall file `nc_path` and point the rainfall [Meteo] block of
+    its ExtForceFileNew to it.
 
     Parameters
     ----------
@@ -160,7 +196,14 @@ def align(mdu, nc_path, pad_end=None, time_var="time", rain_var="rainfall",
     quantity : {'rainfall', 'rainfall_rate'}, optional
         Ext quantity (default: from the units of `rain_var`).
     update_ext : bool
-        Also update the external forcing file (ExtForceFileNew).
+        Also update the external forcing file (ExtForceFileNew).  If the mdu
+        has none, ExtForceFileNew is set to <mdu name>_bnd.ext; a missing ext
+        file is created.
+    map_interval : float, optional
+        Map output interval in seconds (default: the rainfall time step).
+    update_map : bool
+        Set MapInterval in the [output] section.  An output start / stop
+        after the interval is dropped, as it refers to the old period.
     backup : bool
         Keep a copy of each changed file as <file>.bak.
     write : bool
@@ -171,7 +214,7 @@ def align(mdu, nc_path, pad_end=None, time_var="time", rain_var="rainfall",
     dict
         start, stop, last_rain (datetime), nsteps (int), dt (s), pad_end (s),
         tunit (str), mdu_changes and ext_changes (lists of (key, old, new)),
-        ext (path or None), quantity (str or None).
+        ext (path or None), ext_created (bool), quantity (str or None).
     """
     t0, t_last, n, dt = read_nc_times(nc_path, time_var)
     pad_end = dt if pad_end is None else float(pad_end)
@@ -199,21 +242,36 @@ def align(mdu, nc_path, pad_end=None, time_var="time", rain_var="rainfall",
         if old is None:
             raise ValueError("[time] %s not found in %s" % (key, mdu))
         mdu_changes.append((key, old, value))
-    if write:
-        write_lines(mdu, lines, encoding, backup=backup)
+
+    map_interval = dt if map_interval is None else float(map_interval)
+    if update_map and map_interval > 0:
+        value = fmt_num(map_interval)
+        old = set_key(lines, "output", "MapInterval", value)
+        if old is None and not insert_key(lines, "output", "MapInterval", value,
+                                          after="HisInterval"):
+            raise ValueError("[output] section not found in %s" % mdu)
+        if old != value:
+            mdu_changes.append(("MapInterval", old, value))
 
     res = dict(start=t0, stop=t1, last_rain=t_last, nsteps=n, dt=dt,
                pad_end=pad_end, tunit=tunit, mdu_changes=mdu_changes,
-               ext=None, quantity=None, units=None, ext_changes=[])
+               ext=None, ext_created=False, quantity=None, units=None,
+               ext_changes=[])
     if not update_ext:
-        return res
-    ext_name = get_key(lines, "external forcing", "ExtForceFileNew")
-    if not ext_name:
+        if write:
+            write_lines(mdu, lines, encoding, backup=backup)
         return res
 
+    ext_name = get_key(lines, "external forcing", "ExtForceFileNew")
+    if not ext_name:
+        ext_name = default_ext_name(mdu)
+        mdu_changes.append(("ExtForceFileNew", set_ext_key(lines, ext_name),
+                            ext_name))
+    if write:
+        write_lines(mdu, lines, encoding, backup=backup)
+
     ext = os.path.join(os.path.dirname(os.path.abspath(mdu)), ext_name)
-    if not os.path.isfile(ext):
-        raise FileNotFoundError("ExtForceFileNew not found: %s" % ext)
+    ext_created = not os.path.isfile(ext)
     units = None
     if quantity is None:
         quantity, units = rainfall_quantity(nc_path, rain_var)
@@ -224,11 +282,18 @@ def align(mdu, nc_path, pad_end=None, time_var="time", rain_var="rainfall",
         forcing_file = os.path.abspath(nc_path)
     forcing_file = forcing_file.replace("\\", "/")
 
-    ext_lines, ext_encoding = read_lines(ext)
+    if ext_created:
+        eol = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
+        ext_lines, ext_encoding = [ln + eol for ln in EXT_HEADER], "utf-8"
+    else:
+        ext_lines, ext_encoding = read_lines(ext)
     ext_changes = update_ext_lines(ext_lines, forcing_file, quantity)
     if write:
-        write_lines(ext, ext_lines, ext_encoding, backup=backup)
-    res.update(ext=ext, quantity=quantity, units=units, ext_changes=ext_changes)
+        os.makedirs(os.path.dirname(ext), exist_ok=True)
+        write_lines(ext, ext_lines, ext_encoding,
+                    backup=backup and not ext_created)
+    res.update(ext=ext, ext_created=ext_created, quantity=quantity,
+               units=units, ext_changes=ext_changes)
     return res
 
 
@@ -251,15 +316,19 @@ def main(argv=None):
         prog=SCRIPT,
         description="Align the simulation period (RefDate, TStart, TStop and, if "
                     "filled in, StartDateTime / StopDateTime) of a D-Flow FM .mdu "
-                    "with a NetCDF rainfall file, and point the rainfall [Meteo] "
-                    "block of its ExtForceFileNew to that file.",
+                    "and its map output interval (MapInterval) with a NetCDF "
+                    "rainfall file, and point the rainfall [Meteo] "
+                    "block of its ExtForceFileNew to that file (the ext file is created and "
+                    "added to the mdu if missing).",
         epilog="""
 examples:
   %(prog)s dflowfm rain.nc                  (input folder with one .mdu)
   %(prog)s dflowfm/FlowFM.mdu rain.nc
   %(prog)s FlowFM.mdu rain.nc --pad-end 3600  (simulate 1 h after the last rain stamp)
   %(prog)s FlowFM.mdu rain.nc --quantity rainfall_rate
-  %(prog)s FlowFM.mdu rain.nc --no-ext      (only change the [time] section)
+  %(prog)s FlowFM.mdu rain.nc --map-step 1h (map output every hour)
+  %(prog)s FlowFM.mdu rain.nc --no-map      (keep MapInterval)
+  %(prog)s FlowFM.mdu rain.nc --no-ext      (do not touch the ext file)
   %(prog)s FlowFM.mdu rain.nc --check       (show the changes, write nothing)
 
 Changed files are backed up as <file>.bak unless --no-backup is given.
@@ -279,6 +348,11 @@ Close the project in the FM Suite before running.
     ap.add_argument("--quantity", choices=["rainfall", "rainfall_rate"], default=None,
                     help="ext quantity (default: 'rainfall' for depth units such "
                          "as mm, 'rainfall_rate' for rate units such as mm/day)")
+    ap.add_argument("--map-step", type=parse_interval, default=None,
+                    help="map output interval, in seconds or with a unit "
+                         "(300, 5m, 1h; default: the rainfall time step)")
+    ap.add_argument("--no-map", action="store_true",
+                    help="do not change MapInterval")
     ap.add_argument("--no-ext", action="store_true",
                     help="do not update the external forcing file")
     ap.add_argument("--no-backup", action="store_true",
@@ -297,7 +371,8 @@ Close the project in the FM Suite before running.
     try:
         res = align(mdu, args.nc, pad_end=args.pad_end, time_var=args.time_var,
                     rain_var=args.rain_var, quantity=args.quantity,
-                    update_ext=not args.no_ext, backup=not args.no_backup,
+                    update_ext=not args.no_ext, map_interval=args.map_step,
+                    update_map=not args.no_map, backup=not args.no_backup,
                     write=not args.check)
     except (ValueError, FileNotFoundError, KeyError) as exc:
         print("%s: error: %s" % (SCRIPT, exc), file=sys.stderr)
@@ -312,12 +387,11 @@ Close the project in the FM Suite before running.
     print_changes("\n%s (Tunit = %s)" % (mdu, res["tunit"]), res["mdu_changes"])
     if args.no_ext:
         pass
-    elif res["ext"] is None:
-        print("\nNo ExtForceFileNew in the mdu; external forcing file not updated.")
     else:
         if res["units"] is not None:
             print("\nRainfall units '%s' -> quantity = %s" % (res["units"], res["quantity"]))
-        print_changes("\n%s" % res["ext"], res["ext_changes"])
+        print_changes("\n%s%s" % (res["ext"], " (new file)" if res["ext_created"] else ""),
+                      res["ext_changes"])
 
     print("\nCheck only - nothing written." if args.check else "\nDone.")
     return 0
