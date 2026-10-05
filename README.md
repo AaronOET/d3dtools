@@ -51,6 +51,7 @@ This package provides several utilities for converting shapefiles to various for
 - **clrbak**: Remove the backup files (`*.bak`, `*.bak2`, ...) from a Delft3D FM model input folder
 - **setthreads**: Show or change the OpenMP threads and MPI processes of the components in a DIMR config (`dimr_config.xml`), and set `OMP_NUM_THREADS`
 - **clrmpi**: Delete the partitioned (MPI) input and output files (`<model>_NNNN.*`, `<net>_NNNN_net.nc`, `DFM_interpreted_idomain_*`) of the D-Flow FM models in a DIMR run
+- **addvis**: Add (or update) `Viscosity` in the `[physics]` section of every Delft3D FM `.mdu` under a folder
 
 ## Usage Examples
 
@@ -706,6 +707,25 @@ files = clrmpi.find_mpi_files("dimr_config.xml")
 clrmpi.delete_files(files)
 ```
 
+### Add the viscosity to every .mdu
+
+`addvis` adds `Viscosity = 1.0` to the `[physics]` section of every `.mdu` under a folder
+(recursively), or rewrites the line if the key is already there. The new line is lined up with
+the other keys of the section; files without `[physics]` are skipped. Each changed `.mdu` is
+backed up as `<file>.bak`.
+
+```python
+# addvis                                                         # All .mdu below the current folder
+# addvis F:/path/to/project                                      # All .mdu below a given folder
+# addvis MyProject.dsproj                                        # All .mdu in MyProject.dsproj_data
+# addvis . --value 0.5                                           # Another value
+# addvis . --check                                               # Show the changes, write nothing
+
+from d3dtools import addvis
+addvis.set_viscosity("FlowFM.mdu", value=0.5)
+addvis.add_viscosity("F:/path/to/project", write=False)
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -779,6 +799,7 @@ d3dtools-info itstep
 d3dtools-info clrbak
 d3dtools-info setthreads
 d3dtools-info clrmpi
+d3dtools-info addvis
 
 # Display help for specific tools
 ncrain --help
@@ -820,6 +841,7 @@ itstep --help
 clrbak --help
 setthreads --help
 clrmpi --help
+addvis --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -1019,6 +1041,9 @@ setthreads -n 2 -p 4                             # MPI on 4 processes
 # Delete the MPI (partitioned) files of a DIMR run
 clrmpi --check                                   # Only list the files
 clrmpi -y                                        # Delete without asking
+
+# Add Viscosity to [physics] of every .mdu under a folder
+addvis . --value 1.0                             # --check to only show the changes
 ```
 
 ## Changelog

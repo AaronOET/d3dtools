@@ -573,6 +573,23 @@ TOOL_DESCRIPTIONS = {
             clrmpi -y
             clrmpi C:/models/PT01
     """,
+    'addvis':
+    """
+        Add (or update) the viscosity key in the [physics] section of every .mdu under a folder.
+
+        Sets Viscosity = 1.0 (--value for another value, --key for another key). An existing
+        line is rewritten, otherwise the key is added at the end of [physics]; the line is
+        lined up with the other keys of the section. Files without [physics] are skipped.
+        Accepts a folder (searched recursively; default: the current folder), a .mdu or a
+        .dsproj (its .dsproj_data folder). --check shows the changes without writing,
+        --no-backup skips the <file>.bak copy.
+
+        Examples:
+            addvis
+            addvis F:/path/to/project
+            addvis . --value 0.5
+            addvis MyProject.dsproj --check
+    """,
 }
 
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.34.0
+
+- Added **addvis** (from `prototype/DIMR/add_viscosity_mdu.py`): adds (or updates) `Viscosity = 1.0` in the `[physics]` section of every `.mdu` under a folder (recursively). An existing line is rewritten, otherwise the key is added after the last line of `[physics]`, lined up with the first key line of the section (`=` and trailing comment in the same columns); files without `[physics]` are skipped and the rest of the file is left byte-for-byte unchanged. Accepts a folder (default: current folder), a `.mdu` or a `.dsproj` (its `.dsproj_data` folder); `--value` sets another value, `--key` another key, `--check` (alias `--dry-run`) shows the changes without writing, `--no-backup` skips the `<file>.bak` copy. New Python API: `set_viscosity()`, `add_viscosity()`, `find_mdus()`.
+
 ## 0.33.1
 
 - Renamed **makedimr** to **mkdimr** (module `d3dtools.mkdimr`, command `mkdimr`), in line with `mk2d`. The `makedimr` command and `d3dtools.makedimr` module are gone; use `mkdimr`.

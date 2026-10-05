@@ -2,7 +2,7 @@
 D3DTOOLS - A collection of tools for working with shapefiles and converting them for Delft3D modeling.
 """
 
-__version__ = '0.33.1'
+__version__ = '0.34.0'
 
 # Define all modules that should be exposed when using "from d3dtools import *"
 __all__ = [
@@ -45,6 +45,7 @@ __all__ = [
     'clrbak',
     'setthreads',
     'clrmpi',
+    'addvis',
 ]
 
 from . import ncrain
@@ -86,3 +87,4 @@ from . import itstep
 from . import clrbak
 from . import setthreads
 from . import clrmpi
+from . import addvis
