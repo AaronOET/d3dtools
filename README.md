@@ -48,6 +48,8 @@ This package provides several utilities for converting shapefiles to various for
 - **alignncrain**: Align the simulation period (RefDate, TStart, TStop) of a Delft3D FM `.mdu` with a NetCDF rainfall file, and point the rainfall `[Meteo]` block of the external forcing file to it
 - **otstep**: Show or change the output time step of the his file (`HisInterval`) and map file (`MapInterval`) of a Delft3D FM `.mdu`
 - **itstep**: Show or change the user time step (`DtUser`), initial time step (`DtInit`) and maximum time step (`DtMax`) of a Delft3D FM `.mdu`
+- **setthreads**: Show or change the OpenMP threads and MPI processes of the components in a DIMR config (`dimr_config.xml`), and set `OMP_NUM_THREADS`
+- **clrmpi**: Delete the partitioned (MPI) input and output files (`<model>_NNNN.*`, `<net>_NNNN_net.nc`, `DFM_interpreted_idomain_*`) of the D-Flow FM models in a DIMR run
 
 ## Usage Examples
 
@@ -639,6 +641,46 @@ print(itstep.get_steps("FlowFM.mdu"))
 itstep.set_steps("FlowFM.mdu", user=60, init=1, max=30)
 ```
 
+### Set the threads / MPI processes of a DIMR run
+
+`setthreads` edits every `<component>` of a DIMR config. `-n` sets
+`<setting key="threads" value="N" />` (added after `<workingDir>` when missing) and the
+`OMP_NUM_THREADS` user environment variable (`setx`; applies to new command prompts only,
+skip with `--no-env`). `-p` writes `<process>0 1 ... P-1</process>` and `<mpiCommunicator>`
+after `<library>`; without `-p` they are removed, giving a non-MPI run. The file is edited as
+text (comments, BOM and layout kept), written with CRLF line endings and backed up as
+`<file>.bak`.
+
+```python
+# setthreads [run-folder | dimr_config.xml]                      # Show the current settings
+# setthreads -n 8                                                # Non-MPI run, 8 threads
+# setthreads -n 2 -p 4                                           # MPI on 4 processes, 2 threads each
+# setthreads -n 2 -p 4 -c MY_COMM                                # Custom MPI communicator
+# setthreads -p 6 --check                                        # Show the change, write nothing
+
+from d3dtools import setthreads
+print(setthreads.get_settings("dimr_config.xml"))
+setthreads.set_threads("dimr_config.xml", threads=2, processes=4)
+```
+
+### Delete the MPI files of a DIMR run
+
+`clrmpi` removes the partitioned files of every `dflowfm` component in the DIMR config:
+`<model>_NNNN.mdu`, `<net>_NNNN_net.nc`, `DFM_interpreted_idomain_<net>_net.nc` and any output
+file starting with `<model>_NNNN` (`.dia`, `_map.nc`, `_his.nc`, `_rst.nc`, ...) anywhere in the
+working directory. The original `.mdu`, net file and the merged / non-partitioned output are kept.
+
+```python
+# clrmpi --check                                                 # Only list the files
+# clrmpi                                                         # List, confirm, delete
+# clrmpi -y                                                      # Delete without asking
+# clrmpi C:/models/PT01                                          # Another run folder
+
+from d3dtools import clrmpi
+files = clrmpi.find_mpi_files("dimr_config.xml")
+clrmpi.delete_files(files)
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -709,6 +751,8 @@ d3dtools-info expgrid
 d3dtools-info alignncrain
 d3dtools-info otstep
 d3dtools-info itstep
+d3dtools-info setthreads
+d3dtools-info clrmpi
 
 # Display help for specific tools
 ncrain --help
@@ -747,6 +791,8 @@ expgrid --help
 alignncrain --help
 otstep --help
 itstep --help
+setthreads --help
+clrmpi --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -934,6 +980,14 @@ otstep FlowFM.mdu --his 1m --map 1h              # Set (seconds or with a unit s
 # Show or change the user / initial / max time step
 itstep <input-folder | model.mdu>                # Show DtUser, DtInit, DtMax
 itstep FlowFM.mdu --user 60 --max 30 --init 1    # Set (seconds or with a unit s/m/h/d)
+
+# Set the threads / MPI processes of a DIMR run
+setthreads -n 8                                  # Non-MPI run, 8 threads
+setthreads -n 2 -p 4                             # MPI on 4 processes
+
+# Delete the MPI (partitioned) files of a DIMR run
+clrmpi --check                                   # Only list the files
+clrmpi -y                                        # Delete without asking
 ```
 
 ## Changelog

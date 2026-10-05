@@ -520,6 +520,42 @@ TOOL_DESCRIPTIONS = {
             itstep FlowFM.mdu --user 1m --max 30s
             itstep FlowFM.mdu --max 10 --check
     """,
+    'setthreads':
+    """
+        Show or change the OpenMP threads and MPI processes in a DIMR config (dimr_config.xml).
+
+        -n N sets <setting key="threads" value="N" /> in every <component> (inserted after
+        <workingDir> when missing) and the OMP_NUM_THREADS user environment variable (setx;
+        new command prompts only, skip with --no-env). -p P writes <process>0 .. P-1</process>
+        and <mpiCommunicator> after <library>; without -p they are removed (non-MPI run).
+        Without -n / -p the current settings are printed. Accepts a run folder (default: the
+        current folder) or the config file; comments, BOM and layout are kept, the file is
+        written with CRLF line endings and backed up as <file>.bak.
+
+        Examples:
+            setthreads
+            setthreads -n 8
+            setthreads -n 2 -p 4
+            setthreads -n 2 -p 4 -c MY_COMM
+            setthreads C:/models/PT01 -p 6 --check
+    """,
+    'clrmpi':
+    """
+        Delete the partitioned (MPI) input and output files of the D-Flow FM models in a DIMR run.
+
+        For every dflowfm <component> in the DIMR config it removes, in the working directory
+        tree: <model>_NNNN.mdu, <net>_NNNN_net.nc, DFM_interpreted_idomain_<net>_net.nc and any
+        output file starting with <model>_NNNN (.dia, _map.nc, _his.nc, _rst.nc, ...). The
+        original .mdu, net file and non-partitioned output are kept. Lists the files and asks
+        for confirmation; -y deletes without asking, --check only lists. Accepts a run folder
+        (default: the current folder) or the config file.
+
+        Examples:
+            clrmpi --check
+            clrmpi
+            clrmpi -y
+            clrmpi C:/models/PT01
+    """,
 }
 
 
