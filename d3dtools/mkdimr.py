@@ -11,13 +11,13 @@ The FM model name and its data folder are read from the .dsproj file itself
 contains one D-Flow FM model (use ``--model`` to pick one when it has several).
 
 This is the counterpart of ``rmgriddimr``/``rsgriddimr``: those tools operate
-on a DIMR run folder once it exists; ``makedimr`` is what creates it in the
+on a DIMR run folder once it exists; ``mkdimr`` is what creates it in the
 first place from a .dsproj project.
 
 Examples
 --------
-    makedimr 2DOF_KS.dsproj
-    makedimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
+    mkdimr 2DOF_KS.dsproj
+    mkdimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
 """
 
 import argparse

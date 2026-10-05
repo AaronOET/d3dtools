@@ -38,7 +38,7 @@ This package provides several utilities for converting shapefiles to various for
 - **rsgrid**: Restore the 2D computational mesh (including `Mesh2d_face_z` bed levels) into a D-Flow FM `.dsproj` project by cloning it from a source project, while preserving the target's 1D network. The inverse of `rmgrid`. Also restores the 2D spatial fields (infiltration capacity, roughness) that are lost along with the mesh, via `-f`/`--fields`
 - **rmgriddimr**: `rmgrid` for a model exported as a DIMR run folder (`dimr.xml` + `dflowfm/`) instead of a `.dsproj` project
 - **rsgriddimr**: `rsgrid` for a model exported as a DIMR run folder; restores the 2D mesh and/or the 2D spatial fields, handling GeoTIFF coverages as well as `*.xyz` samples
-- **makedimr**: Build a DIMR run folder (`dimr_config.xml` + `dflowfm/`) from a Delft3D FM Suite project (`.dsproj`), reading the FM model name and its data folder from the project itself. The counterpart of `rmgriddimr`/`rsgriddimr`, which is what creates the run folder those tools operate on
+- **mkdimr**: Build a DIMR run folder (`dimr_config.xml` + `dflowfm/`) from a Delft3D FM Suite project (`.dsproj`), reading the FM model name and its data folder from the project itself. The counterpart of `rmgriddimr`/`rsgriddimr`, which is what creates the run folder those tools operate on
 - **rm1dch**: Remove the open 1D channels (and everything anchored on them - structures, cross sections, 1D2D links, boundary/lateral blocks) from a Delft3D FM model, keeping the sewer system (pipes, sewer connections, manholes) and the 2D grid intact. A kept sewer branch that ran into a removed channel gets a new outfall manhole automatically
 - **rm1dsw**: Remove the 1D sewer system (pipes, sewer connections, manholes) from a Delft3D FM model, keeping the 1D channels and the 2D grid intact. Same engine as `rm1dch`, opposite direction
 - **mk2d**: Turn a Delft3D FM 1D2D model into a 2D-only model by removing the entire 1D network - channels, sewers, manholes, and every 1D structure. Same engine as `rm1dch`/`rm1dsw`, with `--target all`
@@ -485,15 +485,15 @@ infiltration blocks.
 
 ### Build a DIMR run folder from a .dsproj project
 
-`makedimr` creates the DIMR run folder that `rmgriddimr`/`rsgriddimr` operate on, from a
+`mkdimr` creates the DIMR run folder that `rmgriddimr`/`rsgriddimr` operate on, from a
 Delft3D FM Suite project (`.dsproj`). It reads the FM model name and its data folder directly
 from the `.dsproj` file (a SQLite database), so it works for any project with one D-Flow FM
 model (`--model` picks one when there are several).
 
 ```python
-# makedimr 2DOF_KS.dsproj                          # Output: DIMR/ next to the .dsproj
-# makedimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
-# makedimr 2DOF_KS.dsproj --model FlowFM1           # Project has several FM models
+# mkdimr 2DOF_KS.dsproj                            # Output: DIMR/ next to the .dsproj
+# mkdimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
+# mkdimr 2DOF_KS.dsproj --model FlowFM1             # Project has several FM models
 ```
 
 The output folder gets a `dimr_config.xml` (with `creationDate` set to the time the tool is
@@ -766,7 +766,7 @@ d3dtools-info rmgrid
 d3dtools-info rsgrid
 d3dtools-info rmgriddimr
 d3dtools-info rsgriddimr
-d3dtools-info makedimr
+d3dtools-info mkdimr
 d3dtools-info rm1dch
 d3dtools-info rm1dsw
 d3dtools-info mk2d
@@ -807,7 +807,7 @@ rmgrid --help
 rsgrid --help
 rmgriddimr --help
 rsgriddimr --help
-makedimr --help
+mkdimr --help
 rm1dch --help
 rm1dsw --help
 mk2d --help
@@ -961,9 +961,9 @@ rsgriddimr -i C:/models/PT01 -s Intact -f      # Mesh first, then the fields
 rsgriddimr -f -q frictioncoefficient=RHI.tif   # Map an oddly named GeoTIFF coverage
 
 # Build a DIMR run folder from a .dsproj project
-makedimr 2DOF_KS.dsproj                          # Output: DIMR/ next to the .dsproj
-makedimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
-makedimr 2DOF_KS.dsproj --model FlowFM1          # Project has several FM models
+mkdimr 2DOF_KS.dsproj                            # Output: DIMR/ next to the .dsproj
+mkdimr 2DOF_KS.dsproj --out DIMR --threads 1 --force
+mkdimr 2DOF_KS.dsproj --model FlowFM1            # Project has several FM models
 
 # Remove the open 1D channels from a Delft3D FM model (keeps sewer + 2D grid)
 rm1dch <input-folder-or-mdu>

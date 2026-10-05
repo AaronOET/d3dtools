@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.33.1
+
+- Renamed **makedimr** to **mkdimr** (module `d3dtools.mkdimr`, command `mkdimr`), in line with `mk2d`. The `makedimr` command and `d3dtools.makedimr` module are gone; use `mkdimr`.
+
 ## 0.33.0
 
 - Added **setthreads** (from `prototype/DIMR/setthreads.py`): shows or changes the OpenMP threads and MPI processes of every `<component>` in a DIMR config. `-n` sets `<setting key="threads">` (inserted after `<workingDir>` when missing) and the `OMP_NUM_THREADS` user environment variable via `setx` (`--no-env` skips it); `-p` writes `<process>0 .. P-1</process>` and `<mpiCommunicator>` (`-c`, default `DFM_COMM_DFMWORLD`) after `<library>`, and without `-p` they are removed for a non-MPI run. Without `-n` / `-p` it prints the current settings. The file is edited as text (comments, BOM, layout kept) and written with CRLF line endings. Accepts a run folder (default: current folder) or the config file, also via `-f`; `--check` shows the change without writing, `--no-backup` skips the `<file>.bak` copy. New Python API: `get_settings()`, `set_threads()`, `set_omp_num_threads()`.
