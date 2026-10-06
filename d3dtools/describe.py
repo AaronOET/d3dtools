@@ -590,6 +590,26 @@ TOOL_DESCRIPTIONS = {
             addvis . --value 0.5
             addvis MyProject.dsproj --check
     """,
+    'chkprog':
+    """
+        Check the progress of a running D-Flow FM (1D2D) simulation, serial or MPI.
+
+        Reads the simulation period from the [time] section of the .mdu and the progress from
+        the statistics lines in the .dia (or, when there are none yet, the last time in the
+        his / map output). Shows status, % complete, simulated time, wall-clock used / left,
+        ETA, speed and time step, warns when nothing was written for --stale minutes, and lists
+        the running dimr / dflowfm processes. In MPI mode (auto-detected from dimr_config.xml or
+        the <model>_NNNN.dia files) every rank is listed. -w refreshes until the run ends.
+        Accepts a DIMR run folder (default: the current folder), dimr_config.xml, a model folder
+        or a .mdu. Exit code 1 when the run stopped with an error.
+
+        Examples:
+            chkprog
+            chkprog -w
+            chkprog -w 10 C:/models/PT01
+            chkprog --mode mpi -n 6
+            chkprog path/to/FlowFM.mdu
+    """,
 }
 
 

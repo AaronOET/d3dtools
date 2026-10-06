@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.34.0",
+    version="0.35.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -68,6 +68,7 @@ setup(
             "setthreads=d3dtools.setthreads:main",  # Set OpenMP threads / MPI processes in dimr_config.xml
             "clrmpi=d3dtools.clrmpi:main",  # Delete the partitioned (MPI) files of a DIMR run
             "addvis=d3dtools.addvis:main",  # Add / update Viscosity in [physics] of every .mdu under a folder
+            "chkprog=d3dtools.chkprog:main",  # Check the progress of a running D-Flow FM run, serial or MPI
         ],
     },
 )

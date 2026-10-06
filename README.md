@@ -52,6 +52,7 @@ This package provides several utilities for converting shapefiles to various for
 - **setthreads**: Show or change the OpenMP threads and MPI processes of the components in a DIMR config (`dimr_config.xml`), and set `OMP_NUM_THREADS`
 - **clrmpi**: Delete the partitioned (MPI) input and output files (`<model>_NNNN.*`, `<net>_NNNN_net.nc`, `DFM_interpreted_idomain_*`) of the D-Flow FM models in a DIMR run
 - **addvis**: Add (or update) `Viscosity` in the `[physics]` section of every Delft3D FM `.mdu` under a folder
+- **chkprog**: Check the progress (% complete, sim time, wall clock / ETA, errors) of a running D-Flow FM simulation, serial or MPI
 
 ## Usage Examples
 
@@ -726,6 +727,29 @@ addvis.set_viscosity("FlowFM.mdu", value=0.5)
 addvis.add_viscosity("F:/path/to/project", write=False)
 ```
 
+### Check the progress of a running simulation
+
+`chkprog` reads the simulation period from the `.mdu` and the progress from the statistics
+lines D-Flow FM writes to the `.dia` (every `StatsInterval`); before the first statistics line
+it falls back to the last time in the his / map output. It shows the status, % complete,
+simulated time, wall-clock time used / left with ETA, speed and time step, warns when no
+output was written for `--stale` minutes (default 15), and lists the running `dimr` /
+`dflowfm` processes. For an MPI run (detected from `dimr_config.xml` or the newest
+`<model>_NNNN.dia` files) every rank is listed.
+
+```python
+# chkprog                                                        # Run folder = current folder
+# chkprog -w                                                     # Refresh every 60 s until the run ends
+# chkprog -w 10 C:/models/PT01                                   # Refresh every 10 s, another run folder
+# chkprog --mode mpi -n 6                                        # Force MPI mode with 6 ranks
+# chkprog path/to/FlowFM.mdu                                     # A model without DIMR config
+
+from d3dtools import chkprog
+run = chkprog.check("C:/models/PT01")
+print(run["overall"]["state"], run["overall"]["percent"])
+print(chkprog.report(run, stale_min=15, check_procs=False))
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -800,6 +824,7 @@ d3dtools-info clrbak
 d3dtools-info setthreads
 d3dtools-info clrmpi
 d3dtools-info addvis
+d3dtools-info chkprog
 
 # Display help for specific tools
 ncrain --help
@@ -842,6 +867,7 @@ clrbak --help
 setthreads --help
 clrmpi --help
 addvis --help
+chkprog --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -1044,6 +1070,9 @@ clrmpi -y                                        # Delete without asking
 
 # Add Viscosity to [physics] of every .mdu under a folder
 addvis . --value 1.0                             # --check to only show the changes
+
+# Check the progress of a running simulation
+chkprog -w                                       # Refresh every 60 s until the run ends
 ```
 
 ## Changelog
