@@ -609,8 +609,8 @@ print(res["kept"], res["dropped"])
 
 `alignncrain` sets `RefDate`, `TStart` and `TStop` in the `[time]` section of the `.mdu`
 (and `StartDateTime` / `StopDateTime` when filled in) so the run starts at the first
-rainfall time stamp and stops one rainfall time step after the last one (`--pad-end` to
-change), and sets `MapInterval` in `[output]` to the rainfall time step so a map is
+rainfall time stamp and stops at the last one (`--pad-end` seconds to simulate
+longer), and sets `MapInterval` in `[output]` to the rainfall time step so a map is
 written at every rainfall time stamp (`--map-step` to change, `--no-map` to keep it). It
 also points the rainfall `[Meteo]` block of `ExtForceFileNew` to the NetCDF
 file, using `rainfall` for depth units (mm) and `rainfall_rate` for rate units. If the
@@ -627,7 +627,7 @@ and a missing ext file is created next to the `.mdu`. Changed files are backed u
 # alignncrain FlowFM.mdu rain.nc --check                          # Show the changes, write nothing
 
 from d3dtools import alignncrain
-res = alignncrain.align("FlowFM.mdu", "rain.nc", pad_end=None, map_interval=None)
+res = alignncrain.align("FlowFM.mdu", "rain.nc", pad_end=0, map_interval=None)
 print(res["start"], res["stop"], res["mdu_changes"], res["ext_changes"])
 ```
 

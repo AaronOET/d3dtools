@@ -10,8 +10,9 @@ In the [time] section of the .mdu it sets
     TStop   = last rainfall time w.r.t. RefDate (in Tunit) + pad-end
 and, if they are filled in, StartDateTime / StopDateTime (yyyymmddHHMMSS).
 
-By default pad-end is one rainfall time step, so the last rainfall interval
-is fully simulated.
+By default pad-end is 0, so the run stops at the last rainfall time stamp;
+give --pad-end (seconds) to simulate longer, e.g. one rainfall time step so
+the last rainfall interval is fully simulated.
 
 In the [output] section it sets MapInterval to the rainfall time step, so a
 map is written at every rainfall time stamp (--map-step to change, --no-map
@@ -174,7 +175,7 @@ def set_ext_key(lines, ext_name):
 # --------------------------------------------------------------------------- #
 # Python API
 # --------------------------------------------------------------------------- #
-def align(mdu, nc_path, pad_end=None, time_var="time", rain_var="rainfall",
+def align(mdu, nc_path, pad_end=0.0, time_var="time", rain_var="rainfall",
           quantity=None, update_ext=True, map_interval=None, update_map=True,
           backup=True, write=True):
     """
@@ -190,7 +191,7 @@ def align(mdu, nc_path, pad_end=None, time_var="time", rain_var="rainfall",
         NetCDF rainfall file.
     pad_end : float, optional
         Seconds to simulate after the last rainfall time stamp
-        (default: one rainfall time step).
+        (default 0: stop at the last stamp).
     time_var, rain_var : str
         Names of the time and rainfall variables in the NetCDF file.
     quantity : {'rainfall', 'rainfall_rate'}, optional
@@ -217,7 +218,7 @@ def align(mdu, nc_path, pad_end=None, time_var="time", rain_var="rainfall",
         ext (path or None), ext_created (bool), quantity (str or None).
     """
     t0, t_last, n, dt = read_nc_times(nc_path, time_var)
-    pad_end = dt if pad_end is None else float(pad_end)
+    pad_end = 0.0 if pad_end is None else float(pad_end)
     t1 = t_last + timedelta(seconds=pad_end)
 
     lines, encoding = read_lines(mdu)
@@ -342,9 +343,9 @@ Close the project in the FM Suite before running.
     ap.add_argument("--rain-var", default="rainfall",
                     help="rainfall variable in the NetCDF file; its units decide "
                          "the quantity (default: rainfall)")
-    ap.add_argument("--pad-end", type=float, default=None,
+    ap.add_argument("--pad-end", type=float, default=0.0,
                     help="extra seconds to simulate after the last rainfall time "
-                         "stamp (default: one rainfall time step)")
+                         "stamp (default: 0, stop at the last stamp)")
     ap.add_argument("--quantity", choices=["rainfall", "rainfall_rate"], default=None,
                     help="ext quantity (default: 'rainfall' for depth units such "
                          "as mm, 'rainfall_rate' for rate units such as mm/day)")

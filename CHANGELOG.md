@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.37.1
+
+- **alignncrain**: `--pad-end` now defaults to 0, so `TStop` is the last rainfall time stamp; previously the run was extended by one rainfall time step. Give `--pad-end <seconds>` (e.g. `--pad-end 3600` for hourly rainfall) to get the old behaviour. `align(pad_end=...)` defaults to 0 as well (`None` also means 0).
+
 ## 0.37.0
 
 - Added **ncraininfo**: shows what is in a NetCDF rainfall file (e.g. from `ncrain`): the start and end time, the time step (median interval, with a warning listing the steps when they are irregular), the number of steps and duration, the grid (size, cell size, extent, CRS from the `grid_mapping` variable) and the number of masked values. A per-step table gives the domain mean / max rainfall and the share of wet cells, with a bar chart of the mean (hyetograph; `--no-bars` leaves it out), followed by the total rainfall: domain mean, min / max cell and where the max falls, or that the total is the same in every cell (design storm). Rate units (`mm/hr`, `mm/day`, `mm/s`) are multiplied by the time step for the totals. `--plot` shows a hyetograph (domain mean and max cell per step; each bar spans the step from its time stamp to the next one, and the max-cell point sits at the end of that step) and a map of the total rainfall, or of the peak step when the total is uniform; `-o rain.png` saves it. The window uses the Tk backend (unless `MPLBACKEND` is set), because the default Qt backend aborts the process in envs whose Qt platform plugin cannot load (`qt.qpa.plugin: Could not load the Qt platform plugin "windows"`). The rainfall and time variables are found automatically (`rainfall`, `rain`, `precipitation`, ... / `time`) or given with `--var` / `--time-var`. Works with non-ASCII folder paths. New Python API: `get_info()`, `format_info()`, `plot_info()`.
