@@ -500,6 +500,23 @@ TOOL_DESCRIPTIONS = {
             alignncrain FlowFM.mdu rain.nc --no-ext
             alignncrain FlowFM.mdu rain.nc --check
     """,
+    'ncraininfo':
+    """
+        Show the start time, end time, time step and rainfall distribution of a NetCDF rainfall file.
+
+        Prints the time range, time step (with a warning for irregular steps) and duration, the
+        grid (size, cell size, extent, CRS), a table of the domain mean / max rainfall and the
+        wet-cell share per time step with a bar chart of the mean, and the total rainfall
+        (domain mean, min / max cell and where the max falls). Rate units (mm/hr, mm/day) are
+        multiplied by the time step for the totals. --plot shows a hyetograph and a map of the
+        total rainfall (of the peak step when the total is the same everywhere); -o saves it.
+
+        Examples:
+            ncraininfo rain.nc
+            ncraininfo rain.nc --plot
+            ncraininfo rain.nc --plot -o rain.png
+            ncraininfo rain.nc --var precip --time-var t
+    """,
     'otstep':
     """
         Show or change the output time step of the his file and the map file.

@@ -47,6 +47,7 @@ This package provides several utilities for converting shapefiles to various for
 - **orthochk**: Locate non-orthogonal / problematic 2D cells in a Delft3D FM net file and export them as a polygon shapefile. Computes the RGFGRID / D-Flow FM orthogonality per edge and flags the defects behind "network is not orthogonal" (coincident circumcentres, flow link missing the edge, circumcentre outside the cell, non-convex cells, edges shared by more than 2 cells)
 - **expgrid**: Export the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file, dropping the 1D network, mesh1d, the 1D2D links and the composite mesh. The input file is never modified
 - **alignncrain**: Align the simulation period (RefDate, TStart, TStop) and map output interval (MapInterval) of a Delft3D FM `.mdu` with a NetCDF rainfall file, and point the rainfall `[Meteo]` block of the external forcing file to it
+- **ncraininfo**: Show the start time, end time, time step, grid and rainfall distribution (per step and total) of a NetCDF rainfall file, optionally as a hyetograph + rainfall map
 - **otstep**: Show or change the output time step of the his file (`HisInterval`) and map file (`MapInterval`) of a Delft3D FM `.mdu`
 - **itstep**: Show or change the user time step (`DtUser`), initial time step (`DtInit`) and maximum time step (`DtMax`) of a Delft3D FM `.mdu`
 - **clrbak**: Remove the backup files (`*.bak`, `*.bak2`, ...) from a Delft3D FM model input folder
@@ -630,6 +631,29 @@ res = alignncrain.align("FlowFM.mdu", "rain.nc", pad_end=None, map_interval=None
 print(res["start"], res["stop"], res["mdu_changes"], res["ext_changes"])
 ```
 
+### Inspect a NetCDF rainfall file
+
+`ncraininfo` prints the start / end time, the time step (warning for irregular steps), the
+duration and the grid of a rainfall file such as the one `ncrain` writes. A table shows the
+domain mean / max rainfall and the share of wet cells per time step, with a bar chart of the
+mean, followed by the total rainfall (domain mean, min / max cell and where the max falls).
+Rate units (`mm/hr`, `mm/day`) are multiplied by the time step for the totals. `--plot` adds
+a hyetograph and a map of the total rainfall, or of the peak step when the total is the same
+in every cell (a design storm).
+
+```python
+# ncraininfo rain.nc                                             # Time info, per-step table, totals
+# ncraininfo rain.nc --plot                                      # Also show the figure
+# ncraininfo rain.nc --plot -o rain.png                          # Save the figure
+# ncraininfo rain.nc --var precip --time-var t                   # Other variable names
+
+from d3dtools import ncraininfo
+info = ncraininfo.get_info("rain.nc")
+print(info["times"][0], info["times"][-1], info["dt"], info["total_mean"])
+print(ncraininfo.format_info(info))
+ncraininfo.plot_info(info, out="rain.png", show=False)
+```
+
 ### Show or change the his / map output time step
 
 `otstep` reads and writes `HisInterval` and `MapInterval` in the `[output]` section of the
@@ -880,6 +904,7 @@ d3dtools-info rmlinks
 d3dtools-info orthochk
 d3dtools-info expgrid
 d3dtools-info alignncrain
+d3dtools-info ncraininfo
 d3dtools-info otstep
 d3dtools-info itstep
 d3dtools-info clrbak
@@ -926,6 +951,7 @@ rmlinks --help
 orthochk --help
 expgrid --help
 alignncrain --help
+ncraininfo --help
 otstep --help
 itstep --help
 clrbak --help
@@ -1118,6 +1144,10 @@ alignncrain <input-folder | model.mdu> rain.nc
 alignncrain FlowFM.mdu rain.nc --pad-end 3600    # Simulate 1 h after the last rainfall stamp
 alignncrain FlowFM.mdu rain.nc --map-step 1h     # Map output every hour instead of every rainfall step
 alignncrain FlowFM.mdu rain.nc --check           # Show the changes, write nothing
+
+# Inspect a NetCDF rainfall file
+ncraininfo rain.nc                               # Start / end / time step + rainfall per step and total
+ncraininfo rain.nc --plot -o rain.png            # Hyetograph + rainfall map
 
 # Show or change the his / map output time step
 otstep <input-folder | model.mdu>                # Show the current steps
