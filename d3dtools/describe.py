@@ -212,6 +212,21 @@ TOOL_DESCRIPTIONS = {
             fou2shp --input NC/FlowFM_fou.nc -of SHP
             fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
     """,
+    'fou2mfd':
+    """
+        Write the FlowFM 2D mesh faces deeper than ONE flood threshold to a shapefile.
+
+        Like fou2shp, but only the layer of the given threshold (-t, metres, default 0.3) is
+        written, without the threshold -/+ 0.175 m layers. Output SHP/SIM_thrd<mm>.shp
+        (e.g. 0.3 m -> SIM_thrd300; -o for another name, -of for another folder).
+        -r removes the polygons that intersect mask shapefiles (copy in <folder>_RM).
+
+        Examples:
+            fou2mfd
+            fou2mfd NC/FlowFM_fou.nc -t 0.5
+            fou2mfd NC/FlowFM_fou.nc -t 0.5 -o MFD
+            fou2mfd NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
+    """,
     'pliz2shp':
     """
         Convert a Delft3D/D-Flow FM .pliz file (weir/dike polyline with Z) to a 3D ESRI Shapefile.
@@ -609,6 +624,48 @@ TOOL_DESCRIPTIONS = {
             chkprog -w 10 C:/models/PT01
             chkprog --mode mpi -n 6
             chkprog path/to/FlowFM.mdu
+    """,
+    'cpproj':
+    """
+        Copy a Delft3D FM Suite project (.dsproj) without its model output.
+
+        Copies <project>.dsproj and <project>.dsproj_data, leaving out every folder named
+        "output" (created empty in the copy) and DFM_OUTPUT_<model> folders. The project
+        file stores paths relative to its data folder, so the copy can get a new name; the
+        data folder is renamed to match. The destination is a new .dsproj, an existing folder
+        (the name is kept) or, by default, <project>_copy.dsproj next to the source; an
+        existing destination is never overwritten. -x leaves out more files / folders by name
+        pattern; --check lists what would be copied and skipped. Close the project in the FM
+        Suite first.
+
+        Examples:
+            cpproj MyProject.dsproj
+            cpproj MyProject.dsproj D:/runs/Scenario2.dsproj
+            cpproj MyProject.dsproj D:/runs
+            cpproj MyProject.dsproj New.dsproj -x "*.bak*"
+            cpproj MyProject.dsproj --check
+    """,
+    'simtime':
+    """
+        Show or change the reference date, start time and stop time of a D-Flow FM model.
+
+        Reads / writes RefDate, TStart and TStop in the [time] section of the .mdu and shows
+        the start / stop as date-times with the duration (TStart / TStop are offsets from
+        RefDate in Tunit). New times can be a date-time (20240725120000, "2024-07-25 12:00")
+        or an offset from RefDate (43200, 12h); --duration sets the stop from the start, and
+        a new start alone keeps the length. --refdate moves the period with it unless
+        --keep-times is given. StartDateTime / StopDateTime are kept in step when set. -i shows
+        the period and prompts for new values. Accepts a .mdu, a model input folder or a
+        .dsproj (every .mdu in its data folder; -m picks one). --check shows the changes
+        without writing; the .mdu is backed up as <file>.bak.
+
+        Examples:
+            simtime MyProject.dsproj
+            simtime MyProject.dsproj -i
+            simtime FlowFM.mdu --start "2024-07-25 12:00" --stop "2024-07-26 02:00"
+            simtime FlowFM.mdu --start 12h --duration 14h
+            simtime FlowFM.mdu --refdate 20240801 --keep-times
+            simtime MyProject.dsproj -m TNN_JJ --stop 26h --check
     """,
 }
 

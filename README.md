@@ -30,6 +30,7 @@ This package provides several utilities for converting shapefiles to various for
 - **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points. Uses a spatial index (shapely STRtree for point-in-polygon matching, scipy cKDTree for nearest-neighbor matching) instead of scanning every mesh face for every observation point, which is much faster on large meshes. Supports `-if`/`--id-field` to specify which shapefile field to use for point names, and `-p`/`--project` to resolve the NetCDF file from a D-Flow FM `.dsproj` project instead of passing `--nc-file`
 - **getfacez2**: Original brute-force implementation of getfacez (no spatial index), kept as a fallback. Same CLI arguments, Python API, and output format as getfacez, including `-if`/`--id-field`
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<output-folder>_RM/`)
+- **fou2mfd**: Like `fou2shp`, but writes only the shapefile of one flood threshold (`-t`, default 0.3 m), without the -/+ 0.175 m layers
 - **pliz2shp**: Convert Delft3D/D-Flow FM `.pliz` weir/dike polyline files (with Z) to 3D ESRI Shapefiles
 - **pli2shp**: Convert Delft3D polyline files (`.pli`/`.ldb`) to ESRI Shapefiles
 - **pol2shp**: Convert Delft3D/D-Flow FM `.pol` polygon files to ESRI Shapefiles
@@ -53,6 +54,8 @@ This package provides several utilities for converting shapefiles to various for
 - **clrmpi**: Delete the partitioned (MPI) input and output files (`<model>_NNNN.*`, `<net>_NNNN_net.nc`, `DFM_interpreted_idomain_*`) of the D-Flow FM models in a DIMR run
 - **addvis**: Add (or update) `Viscosity` in the `[physics]` section of every Delft3D FM `.mdu` under a folder
 - **chkprog**: Check the progress (% complete, sim time, wall clock / ETA, errors) of a running D-Flow FM simulation, serial or MPI
+- **cpproj**: Copy a Delft3D FM Suite project (`.dsproj` + `.dsproj_data`) without the model output
+- **simtime**: Show or change the reference date (`RefDate`), start time (`TStart`) and stop time (`TStop`) of a Delft3D FM model, as date-times or offsets
 
 ## Usage Examples
 
@@ -332,6 +335,22 @@ print(f"Recall (Catch Rate): {results['recall']:.2f}%")
 # fou2shp NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
 # fou2shp NC/FlowFM_fou.nc -r SHP/*.shp
 # fou2shp NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp
+```
+
+### Write the faces of a single flood threshold
+
+`fou2mfd` writes only the layer of one flood threshold (faces deeper than `-t` metres,
+default 0.3), instead of the three `fou2shp` layers (threshold and -/+ 0.175 m). The
+output is named `SIM_thrd<mm>.shp` (0.3 m -> `SIM_thrd300`) unless `-o` gives a name.
+
+```python
+# fou2mfd                                                        # NC/FlowFM_fou.nc, 0.3 m -> SHP/SIM_thrd300.shp
+# fou2mfd NC/FlowFM_fou.nc -t 0.5                                # -> SHP/SIM_thrd500.shp
+# fou2mfd NC/FlowFM_fou.nc -t 0.5 -o MFD                         # -> SHP/MFD.shp
+# fou2mfd NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp                    # Filtered copy -> SHP_RM/
+
+from d3dtools import fou2mfd
+fou2mfd.fou2mfd("NC/FlowFM_fou.nc", threshold=0.5, out_dir="SHP")
 ```
 
 ### Convert PLIZ files to Shapefiles
@@ -750,6 +769,48 @@ print(run["overall"]["state"], run["overall"]["percent"])
 print(chkprog.report(run, stale_min=15, check_procs=False))
 ```
 
+### Copy a project without its output
+
+`cpproj` copies a `.dsproj` and its `.dsproj_data` folder, leaving out the model output:
+every folder named `output` (created empty in the copy) and `DFM_OUTPUT_<model>` folders.
+The project file stores its paths relative to the data folder, so the copy can get a new
+name. An existing destination is never overwritten. Close the project in the FM Suite first.
+
+```python
+# cpproj MyProject.dsproj                                          # -> MyProject_copy.dsproj
+# cpproj MyProject.dsproj D:/runs/Scenario2.dsproj                 # New name / location
+# cpproj MyProject.dsproj D:/runs                                  # -> D:/runs/MyProject.dsproj
+# cpproj MyProject.dsproj New.dsproj -x "*.bak*"                   # Also leave out the backups
+# cpproj MyProject.dsproj --check                                  # List, copy nothing
+
+from d3dtools import cpproj
+res = cpproj.copy_project("MyProject.dsproj", "D:/runs/Scenario2.dsproj")
+print(res["dest"], res["output_dirs"])
+```
+
+### Show or change the simulation period
+
+`simtime` shows `RefDate`, `TStart` and `TStop` of a `.mdu` together with the start / stop
+date-times and the duration, and changes them. Times can be a date-time
+(`20240725120000`, `"2024-07-25 12:00"`) or an offset from `RefDate` (`43200`, `12h`).
+A new start alone keeps the simulation length; `--refdate` moves the period with it unless
+`--keep-times` is given. `StartDateTime` / `StopDateTime` are kept in step when set. Give a
+`.mdu`, a model input folder or a `.dsproj` (`-m` picks the model when there are several);
+`-i` prompts for the new values. The `.mdu` is backed up as `<file>.bak`.
+
+```python
+# simtime <project.dsproj | input-folder | model.mdu>              # Show the period
+# simtime MyProject.dsproj -i                                      # Prompt for new values
+# simtime FlowFM.mdu --start "2024-07-25 12:00" --stop "2024-07-26 02:00"
+# simtime FlowFM.mdu --start 12h --duration 14h                    # Offset from RefDate + length
+# simtime FlowFM.mdu --refdate 20240801 --keep-times               # Same period, new offsets
+# simtime FlowFM.mdu --stop 26h --check                            # Show the change, write nothing
+
+from d3dtools import simtime
+print(simtime.get_period("FlowFM.mdu")["start"])
+changes, period = simtime.set_period("FlowFM.mdu", start="2024-07-25 12:00", duration="14h")
+```
+
 ### Calculate flood simulation accuracy
 
 ```python
@@ -802,6 +863,7 @@ d3dtools-info eval_iot
 d3dtools-info getfacez
 d3dtools-info getfacez2
 d3dtools-info fou2shp
+d3dtools-info fou2mfd
 d3dtools-info pliz2shp
 d3dtools-info pli2shp
 d3dtools-info pol2shp
@@ -825,6 +887,8 @@ d3dtools-info setthreads
 d3dtools-info clrmpi
 d3dtools-info addvis
 d3dtools-info chkprog
+d3dtools-info cpproj
+d3dtools-info simtime
 
 # Display help for specific tools
 ncrain --help
@@ -845,6 +909,7 @@ eval_iot --help
 getfacez --help
 getfacez2 --help
 fou2shp --help
+fou2mfd --help
 pliz2shp --help
 pli2shp --help
 pol2shp --help
@@ -868,6 +933,8 @@ setthreads --help
 clrmpi --help
 addvis --help
 chkprog --help
+cpproj --help
+simtime --help
 ```
 
 The `d3dtools-info` tool helps you discover available functionality, learn about tool options, and access usage examples without having to remember all command-line parameters.
@@ -949,6 +1016,9 @@ fou2shp NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder outpu
 fou2shp NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp                      # Remove polygons intersecting a mask; output -> SHP_RM/
 fou2shp NC/FlowFM_fou.nc -r SHP/*.shp                            # Glob pattern for multiple masks
 fou2shp NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp  # Multiple explicit masks
+
+# Only the layer of one flood threshold (no -/+ 0.175 m layers)
+fou2mfd NC/FlowFM_fou.nc -t 0.5                 # -> SHP/SIM_thrd500.shp
 
 # Convert a Delft3D/D-Flow FM .pliz file (weir/dike polyline with Z) to a 3D ESRI Shapefile
 pliz2shp -i Dike001.pliz
@@ -1073,6 +1143,13 @@ addvis . --value 1.0                             # --check to only show the chan
 
 # Check the progress of a running simulation
 chkprog -w                                       # Refresh every 60 s until the run ends
+
+# Copy a project without the model output
+cpproj MyProject.dsproj D:/runs/Scenario2.dsproj # --check to only list
+
+# Show or change RefDate / start / stop time
+simtime MyProject.dsproj                         # Show; -i to prompt for new values
+simtime FlowFM.mdu --start 12h --duration 14h    # Offset from RefDate + length
 ```
 
 ## Changelog
