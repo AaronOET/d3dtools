@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.37.2
+
+- **evaluate_sensor2** (`eval_iot`): `--thresh-iot` now defaults to 30 cm instead of 10 cm, so a sensor counts as flooded from 30 cm water depth unless another threshold is given (e.g. `--thresh-iot 10` for the old behaviour).
+
 ## 0.37.1
 
 - **alignncrain**: `--pad-end` now defaults to 0, so `TStop` is the last rainfall time stamp; previously the run was extended by one rainfall time step. Give `--pad-end <seconds>` (e.g. `--pad-end 3600` for hourly rainfall) to get the old behaviour. `align(pad_end=...)` defaults to 0 as well (`None` also means 0).

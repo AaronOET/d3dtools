@@ -236,10 +236,10 @@ def main():
         description="Calculate flood simulation accuracy and recall using sensor data.",
         epilog="""
 examples:
-  %(prog)s              # Use default shapefiles and parameters (input SHP/SIM_thrd125.shp, SHP/SIM_thrd475.shp, SHP/IOT_SENSOR.shp; buffer 20m; threshold 10cm)
+  %(prog)s              # Use default shapefiles and parameters (input SHP/SIM_thrd125.shp, SHP/SIM_thrd475.shp, SHP/IOT_SENSOR.shp; buffer 20m; threshold 30cm)
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp (default arguments)
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 50 --thresh-iot 20
-  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 0 --thresh-iot 30
+  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 0 --thresh-iot 10 # Point data, 10 cm threshold
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --output results.csv
   %(prog)s --obs SHP/IOT_SENSOR.gpkg # --obs also accepts a GeoPackage (*.gpkg) file
   %(prog)s --buffer-by-source 淹水感測=20 EMIC=30 # Use different buffer radii per "來源說"/"通報類型" source
@@ -284,8 +284,8 @@ examples:
     parser.add_argument(
         "--thresh-iot",
         type=float,
-        default=10,
-        help="Water depth threshold in cm (default: 10)",
+        default=30,
+        help="Water depth threshold in cm (default: 30)",
     )
     parser.add_argument("--output", help="Path to output CSV file (optional)")
     parser.add_argument(
