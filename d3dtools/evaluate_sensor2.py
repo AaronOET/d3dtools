@@ -46,7 +46,7 @@ def confusion_matrix(
     high_threshold_sim_path="SHP/SIM_thrd475.shp",
     obs_path="SHP/IOT_SENSOR.shp",
     buffer_radius=20,
-    depth_threshold=10,
+    depth_threshold=30,
     output_csv=None,
     output_buffer_shp=None,
 ):
@@ -70,7 +70,7 @@ def confusion_matrix(
         radii per source, e.g. ``{"EMIC": 30, "淹水感測": 20}``
         (sources missing from the dict get a radius of 0). Default: 20.
     depth_threshold : float, optional
-        Water depth threshold in centimeters (default: 10)
+        Water depth threshold in centimeters (default: 30)
     output_csv : str, optional
         Path to the output CSV file
     output_buffer_shp : str, optional

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.37.3
+
+- **evaluate_sensor2**: the Python API `confusion_matrix()` now also defaults `depth_threshold` to 30 cm (was 10 cm), matching the `--thresh-iot` default of the command line since 0.37.2. Pass `depth_threshold=10` for the old behaviour.
+
 ## 0.37.2
 
 - **evaluate_sensor2** (`eval_iot`): `--thresh-iot` now defaults to 30 cm instead of 10 cm, so a sensor counts as flooded from 30 cm water depth unless another threshold is given (e.g. `--thresh-iot 10` for the old behaviour).
