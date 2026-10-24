@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.37.4
+
+- **evaluate_sensor2**: the `confusion_matrix()` keyword `output_buffer_shp` is renamed to `output_buffer_area`, since the buffered sensor areas can also be written as a GeoPackage (`*.gpkg`). Code that calls `output_buffer_shp=` has to switch to the new name. The command line `--output-buffer` option is unchanged, and its help now has examples for a custom output file and for `--output-buffer ""` (do not save the buffers).
+
 ## 0.37.3
 
 - **evaluate_sensor2**: the Python API `confusion_matrix()` now also defaults `depth_threshold` to 30 cm (was 10 cm), matching the `--thresh-iot` default of the command line since 0.37.2. Pass `depth_threshold=10` for the old behaviour.
