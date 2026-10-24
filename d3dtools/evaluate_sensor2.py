@@ -48,7 +48,7 @@ def confusion_matrix(
     buffer_radius=20,
     depth_threshold=30,
     output_csv=None,
-    output_buffer_shp=None,
+    output_buffer_area=None,
 ):
     """
     Calculate the accuracy and recall of a flood simulation using sensor data.
@@ -73,7 +73,7 @@ def confusion_matrix(
         Water depth threshold in centimeters (default: 30)
     output_csv : str, optional
         Path to the output CSV file
-    output_buffer_shp : str, optional
+    output_buffer_area : str, optional
         Path to a shapefile or GeoPackage (``*.gpkg``) where the buffered
         sensor geometries (with the applied radius and computed area) will
         be written. The format is chosen from the file extension. If
@@ -122,20 +122,20 @@ def confusion_matrix(
     obs_buffer["buf_area"] = obs_buffer.geometry.area
 
     # Export buffered geometries if requested
-    if output_buffer_shp:
+    if output_buffer_area:
         # GeoPackage observation input goes to a dedicated GPKG folder
         if os.path.splitext(obs_path)[1].lower() == ".gpkg":
-            output_buffer_shp = os.path.join(
-                "GPKG", os.path.basename(output_buffer_shp)
+            output_buffer_area = os.path.join(
+                "GPKG", os.path.basename(output_buffer_area)
             )
-        out_dir = os.path.dirname(output_buffer_shp)
+        out_dir = os.path.dirname(output_buffer_area)
         if out_dir:
             os.makedirs(out_dir, exist_ok=True)
-        if os.path.splitext(output_buffer_shp)[1].lower() == ".gpkg":
-            obs_buffer.to_file(output_buffer_shp, driver="GPKG")
+        if os.path.splitext(output_buffer_area)[1].lower() == ".gpkg":
+            obs_buffer.to_file(output_buffer_area, driver="GPKG")
         else:
-            obs_buffer.to_file(output_buffer_shp, encoding="utf-8")
-        print(f"Buffer geometries saved to {output_buffer_shp}")
+            obs_buffer.to_file(output_buffer_area, encoding="utf-8")
+        print(f"Buffer geometries saved to {output_buffer_area}")
         total_area = float(obs_buffer.geometry.area.sum())
         print(f"Total buffer area: {total_area:.2f} (CRS units squared)")
 
@@ -243,6 +243,8 @@ examples:
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --output results.csv
   %(prog)s --obs SHP/IOT_SENSOR.gpkg # --obs also accepts a GeoPackage (*.gpkg) file
   %(prog)s --buffer-by-source 淹水感測=20 EMIC=30 # Use different buffer radii per "來源說"/"通報類型" source
+  %(prog)s --output-buffer SHP/MY_BUFFER.shp # Save buffered sensor geometries to a custom shapefile or GeoPackage
+  %(prog)s --output-buffer "" # Do not save buffered sensor geometries
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -341,7 +343,7 @@ examples:
             buffer_radius=buffer_param,
             depth_threshold=args.thresh_iot,
             output_csv=args.output,
-            output_buffer_shp=args.output_buffer,
+            output_buffer_area=args.output_buffer,
         )
     except Exception as e:
         print(f"Error processing sensor evaluation: {str(e)}")
