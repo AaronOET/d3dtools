@@ -41,30 +41,46 @@ TOOL_DESCRIPTIONS = {
         This tool compares two simulated flood extent shapefiles (low and high depth threshold)
         with observed sensor point data to calculate accuracy and recall metrics. TP/FN are
         determined against the low-threshold simulation; FP/TN against the high-threshold one.
+        --obs can be a shapefile, GeoPackage (*.gpkg) or GeoJSON (*.geojson); EPSG:4326 input
+        is reprojected to EPSG:3826, depth values stored as text are converted to numbers.
+        The buffered sensor areas are saved to SHP/IOT_BUFFER.geojson (EPSG:4326) unless
+        --output-buffer gives another file (*.geojson, *.gpkg or *.shp) or "" (none).
 
         Examples:
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --thresh-iot 20
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --output results.csv
+            evaluate_sensor2 --obs SHP/IOT_SENSOR.geojson --output-buffer SHP/IOT_BUFFER.geojson
     """,
     'eval_plot':
     """
         Plot every IoT sensor of an evaluate_sensor2 (eval_iot) run as a map: the sensor point,
-        its buffer (SHP/IOT_BUFFER.gpkg from eval_iot, or --buffer m circles), the simulated
+        its buffer (SHP/IOT_BUFFER.geojson from eval_iot, or --buffer m circles), the simulated
         flood cells and an OpenStreetMap basemap. One PNG per sensor (PLOTS/IOT_<id>.png),
         150 m x 120 m around the point (--extent).
 
         As in eval_iot, sensors with depth (最大深*) >= --thresh-iot (30 cm) are shown / tested
         on --sim-low (SHP/SIM_thrd125.shp), the others on --sim-high (SHP/SIM_thrd475.shp).
-        Each map shows the sensor's TP / FN / FP / TN class, the overall confusion matrix and
+        TP / FN / FP / TN are counted on the buffer layer (--buffer-file / --buffer-layer),
+        feature by feature, as eval_iot counts them; the matrix covers the whole layer, also
+        with --ids. Each map shows the sensor's TP / FN / FP / TN class, the overall confusion matrix and
         the depth (m) of the cells under the buffer. The basemap needs contextily
         (pip install contextily); --no-basemap plots without it.
+        --obs can be a GeoPackage (--obs-layer for a multi-layer file); its buffers are then
+        read from GPKG/IOT_BUFFER.geojson, where eval_iot writes them for a GeoPackage --obs.
+        --obs can also be a GeoJSON (*.geojson), and --buffer-file a GeoJSON written by
+        eval_iot --output-buffer *.geojson.
 
         Examples:
             eval_plot
             eval_plot --ids U0197 U0273
             eval_plot -of PLOTS --dpi 200
             eval_plot --id-field SENSOR_ID --thresh-iot 10
+            eval_plot --obs SHP/IOT_SENSOR.gpkg          (buffers from GPKG/IOT_BUFFER.geojson)
+            eval_plot --obs sensors.gpkg --obs-layer IOT_SENSOR
+            eval_plot --obs SHP/IOT_SENSOR.geojson
+            eval_plot --buffer-file SHP/B50.geojson          (count on another buffer layer)
+            eval_plot --buffer-file layers.gpkg --buffer-layer IOT_BUFFER
             eval_plot --no-basemap
     """,
     'sensor':

@@ -14,6 +14,9 @@ SOURCE_FIELD_CANDIDATES = ("來源說", "通報類型")
 
 DEPTH_FIELD_PREFIX = "最大深"
 
+# Default file for the buffered sensor areas (command line --output-buffer)
+BUFFER_OUTPUT = os.path.join("SHP", "IOT_BUFFER.geojson")
+
 OBS_SOURCE_EPSG = 4326
 OBS_TARGET_EPSG = 3826
 
@@ -41,6 +44,31 @@ def _resolve_depth_field(columns):
     return None
 
 
+def numeric_depth(values, label="depth"):
+    """
+    Depth values as numbers. GeoJSON (and some other) exports often store them
+    as text ("37", "37.0"); text that is not a number becomes NaN, with a warning.
+    """
+    if pd.api.types.is_numeric_dtype(values):
+        return values
+    num = pd.to_numeric(values, errors="coerce")
+    bad = values.notna() & (values.astype(str).str.strip() != "") & num.isna()
+    if bad.any():
+        print(f"Warning: {int(bad.sum())} non-numeric {label} value(s) treated as missing: "
+              f"{sorted(set(values[bad].astype(str)))[:5]}")
+    return num
+
+
+def _vector_driver(path):
+    """OGR driver for an output file, from its extension."""
+    ext = os.path.splitext(path)[1].lower()
+    if ext == ".gpkg":
+        return "GPKG"
+    if ext in (".geojson", ".json"):
+        return "GeoJSON"
+    return None  # shapefile
+
+
 def confusion_matrix(
     low_threshold_sim_path="SHP/SIM_thrd125.shp",
     high_threshold_sim_path="SHP/SIM_thrd475.shp",
@@ -60,9 +88,11 @@ def confusion_matrix(
     high_threshold_sim_path : str
         Path to the simulated flood extent shapefile with high threshold
     obs_path : str
-        Path to the observed sensor point file (shapefile or GeoPackage
-        ``*.gpkg``). If its CRS is EPSG:4326, it is reprojected to
-        EPSG:3826 before use.
+        Path to the observed sensor point file: shapefile, GeoPackage
+        (``*.gpkg``) or GeoJSON (``*.geojson`` / ``*.json``). If its CRS is
+        EPSG:4326 (always the case for GeoJSON), it is reprojected to
+        EPSG:3826 before use. Depth values stored as text are converted to
+        numbers.
     buffer_radius : float or dict, optional
         Buffer radius around sensor points in meters. Set to 0 to use point
         data directly. Pass a dict mapping source-field values (``來源說``
@@ -74,9 +104,12 @@ def confusion_matrix(
     output_csv : str, optional
         Path to the output CSV file
     output_buffer_area : str, optional
-        Path to a shapefile or GeoPackage (``*.gpkg``) where the buffered
+        Path to a shapefile, GeoPackage (``*.gpkg``) or GeoJSON
+        (``*.geojson``) where the buffered
         sensor geometries (with the applied radius and computed area) will
-        be written. The format is chosen from the file extension. If
+        be written. The format is chosen from the file extension. A GeoJSON
+        is written in EPSG:4326 (WGS84, as the GeoJSON standard RFC 7946
+        requires); ``buf_r`` / ``buf_area`` stay in metres / m2. If
         ``obs_path`` is a GeoPackage (``*.gpkg``), the file is written into
         a ``GPKG`` folder (created if missing) instead of its own directory.
 
@@ -131,8 +164,15 @@ def confusion_matrix(
         out_dir = os.path.dirname(output_buffer_area)
         if out_dir:
             os.makedirs(out_dir, exist_ok=True)
-        if os.path.splitext(output_buffer_area)[1].lower() == ".gpkg":
-            obs_buffer.to_file(output_buffer_area, driver="GPKG")
+        driver = _vector_driver(output_buffer_area)
+        if driver == "GeoJSON":
+            # GeoJSON is WGS84 by definition (RFC 7946)
+            out = obs_buffer.to_crs(epsg=OBS_SOURCE_EPSG) if obs_buffer.crs else obs_buffer
+            if os.path.exists(output_buffer_area):
+                os.remove(output_buffer_area)  # the GeoJSON driver cannot overwrite
+            out.to_file(output_buffer_area, driver=driver)
+        elif driver:
+            obs_buffer.to_file(output_buffer_area, driver=driver)
         else:
             obs_buffer.to_file(output_buffer_area, encoding="utf-8")
         print(f"Buffer geometries saved to {output_buffer_area}")
@@ -146,6 +186,7 @@ def confusion_matrix(
         raise ValueError(
             f"No column starting with '{DEPTH_FIELD_PREFIX}' found in {obs_path}"
         )
+    obs_buffer[depth_field] = numeric_depth(obs_buffer[depth_field], depth_field)
 
     # Calculate True Positive (TP) and False Positive (FP)
     # Sensors with depth >= threshold that intersect with simulated flood
@@ -242,8 +283,9 @@ examples:
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 0 --thresh-iot 10 # Point data, 10 cm threshold
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --output results.csv
   %(prog)s --obs SHP/IOT_SENSOR.gpkg # --obs also accepts a GeoPackage (*.gpkg) file
+  %(prog)s --obs SHP/IOT_SENSOR.geojson # ... or a GeoJSON (*.geojson) file (EPSG:4326, reprojected to EPSG:3826)
   %(prog)s --buffer-by-source 淹水感測=20 EMIC=30 # Use different buffer radii per "來源說"/"通報類型" source
-  %(prog)s --output-buffer SHP/MY_BUFFER.shp # Save buffered sensor geometries to a custom shapefile or GeoPackage
+  %(prog)s --output-buffer SHP/MY_BUFFER.gpkg # Save buffered sensor geometries to a custom GeoJSON, GeoPackage or shapefile
   %(prog)s --output-buffer "" # Do not save buffered sensor geometries
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -262,8 +304,8 @@ examples:
         "--obs",
         default=os.path.join("SHP", "IOT_SENSOR.shp"),
         help=(
-            "Path to observed sensor point file: shapefile or GeoPackage "
-            "(*.gpkg) (default: SHP/IOT_SENSOR.shp). If its CRS is "
+            "Path to observed sensor point file: shapefile, GeoPackage "
+            "(*.gpkg) or GeoJSON (*.geojson) (default: SHP/IOT_SENSOR.shp). If its CRS is "
             "EPSG:4326, it is reprojected to EPSG:3826 automatically."
         ),
     )
@@ -292,10 +334,11 @@ examples:
     parser.add_argument("--output", help="Path to output CSV file (optional)")
     parser.add_argument(
         "--output-buffer",
-        default=os.path.join("SHP", "IOT_BUFFER.gpkg"),
+        default=BUFFER_OUTPUT,
         help=(
-            "Path to output shapefile or GeoPackage (*.gpkg) of the "
-            "buffered sensor geometries (default: SHP/IOT_BUFFER.gpkg). "
+            "Path to output shapefile, GeoPackage (*.gpkg) or GeoJSON (*.geojson) of the "
+            "buffered sensor geometries (default: SHP/IOT_BUFFER.geojson, "
+            "written in EPSG:4326). "
             "If --obs is a GeoPackage, the file is written into a GPKG "
             "folder (created if missing) instead. Use '' to disable."
         ),

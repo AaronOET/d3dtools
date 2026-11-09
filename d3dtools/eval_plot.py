@@ -8,12 +8,23 @@ The simulation layer shown for a sensor follows its observed max depth
     depth >= --thresh-iot (30 cm)  -> --sim-low  (SHP/SIM_thrd125.shp)
     otherwise                      -> --sim-high (SHP/SIM_thrd475.shp)
 
-Each sensor is classified TP / FN / FP / TN with the same rule:
+TP / FN / FP / TN are counted on the buffer layer (--buffer-file /
+--buffer-layer), feature by feature with each feature's own depth, exactly as
+evaluate_sensor2 counts them:
     depth >= threshold: buffer hits --sim-low  -> TP, else FN
     depth <  threshold: buffer hits --sim-high -> FP, else TN
-The class is shown as a badge on the plot, the overall confusion matrix in the
-upper-right corner, and the depth of every cell under the sensor's buffer is
-labelled (m).
+Accuracy is (TP + TN) over all buffer features (also those without a depth).
+The matrix always covers the whole buffer layer, also with --ids. Without a
+buffer file, --buffer m circles around every sensor are counted instead.
+Each map shows its sensor's class as a badge ("not counted" when the sensor has
+no buffer feature), the overall confusion matrix in the upper-right corner, and
+the depth (m) of every cell under the sensor's buffer.
+
+--obs can be a shapefile, a GeoPackage (*.gpkg; --obs-layer picks the layer
+of a multi-layer file) or a GeoJSON (*.geojson). The buffers are read by
+default from SHP/IOT_BUFFER.geojson, or GPKG/IOT_BUFFER.geojson for a GeoPackage
+--obs, where eval_iot writes them (the IOT_BUFFER.gpkg of eval_iot < 0.38.1 is
+used when there is no .geojson).
 
 The basemap needs `contextily` (pip install contextily); without it, or with
 --no-basemap, the maps are drawn without one.
@@ -27,16 +38,19 @@ import sys
 from pathlib import Path
 
 import geopandas as gpd
-from shapely.geometry import MultiPolygon, box
+from shapely import union_all
+from shapely.geometry import box
 
-from .evaluate_sensor2 import _resolve_depth_field
+from .evaluate_sensor2 import _resolve_depth_field, numeric_depth
 
 SCRIPT = "eval_plot"
 
 SIM_LOW = os.path.join("SHP", "SIM_thrd125.shp")    # used when depth >= threshold
 SIM_HIGH = os.path.join("SHP", "SIM_thrd475.shp")   # used otherwise
 OBS_FILE = os.path.join("SHP", "IOT_SENSOR.shp")
-BUFFER_FILE = os.path.join("SHP", "IOT_BUFFER.gpkg")  # written by evaluate_sensor2
+BUFFER_FILE = os.path.join("SHP", "IOT_BUFFER.geojson")  # written by evaluate_sensor2
+# evaluate_sensor2 writes the buffers into a GPKG folder when --obs is a GeoPackage
+BUFFER_FILE_GPKG = os.path.join("GPKG", "IOT_BUFFER.geojson")
 OUT_DIR = "PLOTS"
 ID_FIELD = "序號"
 DEPTH_THRESHOLD = 30.0      # cm
@@ -80,6 +94,67 @@ def _to_metric(gdf):
     return gdf.to_crs(METRIC_CRS) if gdf.crs else gdf.set_crs(METRIC_CRS)
 
 
+def is_gpkg(path):
+    return bool(path) and os.path.splitext(str(path))[1].lower() == ".gpkg"
+
+
+def _list_layers(path):
+    """Layer names of a vector file ([] if they cannot be listed)."""
+    try:
+        if hasattr(gpd, "list_layers"):  # geopandas >= 1.0
+            return list(gpd.list_layers(path)["name"])
+        import pyogrio
+        return [row[0] for row in pyogrio.list_layers(path)]
+    except Exception:
+        try:
+            import fiona
+            return list(fiona.listlayers(path))
+        except Exception:
+            return []
+
+
+def read_layer(path, layer=None, **kw):
+    """
+    Read a shapefile or GeoPackage. For a GeoPackage with several layers and no
+    `layer` given, the first layer is used (with a note listing the others).
+    """
+    if layer is None and is_gpkg(path):
+        layers = _list_layers(path)
+        if len(layers) > 1:
+            print(f"Note: {path} has {len(layers)} layers {layers}; "
+                  f"using '{layers[0]}' (choose another with --obs-layer / --buffer-layer)")
+            layer = layers[0]
+    elif layer is not None and is_gpkg(path):
+        layers = _list_layers(path)
+        if layers and layer not in layers:
+            raise ValueError(f"layer '{layer}' not in {path}; available: {layers}")
+    return gpd.read_file(path, layer=layer, **kw) if layer is not None else gpd.read_file(path, **kw)
+
+
+def default_buffer_file(obs):
+    """
+    Where eval_iot writes the buffers for this --obs (GPKG/ folder for a
+    GeoPackage). eval_iot < 0.38.1 wrote IOT_BUFFER.gpkg instead of
+    IOT_BUFFER.geojson; that file is used when there is no .geojson.
+    """
+    candidates = [BUFFER_FILE_GPKG] if is_gpkg(obs) else []
+    candidates.append(BUFFER_FILE)
+    for path in candidates:
+        for p in (path, os.path.splitext(path)[0] + ".gpkg"):
+            if os.path.exists(p):
+                return p
+    return BUFFER_FILE
+
+
+def _as_points(gdf):
+    """Sensor locations as Points (MultiPoint / polygon features -> a point inside them)."""
+    gdf = gdf[gdf.geometry.notna() & ~gdf.geometry.is_empty].copy()
+    not_point = gdf.geom_type != "Point"
+    if not_point.any():
+        gdf.loc[not_point, "geometry"] = gdf.geometry[not_point].representative_point()
+    return gdf
+
+
 def _load_contextily(tile_cache):
     """Import contextily (None if missing), with a usable PROJ and an OSM-friendly setup."""
     # A system-wide PROJ_LIB (e.g. from TauDEM) can point rasterio at an
@@ -109,53 +184,70 @@ def _load_contextily(tile_cache):
     return ctx
 
 
-def classify(pts, polys, sims, use_low, depth_field, id_field,
-             threshold=DEPTH_THRESHOLD, fallback=BUFFER_FALLBACK):
-    """Return ({index: 'TP'/'FN'/'FP'/'TN'/None}, {index: buffer geometry})."""
-    classes, buffers = {}, {}
-    for idx, row in pts.iterrows():
-        own = polys[polys[id_field] == row[id_field]]
-        geom = row.geometry.buffer(fallback) if own.empty else _union(own.geometry)
-        buffers[idx] = geom
+def classify(layer, sims, use_low, depth_field, threshold=DEPTH_THRESHOLD):
+    """
+    {index: 'TP'/'FN'/'FP'/'TN'/None} for every feature of `layer` (the buffer
+    areas), with the same rule as evaluate_sensor2:
+        depth >= threshold: geometry hits sims[True]  -> TP, else FN
+        depth <  threshold: geometry hits sims[False] -> FP, else TN
+    Features without a depth value are None (not classified).
+    """
+    classes = {}
+    for idx, row in layer.iterrows():
         depth = row[depth_field]
-        if _isnan(depth):
+        if _isnan(depth) or row.geometry is None or row.geometry.is_empty:
             classes[idx] = None
             continue
         sim = sims.get(bool(use_low.loc[idx]))
-        hit = sim is not None and len(sim.sindex.query(geom, predicate="intersects")) > 0
+        hit = sim is not None and len(sim.sindex.query(row.geometry, predicate="intersects")) > 0
         if depth >= threshold:
             classes[idx] = "TP" if hit else "FN"
         else:
             classes[idx] = "FP" if hit else "TN"
-    return classes, buffers
+    return classes
 
 
 def summarize(classes):
-    """Counts, accuracy and recall (%) of a classes dict."""
+    """
+    Counts, accuracy and recall (%) of a classes dict. As in evaluate_sensor2,
+    accuracy is (TP + TN) over ALL features, including unclassified ones.
+    """
     counts = {k: sum(1 for c in classes.values() if c == k) for k in CLASS_COLORS}
-    n = sum(counts.values())
+    n = len(classes)
     pos = counts["TP"] + counts["FN"]
     return {
         **counts,
         "n": n,
+        "unclassified": n - sum(counts.values()),
         "accuracy": (counts["TP"] + counts["TN"]) / n * 100 if n else 0.0,
         "recall": counts["TP"] / pos * 100 if pos else 0.0,
     }
 
 
-def plot_sensors(sim_low=SIM_LOW, sim_high=SIM_HIGH, obs=OBS_FILE, buffer_file=BUFFER_FILE,
+def plot_sensors(sim_low=SIM_LOW, sim_high=SIM_HIGH, obs=OBS_FILE, buffer_file="auto",
                  out_dir=OUT_DIR, ids=None, id_field=ID_FIELD, depth_field=None,
                  threshold=DEPTH_THRESHOLD, buffer_fallback=BUFFER_FALLBACK,
                  extent=(EXTENT_W, EXTENT_H), dpi=150, zoom=19, basemap=True,
-                 tile_cache=TILE_CACHE):
+                 tile_cache=TILE_CACHE, obs_layer=None, buffer_layer=None):
     """
     Write one PNG map per sensor to `out_dir` (IOT_<id>.png).
 
-    `sim_low` is shown / tested for sensors with depth >= `threshold` (cm),
-    `sim_high` for the others. Sensors without a polygon in `buffer_file`
-    (or when `buffer_file` is None / missing) get a `buffer_fallback` m circle.
-    Return a dict with the confusion matrix summary and the PNG paths.
+    `obs` is a shapefile, GeoPackage (`obs_layer` picks the layer of a
+    multi-layer GeoPackage) or GeoJSON. `sim_low` is shown / tested for sensors with
+    depth >= `threshold` (cm), `sim_high` for the others. `buffer_file="auto"`
+    uses where eval_iot writes the buffers: GPKG/IOT_BUFFER.geojson for a
+    GeoPackage `obs` (if it exists), else SHP/IOT_BUFFER.geojson (or the
+    older IOT_BUFFER.gpkg in the same folders). Sensors without
+    a buffer polygon (or when `buffer_file` is None / missing) get a
+    `buffer_fallback` m circle.
+    The confusion matrix is counted on the buffer features (see the module
+    docstring), not on the sensor points, and covers the whole buffer layer
+    whatever `ids` selects.
+    Return a dict with the confusion matrix summary, the class per buffer ID
+    and the PNG paths.
     """
+    if buffer_file == "auto":
+        buffer_file = default_buffer_file(obs)
     import matplotlib
     import matplotlib.pyplot as plt
     import matplotlib.patheffects as pe
@@ -165,9 +257,11 @@ def plot_sensors(sim_low=SIM_LOW, sim_high=SIM_HIGH, obs=OBS_FILE, buffer_file=B
     ctx = _load_contextily(tile_cache) if basemap else None
     ext_w, ext_h = extent
 
-    pts = _to_metric(gpd.read_file(obs))
+    pts = _as_points(_to_metric(read_layer(obs, obs_layer)))
+    print(f"Sensors: {obs}{f' (layer {obs_layer})' if obs_layer else ''}  - {len(pts)} point(s)")
     if buffer_file and os.path.exists(buffer_file):
-        polys = _to_metric(gpd.read_file(buffer_file))
+        polys = _to_metric(read_layer(buffer_file, buffer_layer))
+        print(f"Buffers: {buffer_file}")
     else:
         if buffer_file:
             print(f"Warning: buffer file not found: {buffer_file}; "
@@ -178,15 +272,38 @@ def plot_sensors(sim_low=SIM_LOW, sim_high=SIM_HIGH, obs=OBS_FILE, buffer_file=B
         if id_field not in layer.columns:
             raise ValueError(f"ID field '{id_field}' not in the {name} layer; available: "
                              f"{[c for c in layer.columns if c != 'geometry']}")
+    # compare IDs as text, so e.g. integer IDs in a GeoPackage match the --ids given
+    pts[id_field] = pts[id_field].astype(str)
+    polys[id_field] = polys[id_field].astype(str)
     depth_field = depth_field or _resolve_depth_field(pts.columns)
     if depth_field is None or depth_field not in pts.columns:
         raise ValueError(f"no depth field (最大深*) in {obs}; give one with --depth-field")
+    pts[depth_field] = numeric_depth(pts[depth_field], depth_field)
+
+    # The confusion matrix is counted on the buffer layer, feature by feature,
+    # as evaluate_sensor2 counts it; without one, on buffer_fallback m circles
+    # around every sensor.
+    if not polys.empty:
+        if depth_field not in polys.columns:
+            print(f"Note: no '{depth_field}' in the buffer layer; "
+                  f"taking it from the sensor layer by {id_field}")
+            depth_by_id = pts.drop_duplicates(id_field).set_index(id_field)[depth_field]
+            polys[depth_field] = polys[id_field].map(depth_by_id)
+        polys[depth_field] = numeric_depth(polys[depth_field], f"buffer {depth_field}")
+        counted = polys
+        count_src = f"{len(polys)} buffer feature(s) in {buffer_file}"
+    else:
+        counted = pts.copy()
+        counted["geometry"] = pts.geometry.buffer(buffer_fallback)
+        count_src = f"{buffer_fallback:g} m circles around {len(pts)} sensor(s)"
+    counted_low = counted[depth_field].fillna(-1) >= threshold
 
     if ids:
-        missing = set(ids) - set(pts[id_field].astype(str))
+        ids = [str(i) for i in ids]
+        missing = set(ids) - set(pts[id_field])
         if missing:
             print(f"Warning: IDs not found: {sorted(missing)}")
-        pts = pts[pts[id_field].astype(str).isin(ids)]
+        pts = pts[pts[id_field].isin(ids)]
 
     os.makedirs(out_dir, exist_ok=True)
     use_low = pts[depth_field].fillna(-1) >= threshold
@@ -195,14 +312,17 @@ def plot_sensors(sim_low=SIM_LOW, sim_high=SIM_HIGH, obs=OBS_FILE, buffer_file=B
         return box(pt.x - ext_w / 2, pt.y - ext_h / 2, pt.x + ext_w / 2, pt.y + ext_h / 2)
 
     # The SIM files are large; read each once, only the cells inside the frames
-    # of the sensors that use it.
+    # of the plotted sensors and under the counted buffers that use it.
     sims, sim_fields, sim_names = {}, {}, {True: Path(sim_low).stem, False: Path(sim_high).stem}
     for is_low, path in ((True, sim_low), (False, sim_high)):
         sel = pts[use_low == is_low]
-        if sel.empty:
+        cnt = counted[counted_low == is_low]
+        if sel.empty and cnt.empty:
             continue
-        print(f"Reading {path} for {len(sel)} sensor(s) ...")
-        sim = gpd.read_file(path, mask=MultiPolygon([frame(g) for g in sel.geometry]))
+        print(f"Reading {path} for {len(sel)} plotted sensor(s) / {len(cnt)} counted buffer(s) ...")
+        parts = [frame(g) for g in sel.geometry]
+        parts += [g for g in cnt.geometry if g is not None and not g.is_empty]
+        sim = gpd.read_file(path, mask=union_all(parts))
         field = next((f for f in SIM_VALUE_FIELDS if f in sim.columns), None)
         if field is None:
             raise ValueError(f"{path} has none of {list(SIM_VALUE_FIELDS)}; available: "
@@ -214,15 +334,28 @@ def plot_sensors(sim_low=SIM_LOW, sim_high=SIM_HIGH, obs=OBS_FILE, buffer_file=B
     all_vals = [v for g in sims.values() for v in g[_SIM_VALUE].dropna()]
     norm = Normalize(vmin=0, vmax=max(all_vals) if all_vals else 1)
 
-    classes, buffers = classify(pts, polys, sims, use_low, depth_field, id_field,
-                                threshold, buffer_fallback)
+    classes = classify(counted, sims, counted_low, depth_field, threshold)
     s = summarize(classes)
+    print(f"Counted: {count_src}")
     print("TP={TP} FN={FN} FP={FP} TN={TN}  Accuracy={accuracy:.2f}%  "
-          "Recall={recall:.2f}%".format(**s))
+          "Recall={recall:.2f}%".format(**s)
+          + (f"  ({s['unclassified']} without depth)" if s["unclassified"] else ""))
     summary_txt = ("Confusion matrix (n={n})\n"
                    "TP {TP:>3}   FN {FN:>3}\n"
                    "FP {FP:>3}   TN {TN:>3}\n"
                    "Acc {accuracy:.1f}%  Recall {recall:.1f}%").format(**s)
+
+    # Per plotted sensor: its counted buffer feature(s) and their class
+    buffers, sensor_class = {}, {}
+    for idx, row in pts.iterrows():
+        own = counted[counted[id_field] == row[id_field]]
+        geoms = [g for g in own.geometry if g is not None and not g.is_empty]
+        buffers[idx] = union_all(geoms) if geoms else row.geometry.buffer(buffer_fallback)
+        own_cls = [classes[i] for i in own.index if classes.get(i)]
+        sensor_class[idx] = own_cls[0] if own_cls else ("Unclassified" if len(own) else None)
+        if len(set(own_cls)) > 1:
+            print(f"Warning: [{row[id_field]}] has {len(own)} buffer features with "
+                  f"classes {own_cls}; the badge shows {own_cls[0]}")
 
     pngs = []
     rc = {"font.sans-serif": CJK_FONTS, "axes.unicode_minus": False}
@@ -278,8 +411,10 @@ def plot_sensors(sim_low=SIM_LOW, sim_high=SIM_HIGH, obs=OBS_FILE, buffer_file=B
                         color="black", zorder=5,
                         path_effects=[pe.withStroke(linewidth=3, foreground="white")])
 
-            cls = classes.get(idx)
-            ax.text(0.015, 0.985, f"{cls}  {CLASS_NAMES[cls]}" if cls else "Unclassified",
+            cls = sensor_class.get(idx)
+            badge = (f"{cls}  {CLASS_NAMES[cls]}" if cls in CLASS_NAMES
+                     else cls or "Not in buffer layer (not counted)")
+            ax.text(0.015, 0.985, badge,
                     transform=ax.transAxes, ha="left", va="top", fontsize=13,
                     fontweight="bold", color="white", zorder=6,
                     bbox=dict(boxstyle="round,pad=0.4",
@@ -315,7 +450,7 @@ def plot_sensors(sim_low=SIM_LOW, sim_high=SIM_HIGH, obs=OBS_FILE, buffer_file=B
             print(f"Saved {out_png}")
             pngs.append(out_png)
 
-    return {**s, "classes": {pts.loc[i, id_field]: c for i, c in classes.items()},
+    return {**s, "classes": {counted.loc[i, id_field]: c for i, c in classes.items()},
             "pngs": pngs}
 
 
@@ -327,14 +462,25 @@ def main():
                     "its TP / FN / FP / TN class. One PNG per sensor.",
         epilog="""
 examples:
-  %(prog)s                                  (SHP/SIM_thrd125 + SIM_thrd475, SHP/IOT_SENSOR.shp,
-                                            SHP/IOT_BUFFER.gpkg -> PLOTS/IOT_<id>.png)
-  %(prog)s --ids U0197 U0273                (only these sensors)
+  %(prog)s                                 (SHP/SIM_thrd125 + SIM_thrd475, SHP/IOT_SENSOR.shp,
+                                            SHP/IOT_BUFFER.geojson -> PLOTS/IOT_<id>.png)
+  %(prog)s --ids U0197 U0273               (only these sensors)
   %(prog)s -of PLOTS --dpi 200
   %(prog)s --id-field SENSOR_ID
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp
-  %(prog)s --thresh-iot 10                  (same threshold as eval_iot --thresh-iot 10)
-  %(prog)s --no-basemap                     (offline, no OpenStreetMap tiles)
+  %(prog)s --obs SHP/IOT_SENSOR.gpkg       (GeoPackage sensors; buffers from GPKG/IOT_BUFFER.geojson,
+                                            where eval_iot --obs *.gpkg writes them)
+  %(prog)s --obs sensors.gpkg --obs-layer IOT_SENSOR
+  %(prog)s --obs SHP/IOT_SENSOR.geojson    (GeoJSON sensors, EPSG:4326 -> EPSG:3826)
+  %(prog)s --buffer-file SHP/B50.geojson   (count TP/FN/FP/TN on another buffer layer, e.g. from
+                                            eval_iot --buffer 50 --output-buffer SHP/B50.geojson)
+  %(prog)s --buffer-file SHP/IOT_BUFFER.gpkg (buffers of eval_iot < 0.38.1, GeoPackage)
+  %(prog)s --buffer-file SHP/MY_BUFFER.shp (buffers as a shapefile)
+  %(prog)s --buffer-file layers.gpkg --buffer-layer IOT_BUFFER
+                                            (one layer of a multi-layer GeoPackage)
+  %(prog)s --buffer-file "" --buffer 30    (no buffer file: count 30 m circles around the sensors)
+  %(prog)s --thresh-iot 10                 (same threshold as eval_iot --thresh-iot 10)
+  %(prog)s --no-basemap                    (offline, no OpenStreetMap tiles)
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -345,10 +491,18 @@ examples:
                         help="High-threshold SIM shapefile, used for the other sensors "
                              "(default: %(default)s)")
     parser.add_argument("--obs", default=OBS_FILE,
-                        help="Sensor point shapefile or GeoPackage (default: %(default)s)")
-    parser.add_argument("--buffer-file", default=BUFFER_FILE,
+                        help="Sensor point shapefile, GeoPackage (*.gpkg) or GeoJSON (*.geojson) "
+                             "(default: %(default)s)")
+    parser.add_argument("--obs-layer", default=None, metavar="LAYER",
+                        help="Layer of a multi-layer --obs GeoPackage (default: the first)")
+    parser.add_argument("--buffer-file", default="auto",
                         help="Buffered sensor areas written by eval_iot --output-buffer "
-                             "(default: %(default)s). Use '' to draw --buffer circles instead.")
+                             f"(default: {BUFFER_FILE}, or {BUFFER_FILE_GPKG} when --obs is "
+                             "a GeoPackage, as eval_iot writes it there). "
+                             "Use '' to draw --buffer circles instead.")
+    parser.add_argument("--buffer-layer", default=None, metavar="LAYER",
+                        help="Layer of a multi-layer --buffer-file GeoPackage (default: the "
+                             "first). TP / FN / FP / TN are counted on this layer.")
     parser.add_argument("--buffer", type=float, default=BUFFER_FALLBACK, metavar="M",
                         help="Buffer radius (m) for sensors without a buffer polygon "
                              "(default: %(default)g)")
@@ -387,7 +541,8 @@ examples:
         plot_sensors(args.sim_low, args.sim_high, args.obs, args.buffer_file or None,
                      args.out_dir, args.ids, args.id_field, args.depth_field,
                      args.thresh_iot, args.buffer, tuple(args.extent), args.dpi,
-                     args.zoom, not args.no_basemap, args.tile_cache)
+                     args.zoom, not args.no_basemap, args.tile_cache,
+                     args.obs_layer, args.buffer_layer)
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)

@@ -322,6 +322,10 @@ results = evaluate_sensor2.confusion_matrix(
     depth_threshold=30,             # Water depth threshold in centimeters (default: 30)
     output_csv='sensor_accuracy2.csv'
 )
+# obs_path can also be a GeoPackage (*.gpkg) or GeoJSON (*.geojson); EPSG:4326 input is
+# reprojected to EPSG:3826 and depth values stored as text are converted to numbers.
+# output_buffer_area may be a shapefile, *.gpkg or *.geojson (written in EPSG:4326).
+# On the command line, --output-buffer defaults to SHP/IOT_BUFFER.geojson.
 
 print(f"Accuracy: {results['accuracy']:.2f}%")
 print(f"Recall (Catch Rate): {results['recall']:.2f}%")
@@ -330,17 +334,24 @@ print(f"Recall (Catch Rate): {results['recall']:.2f}%")
 ### Plot the IoT sensors of an evaluation
 
 `eval_plot` draws one map per sensor (`PLOTS/IOT_<id>.png`, 150 m x 120 m) with the
-sensor, its buffer (`SHP/IOT_BUFFER.gpkg`, written by `eval_iot`), the simulated flood
+sensor, its buffer (`SHP/IOT_BUFFER.geojson`, written by `eval_iot`), the simulated flood
 cells (`SIM_thrd125` for sensors with depth >= `--thresh-iot`, else `SIM_thrd475`) and an
 OpenStreetMap basemap, labelled with the sensor's TP/FN/FP/TN class and the overall
-confusion matrix. The basemap needs `contextily` (`pip install contextily`); use
-`--no-basemap` without it or offline.
+confusion matrix. TP/FN/FP/TN are counted on the buffer layer (`--buffer-file` /
+`--buffer-layer`) feature by feature, as `eval_iot` counts them, so the numbers match
+`eval_iot` and cover the whole layer even with `--ids`. The basemap needs `contextily` (`pip install contextily`); use
+`--no-basemap` without it or offline. `--obs` can also be a GeoPackage
+(`--obs-layer` picks the layer of a multi-layer file); the buffers are then read from
+`GPKG/IOT_BUFFER.geojson`, where `eval_iot --obs *.gpkg` writes them. A GeoJSON
+(`*.geojson`) works as `--obs` (and as `--buffer-file`) too.
 
 ```python
 # eval_plot                                  # all sensors -> PLOTS/IOT_<id>.png
 # eval_plot --ids U0197 U0273                # only these sensors
 # eval_plot -of PLOTS --dpi 200 --thresh-iot 10
 # eval_plot --no-basemap
+# eval_plot --obs SHP/IOT_SENSOR.gpkg       # GeoPackage sensors, buffers from GPKG/IOT_BUFFER.geojson
+# eval_plot --obs SHP/IOT_SENSOR.geojson    # GeoJSON sensors
 
 from d3dtools import eval_plot
 result = eval_plot.plot_sensors(obs="SHP/IOT_SENSOR.shp", out_dir="PLOTS", ids=["U0197"])
