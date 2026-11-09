@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.37.4",
+    version="0.38.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -43,10 +43,12 @@ setup(
             "evaluate_sensor=d3dtools.evaluate_sensor:main",  # Tool for evaluating sensor data
             "evaluate_sensor2=d3dtools.evaluate_sensor2:main",  # Tool for evaluating sensor data with dual-threshold shapefiles
             "eval_iot=d3dtools.evaluate_sensor2:main",  # Alias for evaluate_sensor2
+            "eval_plot=d3dtools.eval_plot:main",  # One map PNG per IoT sensor with its TP/FN/FP/TN class
             "getfacez=d3dtools.getfacez:main",  # Tool for extracting Mesh2d_face_z values from NetCDF files
             "getfacez2=d3dtools.getfacez2:main",  # Faster, spatial-index accelerated version of getfacez
             "fou2shp=d3dtools.fou2shp:main",  # Tool for converting Delft3D FOU output to shapefiles
             "fou2mfd=d3dtools.fou2mfd:main",  # FOU output to one shapefile for a single flood threshold
+            "ncts2shp=d3dtools.ncts2shp:main",  # Max water depth over a map time series to threshold shapefiles
             "pliz2shp=d3dtools.pliz2shp:main",  # Tool for converting Delft3D PLIZ files to shapefiles
             "pli2shp=d3dtools.pli2shp:main",  # Tool for converting Delft3D PLI/LDB polyline files to shapefiles
             "pol2shp=d3dtools.pol2shp:main",  # Tool for converting Delft3D POL polygon files to shapefiles

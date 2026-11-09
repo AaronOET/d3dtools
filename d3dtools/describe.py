@@ -47,6 +47,26 @@ TOOL_DESCRIPTIONS = {
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --thresh-iot 20
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --output results.csv
     """,
+    'eval_plot':
+    """
+        Plot every IoT sensor of an evaluate_sensor2 (eval_iot) run as a map: the sensor point,
+        its buffer (SHP/IOT_BUFFER.gpkg from eval_iot, or --buffer m circles), the simulated
+        flood cells and an OpenStreetMap basemap. One PNG per sensor (PLOTS/IOT_<id>.png),
+        150 m x 120 m around the point (--extent).
+
+        As in eval_iot, sensors with depth (最大深*) >= --thresh-iot (30 cm) are shown / tested
+        on --sim-low (SHP/SIM_thrd125.shp), the others on --sim-high (SHP/SIM_thrd475.shp).
+        Each map shows the sensor's TP / FN / FP / TN class, the overall confusion matrix and
+        the depth (m) of the cells under the buffer. The basemap needs contextily
+        (pip install contextily); --no-basemap plots without it.
+
+        Examples:
+            eval_plot
+            eval_plot --ids U0197 U0273
+            eval_plot -of PLOTS --dpi 200
+            eval_plot --id-field SENSOR_ID --thresh-iot 10
+            eval_plot --no-basemap
+    """,
     'sensor':
     """
         Extract time series data at observation points from Delft3D FM NetCDF files.
@@ -226,6 +246,24 @@ TOOL_DESCRIPTIONS = {
             fou2mfd NC/FlowFM_fou.nc -t 0.5
             fou2mfd NC/FlowFM_fou.nc -t 0.5 -o MFD
             fou2mfd NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
+    """,
+    'ncts2shp':
+    """
+        Write threshold flood-extent shapefiles from the MAXIMUM water depth over time in a
+        Delft3D FM map file (time series), e.g. an event simulation without FOU output.
+
+        Mesh2d_waterdepth (auto-detected, or --var) is read in chunks of time steps (--chunk,
+        default 50) and its maximum per face is written to SHP/SIM_thrd125 / 300 / 475.shp
+        (attribute max_dep, EPSG:3826). -t gives other thresholds (metres), -of another folder,
+        -r removes polygons intersecting mask shapefiles (copies in <folder>_RM).
+        Works with non-ASCII (e.g. Chinese) file / folder names.
+
+        Examples:
+            ncts2shp
+            ncts2shp B01-TPE_TM_EVENT.nc -of SHP
+            ncts2shp FlowFM_map.nc -t 0.3
+            ncts2shp FlowFM_map.nc --var Mesh2d_waterdepth --chunk 100
+            ncts2shp FlowFM_map.nc -r SHP/EXCLUDE.shp
     """,
     'pliz2shp':
     """

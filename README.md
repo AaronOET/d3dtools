@@ -26,11 +26,13 @@ This package provides several utilities for converting shapefiles to various for
 - **evaluate**: Calculate flood simulation accuracy metrics by comparing simulated and observed flood extents
 - **evaluate_sensor**: Calculate flood simulation accuracy metrics by comparing simulated flood extents with point-based sensor data (with configurable buffer radius and depth threshold)
 - **evaluate_sensor2** (alias: **eval_iot**): Calculate flood simulation accuracy metrics using sensor data with dual-threshold shapefiles (separate low and high depth threshold simulations)
+- **eval_plot**: Plot every IoT sensor of an `evaluate_sensor2` (`eval_iot`) run as a map PNG (sensor, buffer, simulated flood cells, OpenStreetMap basemap) with its TP/FN/FP/TN class and the overall confusion matrix
 - **sensor**: Extract time series data from Delft3D FM NetCDF files at observation points
 - **getfacez**: Extract Mesh2d_face_z values (bed level/bathymetry) from Delft3D FM NetCDF files at observation points. Uses a spatial index (shapely STRtree for point-in-polygon matching, scipy cKDTree for nearest-neighbor matching) instead of scanning every mesh face for every observation point, which is much faster on large meshes. Supports `-if`/`--id-field` to specify which shapefile field to use for point names, and `-p`/`--project` to resolve the NetCDF file from a D-Flow FM `.dsproj` project instead of passing `--nc-file`
 - **getfacez2**: Original brute-force implementation of getfacez (no spatial index), kept as a fallback. Same CLI arguments, Python API, and output format as getfacez, including `-if`/`--id-field`
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<output-folder>_RM/`)
 - **fou2mfd**: Like `fou2shp`, but writes only the shapefile of one flood threshold (`-t`, default 0.3 m), without the -/+ 0.175 m layers
+- **ncts2shp**: Like `fou2shp`, but from a map output time series: computes the maximum `Mesh2d_waterdepth` over all time steps and writes the threshold shapefiles (`SIM_thrd125/300/475`, or `-t` thresholds)
 - **pliz2shp**: Convert Delft3D/D-Flow FM `.pliz` weir/dike polyline files (with Z) to 3D ESRI Shapefiles
 - **pli2shp**: Convert Delft3D polyline files (`.pli`/`.ldb`) to ESRI Shapefiles
 - **pol2shp**: Convert Delft3D/D-Flow FM `.pol` polygon files to ESRI Shapefiles
@@ -325,6 +327,26 @@ print(f"Accuracy: {results['accuracy']:.2f}%")
 print(f"Recall (Catch Rate): {results['recall']:.2f}%")
 ```
 
+### Plot the IoT sensors of an evaluation
+
+`eval_plot` draws one map per sensor (`PLOTS/IOT_<id>.png`, 150 m x 120 m) with the
+sensor, its buffer (`SHP/IOT_BUFFER.gpkg`, written by `eval_iot`), the simulated flood
+cells (`SIM_thrd125` for sensors with depth >= `--thresh-iot`, else `SIM_thrd475`) and an
+OpenStreetMap basemap, labelled with the sensor's TP/FN/FP/TN class and the overall
+confusion matrix. The basemap needs `contextily` (`pip install contextily`); use
+`--no-basemap` without it or offline.
+
+```python
+# eval_plot                                  # all sensors -> PLOTS/IOT_<id>.png
+# eval_plot --ids U0197 U0273                # only these sensors
+# eval_plot -of PLOTS --dpi 200 --thresh-iot 10
+# eval_plot --no-basemap
+
+from d3dtools import eval_plot
+result = eval_plot.plot_sensors(obs="SHP/IOT_SENSOR.shp", out_dir="PLOTS", ids=["U0197"])
+print(result["accuracy"], result["recall"], result["pngs"])
+```
+
 ### Reconstruct FOU mesh faces as threshold shapefiles
 
 ```python
@@ -352,6 +374,24 @@ output is named `SIM_thrd<mm>.shp` (0.3 m -> `SIM_thrd300`) unless `-o` gives a 
 
 from d3dtools import fou2mfd
 fou2mfd.fou2mfd("NC/FlowFM_fou.nc", threshold=0.5, out_dir="SHP")
+```
+
+### Threshold shapefiles from the max depth of a map time series
+
+`ncts2shp` computes the maximum water depth over all time steps of a map output file
+(e.g. an event simulation without FOU output), reading `Mesh2d_waterdepth` in chunks of
+time steps, and writes the faces deeper than each threshold to `SIM_thrd<mm>.shp`
+(attribute `max_dep`). Non-ASCII (e.g. Chinese) file and folder names are supported.
+
+```python
+# ncts2shp                                                       # NC/FlowFM_map.nc -> SHP/SIM_thrd125/300/475.shp
+# ncts2shp B01-TPE_TM_EVENT.nc -of SHP
+# ncts2shp FlowFM_map.nc -t 0.3                                  # -> SHP/SIM_thrd300.shp only
+# ncts2shp FlowFM_map.nc --var Mesh2d_waterdepth --chunk 100
+# ncts2shp FlowFM_map.nc -r SHP/EXCLUDE.shp                      # Filtered copies -> SHP_RM/
+
+from d3dtools import ncts2shp
+ncts2shp.ncts2shp("FlowFM_map.nc", thresholds=[0.125, 0.3, 0.475], out_dir="SHP")
 ```
 
 ### Convert PLIZ files to Shapefiles
@@ -884,10 +924,12 @@ d3dtools-info evaluate
 d3dtools-info evaluate_sensor
 d3dtools-info evaluate_sensor2
 d3dtools-info eval_iot
+d3dtools-info eval_plot
 d3dtools-info getfacez
 d3dtools-info getfacez2
 d3dtools-info fou2shp
 d3dtools-info fou2mfd
+d3dtools-info ncts2shp
 d3dtools-info pliz2shp
 d3dtools-info pli2shp
 d3dtools-info pol2shp
@@ -931,10 +973,12 @@ evaluate --help
 evaluate_sensor --help
 evaluate_sensor2 --help
 eval_iot --help
+eval_plot --help
 getfacez --help
 getfacez2 --help
 fou2shp --help
 fou2mfd --help
+ncts2shp --help
 pliz2shp --help
 pli2shp --help
 pol2shp --help
@@ -1045,6 +1089,10 @@ fou2shp NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp  # Multiple expl
 
 # Only the layer of one flood threshold (no -/+ 0.175 m layers)
 fou2mfd NC/FlowFM_fou.nc -t 0.5                 # -> SHP/SIM_thrd500.shp
+
+# Threshold shapefiles from the max water depth over a map output time series
+ncts2shp FlowFM_map.nc                          # -> SHP/SIM_thrd125/300/475.shp
+ncts2shp FlowFM_map.nc -t 0.3 --chunk 100       # -> SHP/SIM_thrd300.shp
 
 # Convert a Delft3D/D-Flow FM .pliz file (weir/dike polyline with Z) to a 3D ESRI Shapefile
 pliz2shp -i Dike001.pliz
