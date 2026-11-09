@@ -3,7 +3,7 @@ Write the flooded FlowFM 2D mesh faces for ONE depth threshold to a shapefile.
 
 Like fou2shp, but instead of the three layers threshold - 0.175, threshold and
 threshold + 0.175 m (SIM_thrd125 / 300 / 475) it writes only the layer of the
-given threshold: the faces whose Mesh2d_fourier002_max_depth is deeper than it.
+given threshold: the faces whose Mesh2d_fourier002_max_depth is >= it.
 
 Attribute: Mesh2d_fourier002_max_depth (stored as "fou_dep")
 
@@ -63,7 +63,7 @@ def remove_masked(shp, masks, out_dir):
 def fou2mfd(nc_file=NC_FILE, threshold=DEFAULT_THRESHOLD, out_dir=_SHP_DIR, name=None,
             var=VAR_NAME, remove=None):
     """
-    Write the faces of `nc_file` deeper than `threshold` (m) to <out_dir>/<name>.shp
+    Write the faces of `nc_file` with depth >= `threshold` (m) to <out_dir>/<name>.shp
     (default name SIM_thrd<mm>).  With `remove` (mask shapefiles), a filtered copy
     goes to <out_dir>_RM.  Return the path(s) written (without .shp).
     """
@@ -78,7 +78,7 @@ def fou2mfd(nc_file=NC_FILE, threshold=DEFAULT_THRESHOLD, out_dir=_SHP_DIR, name
     print("CRS    : EPSG:3826  (TWD97 / TM2 zone 121)")
     print()
     shp_out = os.path.join(out_dir, stem)
-    print(f"Threshold > {threshold:g} m  ->  {stem}")
+    print(f"Threshold >= {threshold:g} m  ->  {stem}")
     write_threshold_shp(shp_out, threshold, fn, fn_fill, node_x, node_y, values)
     written = [shp_out]
 
@@ -94,7 +94,7 @@ def fou2mfd(nc_file=NC_FILE, threshold=DEFAULT_THRESHOLD, out_dir=_SHP_DIR, name
 def main():
     parser = argparse.ArgumentParser(
         prog=SCRIPT,
-        description="Write the FlowFM 2D mesh faces deeper than one flood threshold "
+        description="Write the FlowFM 2D mesh faces with depth >= one flood threshold "
                     "to a shapefile (fou2shp without the +/- 0.175 m layers).",
         epilog="""
 examples:
@@ -111,7 +111,7 @@ examples:
     parser.add_argument("path", nargs="?", default=None,
                         help=f"Path to the input NetCDF file (default: {NC_FILE})")
     parser.add_argument("-t", "--threshold", type=float, default=DEFAULT_THRESHOLD, metavar="M",
-                        help="Flood depth threshold in metres; faces deeper than it are "
+                        help="Flood depth threshold in metres; faces with depth >= it are "
                              "written (default: %(default)g)")
     parser.add_argument("-o", "--name", default=None, metavar="NAME",
                         help="Output shapefile name (default: SIM_thrd<threshold in mm>)")

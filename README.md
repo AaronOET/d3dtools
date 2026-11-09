@@ -32,6 +32,7 @@ This package provides several utilities for converting shapefiles to various for
 - **getfacez2**: Original brute-force implementation of getfacez (no spatial index), kept as a fallback. Same CLI arguments, Python API, and output format as getfacez, including `-if`/`--id-field`
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<output-folder>_RM/`)
 - **fou2mfd**: Like `fou2shp`, but writes only the shapefile of one flood threshold (`-t`, default 0.3 m), without the -/+ 0.175 m layers
+- **foustrip1d**: Copy Delft3D FM NetCDF output (`*_fou.nc`, `*_map.nc`) without the 1D network and 1D2D links, keeping only the 2D mesh and its results (`<name>_2d.nc`)
 - **ncts2shp**: Like `fou2shp`, but from a map output time series: computes the maximum `Mesh2d_waterdepth` over all time steps and writes the threshold shapefiles (`SIM_thrd125/300/475`, or `-t` thresholds)
 - **pliz2shp**: Convert Delft3D/D-Flow FM `.pliz` weir/dike polyline files (with Z) to 3D ESRI Shapefiles
 - **pli2shp**: Convert Delft3D polyline files (`.pli`/`.ldb`) to ESRI Shapefiles
@@ -360,6 +361,9 @@ print(result["accuracy"], result["recall"], result["pngs"])
 
 ### Reconstruct FOU mesh faces as threshold shapefiles
 
+`fou2shp` writes `SIM_thrd125`, `SIM_thrd300` and `SIM_thrd475`, with the faces whose
+max depth is >= 0.125, 0.3 and 0.475 m (a depth of exactly 0.3 m is in `SIM_thrd300`).
+
 ```python
 # Run via command line (recommended)
 # fou2shp NC/FlowFM_fou.nc -of SHP
@@ -373,7 +377,7 @@ print(result["accuracy"], result["recall"], result["pngs"])
 
 ### Write the faces of a single flood threshold
 
-`fou2mfd` writes only the layer of one flood threshold (faces deeper than `-t` metres,
+`fou2mfd` writes only the layer of one flood threshold (faces with depth >= `-t` metres,
 default 0.3), instead of the three `fou2shp` layers (threshold and -/+ 0.175 m). The
 output is named `SIM_thrd<mm>.shp` (0.3 m -> `SIM_thrd300`) unless `-o` gives a name.
 
@@ -385,6 +389,26 @@ output is named `SIM_thrd<mm>.shp` (0.3 m -> `SIM_thrd300`) unless `-o` gives a 
 
 from d3dtools import fou2mfd
 fou2mfd.fou2mfd("NC/FlowFM_fou.nc", threshold=0.5, out_dir="SHP")
+```
+
+### Strip the 1D network from FOU / map output
+
+`foustrip1d` copies Delft3D FM NetCDF output without the 1D network (`mesh1d*`,
+`network*`), the 1D2D links (`links*`) and `composite_mesh`, so a 1D2D model's output
+opens as a pure 2D UGRID file (e.g. a QGIS mesh layer). The rest is copied bit-identical,
+in the same NetCDF format, to `FOU_2D/<name>_2d.nc` (`FOU_2D` in the current folder,
+created if missing; `-of` for another folder, `-of ""` for next to each input).
+
+```python
+# foustrip1d                                     # every *_fou.nc in the current folder -> FOU_2D/
+# foustrip1d FOU/TPE_TM_0000_fou.nc              # -> FOU_2D/TPE_TM_0000_fou_2d.nc
+# foustrip1d FOU                                 # every *_fou.nc in FOU -> FOU_2D/
+# foustrip1d FOU -of ""                          # next to the inputs: FOU/*_fou_2d.nc
+# foustrip1d output --pattern "*_map.nc"         # map files instead
+# foustrip1d FOU --check                         # list what would be removed
+
+from d3dtools import foustrip1d
+foustrip1d.strip1d("FOU/TPE_TM_0000_fou.nc")   # -> FOU_2D/TPE_TM_0000_fou_2d.nc
 ```
 
 ### Threshold shapefiles from the max depth of a map time series
@@ -941,6 +965,7 @@ d3dtools-info getfacez2
 d3dtools-info fou2shp
 d3dtools-info fou2mfd
 d3dtools-info ncts2shp
+d3dtools-info foustrip1d
 d3dtools-info pliz2shp
 d3dtools-info pli2shp
 d3dtools-info pol2shp
@@ -990,6 +1015,7 @@ getfacez2 --help
 fou2shp --help
 fou2mfd --help
 ncts2shp --help
+foustrip1d --help
 pliz2shp --help
 pli2shp --help
 pol2shp --help
@@ -1100,6 +1126,9 @@ fou2shp NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp  # Multiple expl
 
 # Only the layer of one flood threshold (no -/+ 0.175 m layers)
 fou2mfd NC/FlowFM_fou.nc -t 0.5                 # -> SHP/SIM_thrd500.shp
+
+# Copy FOU / map output without the 1D network (2D only)
+foustrip1d FOU                                  # every *_fou.nc in FOU -> FOU_2D/*_fou_2d.nc
 
 # Threshold shapefiles from the max water depth over a map output time series
 ncts2shp FlowFM_map.nc                          # -> SHP/SIM_thrd125/300/475.shp

@@ -241,7 +241,8 @@ TOOL_DESCRIPTIONS = {
 
         This tool reads a Delft3D FM fourier/statistics NetCDF file, extracts 2D mesh face
         polygons with depth values, and writes multiple threshold-based shapefiles (e.g.,
-        SIM_thrd125, SIM_thrd300, SIM_thrd475) to an output directory.
+        SIM_thrd125, SIM_thrd300, SIM_thrd475) to an output directory. Each holds the faces
+        whose depth is >= its threshold (0.125 / 0.3 / 0.475 m).
 
         Examples:
             fou2shp
@@ -262,6 +263,25 @@ TOOL_DESCRIPTIONS = {
             fou2mfd NC/FlowFM_fou.nc -t 0.5
             fou2mfd NC/FlowFM_fou.nc -t 0.5 -o MFD
             fou2mfd NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
+    """,
+    'foustrip1d':
+    """
+        Copy Delft3D FM NetCDF output (*_fou.nc, *_map.nc) without the 1D network and the
+        1D2D links, keeping only the 2D mesh and its results (a pure 2D UGRID file, e.g. for a
+        QGIS mesh layer). Removed: mesh1d*, network*, links* and composite_mesh; everything
+        else is copied bit-identical, in the same NetCDF format. Output FOU_2D/<name>_2d.nc
+        (FOU_2D in the current folder, created if missing; -of for another folder, -of "" for
+        next to each input, -o for one file). Inputs can be files, folders
+        (every *_fou.nc, --pattern for others) or glob patterns. --check lists what would be
+        removed. Works with non-ASCII (e.g. Chinese) paths.
+
+        Examples:
+            foustrip1d
+            foustrip1d FOU/TPE_TM_0000_fou.nc            (-> FOU_2D/TPE_TM_0000_fou_2d.nc)
+            foustrip1d FOU                               (every *_fou.nc in FOU -> FOU_2D)
+            foustrip1d FOU -of ""                        (next to the inputs)
+            foustrip1d output --pattern "*_map.nc"
+            foustrip1d FOU --check
     """,
     'ncts2shp':
     """

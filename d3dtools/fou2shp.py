@@ -5,7 +5,8 @@ Attribute: Mesh2d_fourier002_max_depth (stored as "fou_dep" — DBF field
            names are limited to 10 characters)
 
 Input : FlowFM_fou.nc  (UGRID 2D mesh, EPSG:3826 TWD97/TM2-121)
-Output: FlowFM_fou_faces.shp  (+.dbf, .shx, .prj)
+Output: SIM_thrd125.shp, SIM_thrd300.shp, SIM_thrd475.shp  (+.dbf, .shx, .prj)
+        with the faces whose depth is >= 0.125 / 0.3 / 0.475 m
 """
 
 import glob as _glob
@@ -74,7 +75,7 @@ def _to_file_polygon(gdf, path, encoding="utf-8"):
 
 
 def write_threshold_shp(shp_out, threshold, fn, fn_fill, node_x, node_y, values):
-    """Write faces whose depth value exceeds *threshold* to *shp_out*."""
+    """Write faces whose depth value is >= *threshold* to *shp_out*."""
     w = shapefile.Writer(shp_out, shapefile.POLYGON)
     w.autoBalance = 1
     w.field(FIELD_NAME, "N", size=18, decimal=6)
@@ -89,8 +90,8 @@ def write_threshold_shp(shp_out, threshold, fn, fn_fill, node_x, node_y, values)
 
         val = values[i]
 
-        # Skip masked values or values not exceeding the threshold
-        if np.ma.is_masked(val) or float(val) <= threshold:
+        # Skip masked values or values below the threshold (depth == threshold is kept)
+        if np.ma.is_masked(val) or float(val) < threshold:
             n_skipped += 1
             continue
 
@@ -196,7 +197,7 @@ examples:
 
         for threshold, stem in THRESHOLDS:
             shp_out = os.path.join(args.out_dir, stem)
-            print(f"Threshold > {threshold:.3f}m  ->  {stem}")
+            print(f"Threshold >= {threshold:.3f}m  ->  {stem}")
             write_threshold_shp(shp_out, threshold, fn, fn_fill, node_x, node_y, values)
 
         if args.remove:

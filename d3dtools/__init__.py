@@ -2,7 +2,7 @@
 D3DTOOLS - A collection of tools for working with shapefiles and converting them for Delft3D modeling.
 """
 
-__version__ = '0.38.1'
+__version__ = '0.39.0'
 
 # Define all modules that should be exposed when using "from d3dtools import *"
 __all__ = [
@@ -26,6 +26,7 @@ __all__ = [
     'getfacez2',
     'fou2shp',
     'fou2mfd',
+    'foustrip1d',
     'ncts2shp',
     'pliz2shp',
     'pli2shp',
@@ -75,6 +76,7 @@ from . import getfacez2
 from . import getfacez
 from . import fou2shp
 from . import fou2mfd
+from . import foustrip1d
 from . import ncts2shp
 from . import pliz2shp
 from . import pli2shp
