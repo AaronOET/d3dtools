@@ -10,7 +10,7 @@ Attribute: max depth over time [m] (stored as "max_dep")
 
 Input : FlowFM_map.nc  (UGRID 2D map output, EPSG:3826 TWD97/TM2-121)
 Output: SIM_thrd125.shp, SIM_thrd300.shp, SIM_thrd475.shp (+.dbf, .shx, .prj)
-        Each holds the mesh faces whose max depth is > threshold.
+        Each holds the mesh faces whose max depth is >= threshold.
 """
 
 import argparse
@@ -160,13 +160,13 @@ def read_mesh(ds):
 
 
 def write_threshold_shp(shp_out, threshold, faces, node_x, node_y, values):
-    """Write faces whose max depth > threshold as polygons; return the polygon count."""
+    """Write faces whose max depth >= threshold as polygons; return the polygon count."""
     w = shapefile.Writer(shp_out, shapefile.POLYGON)
     w.autoBalance = 1
     w.field(FIELD_NAME, "N", size=18, decimal=6)
 
     n_written = 0
-    for i in np.nonzero(np.nan_to_num(values, nan=-np.inf) > threshold)[0]:
+    for i in np.nonzero(np.nan_to_num(values, nan=-np.inf) >= threshold)[0]:
         node_idx = faces[i]
         if len(node_idx) < 3:
             continue
@@ -207,7 +207,7 @@ def ncts2shp(nc_file=NC_FILE, thresholds=None, out_dir=_SHP_DIR, var=None,
              chunk=DEFAULT_CHUNK, remove=None):
     """
     Compute the max water depth over time in `nc_file` and write, for every
-    threshold (m), the faces deeper than it to <out_dir>/SIM_thrd<mm>.shp.
+    threshold (m), the faces with depth >= it to <out_dir>/SIM_thrd<mm>.shp.
     With `remove` (mask shapefiles), filtered copies go to <out_dir>_RM.
     Return the paths written (without .shp).
     """
@@ -228,7 +228,7 @@ def ncts2shp(nc_file=NC_FILE, thresholds=None, out_dir=_SHP_DIR, var=None,
     written = []
     for threshold in thresholds:
         stem = threshold_stem(threshold)
-        print(f"Threshold > {threshold:g} m  ->  {stem}")
+        print(f"Threshold >= {threshold:g} m  ->  {stem}")
         shp_out = os.path.join(out_dir, stem)
         write_threshold_shp(shp_out, threshold, faces, node_x, node_y, vmax)
         written.append(shp_out)

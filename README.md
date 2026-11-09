@@ -415,7 +415,7 @@ foustrip1d.strip1d("FOU/TPE_TM_0000_fou.nc")   # -> FOU_2D/TPE_TM_0000_fou_2d.nc
 
 `ncts2shp` computes the maximum water depth over all time steps of a map output file
 (e.g. an event simulation without FOU output), reading `Mesh2d_waterdepth` in chunks of
-time steps, and writes the faces deeper than each threshold to `SIM_thrd<mm>.shp`
+time steps, and writes the faces with depth >= each threshold to `SIM_thrd<mm>.shp`
 (attribute `max_dep`). Non-ASCII (e.g. Chinese) file and folder names are supported.
 
 ```python

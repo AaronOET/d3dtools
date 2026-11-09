@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.39.1
+
+- **ncts2shp**: a face is now written to a threshold layer when its max depth is **>=** the threshold (was **>**), matching `fou2shp` / `fou2mfd` since 0.39.0: `SIM_thrd125` / `SIM_thrd300` / `SIM_thrd475` hold the faces with max depth >= 0.125 / 0.3 / 0.475 m. A face of exactly 0.3 m max depth, for example, is now in `SIM_thrd300`.
+
 ## 0.39.0
 
 - **fou2shp** and **fou2mfd**: a face is now written to a threshold layer when its depth is **>=** the threshold (was **>**): `SIM_thrd125` / `SIM_thrd300` / `SIM_thrd475` hold the faces with depth >= 0.125 / 0.3 / 0.475 m, and `fou2mfd -t 0.3` the faces >= 0.3 m. A face of exactly 0.3 m deep, for example, is now in `SIM_thrd300` (before only in `SIM_thrd125`). `ncts2shp` is unchanged (still > threshold).
