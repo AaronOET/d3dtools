@@ -2,7 +2,7 @@
 D3DTOOLS - A collection of tools for working with shapefiles and converting them for Delft3D modeling.
 """
 
-__version__ = '0.39.1'
+__version__ = '0.39.2'
 
 # Define all modules that should be exposed when using "from d3dtools import *"
 __all__ = [
@@ -56,51 +56,26 @@ __all__ = [
     'simtime',
 ]
 
-from . import ncrain
-from . import snorain
-from . import shpbc2pli
-from . import shpdike2pliz
-from . import shpblock2pol
-from . import shp2pli
-from . import shp2pliz
-from . import shp2pol
-from . import shp2ldb
-from . import shp2xyz
-from . import describe
-from . import evaluate
-from . import evaluate_sensor
-from . import evaluate_sensor2
-from . import eval_plot
-from . import sensor
-from . import getfacez2
-from . import getfacez
-from . import fou2shp
-from . import fou2mfd
-from . import foustrip1d
-from . import ncts2shp
-from . import pliz2shp
-from . import pli2shp
-from . import pol2shp
-from . import xyz2shp
-from . import rmgrid
-from . import rsgrid
-from . import rmgriddimr
-from . import rsgriddimr
-from . import mkdimr
-from . import rm1dch
-from . import rm1dsw
-from . import mk2d
-from . import rmlinks
-from . import orthochk
-from . import expgrid
-from . import alignncrain
-from . import ncraininfo
-from . import otstep
-from . import itstep
-from . import clrbak
-from . import setthreads
-from . import clrmpi
-from . import addvis
-from . import chkprog
-from . import cpproj
-from . import simtime
+# Submodules are imported lazily (PEP 562), on first access such as
+# `d3dtools.fou2shp` or `from d3dtools import fou2shp`. Importing them all up
+# front pulls in pandas, geopandas, rasterio, matplotlib, scipy, ... and makes
+# every command (even `d3dtools -v`) take seconds to start.
+import importlib as _importlib
+import sys as _sys
+
+
+def __getattr__(name):
+    if name in __all__:
+        module = _importlib.import_module(f".{name}", __name__)
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(set(globals()) | set(__all__))
+
+
+if _sys.version_info < (3, 7):  # no module __getattr__: import eagerly
+    for _name in __all__:
+        globals()[_name] = _importlib.import_module(f".{_name}", __name__)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.39.2
+
+- Faster start-up of every command: `import d3dtools` no longer imports all tool modules (and with them pandas, geopandas, rasterio, matplotlib, scipy, ...) up front. Each tool module is now imported on first use, so `d3dtools -v` / `d3dtools -h` start in about 0.1 s instead of 2 s (over 10 s on a cold first run), and a tool such as `fou2shp` only loads the libraries it needs itself. `d3dtools.fou2shp`, `from d3dtools import fou2shp` and `from d3dtools import *` work as before.
+
 ## 0.39.1
 
 - **ncts2shp**: a face is now written to a threshold layer when its max depth is **>=** the threshold (was **>**), matching `fou2shp` / `fou2mfd` since 0.39.0: `SIM_thrd125` / `SIM_thrd300` / `SIM_thrd475` hold the faces with max depth >= 0.125 / 0.3 / 0.475 m. A face of exactly 0.3 m max depth, for example, is now in `SIM_thrd300`.
