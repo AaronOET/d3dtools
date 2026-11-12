@@ -8,6 +8,8 @@ import sys
 import argparse
 import geopandas as gpd
 import pandas as pd
+import pyogrio
+import shapely
 
 
 SOURCE_FIELD_CANDIDATES = ("來源說", "通報類型")
@@ -19,6 +21,134 @@ BUFFER_OUTPUT = os.path.join("SHP", "IOT_BUFFER.geojson")
 
 OBS_SOURCE_EPSG = 4326
 OBS_TARGET_EPSG = 3826
+
+# Mesh-based buffer: radius = factor x edge length of the mesh cell that holds
+# the sensor point (mesh cells taken from SHP/SIM_ALL.shp)
+MESH_PATH = os.path.join("SHP", "SIM_ALL.shp")
+MESH_FACTOR = {"淹水感測": 4, "EMIC": 6}
+
+
+def _cell_edge_length(geom):
+    """
+    Edge length of a mesh cell polygon used to size the buffer.
+
+    - Triangular cell: the LONGEST edge.
+    - Other cells (e.g. squares): the mean edge length, which for a square is
+      exactly its side length.
+
+    Collinear vertices (hanging nodes where a coarse cell meets finer ones)
+    are removed first, so they do not change the vertex count or edge lengths.
+    """
+    pts = _corner_vertices(geom)
+    n = len(pts)
+    if n < 3:
+        return float("nan")
+    edges = [
+        ((pts[i][0] - pts[(i + 1) % n][0]) ** 2
+         + (pts[i][1] - pts[(i + 1) % n][1]) ** 2) ** 0.5
+        for i in range(n)
+    ]
+    if n == 3:
+        return max(edges)
+    return sum(edges) / n
+
+
+def _corner_vertices(geom, tol=1e-6):
+    """
+    Corner vertices of a polygon's exterior ring: repeated and collinear
+    vertices (hanging nodes) removed. ``tol`` is a distance in CRS units.
+    """
+    pts = list(geom.exterior.coords)[:-1]
+    changed = True
+    while changed and len(pts) > 3:
+        changed = False
+        n = len(pts)
+        for i in range(n):
+            (x0, y0), (x1, y1), (x2, y2) = pts[i - 1], pts[i], pts[(i + 1) % n]
+            base = ((x2 - x0) ** 2 + (y2 - y0) ** 2) ** 0.5
+            cross = abs((x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0))
+            # distance of the middle vertex from the line through its neighbours
+            if base == 0 or cross / base <= tol:
+                del pts[i]
+                changed = True
+                break
+    return pts
+
+
+def _has_spatial_index(path):
+    """True for a GeoPackage (built-in R-tree) or a shapefile with a .qix index."""
+    stem, ext = os.path.splitext(path)
+    ext = ext.lower()
+    return ext == ".gpkg" or (ext == ".shp" and (
+        os.path.exists(stem + ".qix") or os.path.exists(stem + ".QIX")))
+
+
+def _fast_mesh_path(mesh_path):
+    """
+    Use an indexed GeoPackage copy of a shapefile mesh (same name, .gpkg) when
+    it exists and is newer than the shapefile: a plain shapefile has no
+    spatial index, so every read scans the whole file.
+    """
+    stem, ext = os.path.splitext(mesh_path)
+    gpkg = stem + ".gpkg"
+    if (ext.lower() == ".shp" and os.path.exists(gpkg)
+            and os.path.getmtime(gpkg) >= os.path.getmtime(mesh_path)):
+        print(f"Using indexed mesh copy {gpkg}")
+        return gpkg
+    return mesh_path
+
+
+def mesh_edge_length(points, mesh_path):
+    """
+    Edge length (m) of the mesh cell in which each point lies.
+
+    Triangular cells use their longest edge, other cells their mean edge.
+    Only the cells around the points are read from ``mesh_path``. A point on
+    a shared edge/corner touches several cells; the smallest edge length is
+    used. A point outside the mesh gets the nearest cell, with a warning.
+    """
+    # CRS from the file header only (gpd.read_file(..., rows=0) would read
+    # every feature of a shapefile)
+    mesh_path = _fast_mesh_path(mesh_path)
+    mesh_crs = pyogrio.read_info(mesh_path)["crs"]
+    pts = points[["geometry"]].copy()
+    if mesh_crs and pts.crs is not None and pts.crs != mesh_crs:
+        pts = pts.to_crs(mesh_crs)
+
+    # 1) cells that contain / touch the points
+    # (union of small buffers, so MultiPoint sensors, e.g. from a GeoPackage, work too)
+    if _has_spatial_index(mesh_path):
+        # indexed file: one small window per sensor (a single mask spanning
+        # all sensors would pull in most of the mesh through its bounding box)
+        parts = [gpd.read_file(mesh_path, mask=g.buffer(1.0))
+                 for g in pts.geometry if g is not None and not g.is_empty]
+        parts = [m for m in parts if len(m)]
+        mesh = (pd.concat(parts, ignore_index=True) if parts
+                else gpd.GeoDataFrame(geometry=[], crs=mesh_crs))
+    else:
+        # plain shapefile: one pass over the whole file
+        mask = shapely.union_all(pts.geometry.buffer(1.0).values)
+        mesh = gpd.read_file(mesh_path, mask=mask)
+    edge = pd.Series(float("nan"), index=pts.index)
+    if len(mesh):
+        mesh["mesh_edge"] = [_cell_edge_length(g) for g in mesh.geometry]
+        hit = gpd.sjoin(pts, mesh[["mesh_edge", "geometry"]], predicate="intersects")
+        edge.update(hit.groupby(level=0)["mesh_edge"].min())
+
+    # 2) points outside the mesh: nearest cell within a growing search window
+    missing = edge.index[edge.isna()]
+    if len(missing):
+        print(f"Warning: {len(missing)} sensor(s) outside the mesh {mesh_path}; "
+              "using the nearest mesh cell.")
+        for idx in missing:
+            pt = pts.geometry.loc[idx]
+            for dist in (50, 200, 1000, 5000):
+                near = gpd.read_file(mesh_path, mask=pt.buffer(dist))
+                if len(near):
+                    nearest = near.geometry.distance(pt).idxmin()
+                    edge.loc[idx] = _cell_edge_length(near.geometry.loc[nearest])
+                    break
+    return edge
 
 
 def _resolve_radius(source_value, buffer_radius):
@@ -77,6 +207,8 @@ def confusion_matrix(
     depth_threshold=30,
     output_csv=None,
     output_buffer_area=None,
+    mesh_path=MESH_PATH,
+    mesh_factor=None,
 ):
     """
     Calculate the accuracy and recall of a flood simulation using sensor data.
@@ -99,6 +231,7 @@ def confusion_matrix(
         or ``通報類型``, whichever is present) to radii to use different
         radii per source, e.g. ``{"EMIC": 30, "淹水感測": 20}``
         (sources missing from the dict get a radius of 0). Default: 20.
+        Ignored when ``mesh_path`` is given.
     depth_threshold : float, optional
         Water depth threshold in centimeters (default: 30)
     output_csv : str, optional
@@ -112,6 +245,18 @@ def confusion_matrix(
         requires); ``buf_r`` / ``buf_area`` stay in metres / m2. If
         ``obs_path`` is a GeoPackage (``*.gpkg``), the file is written into
         a ``GPKG`` folder (created if missing) instead of its own directory.
+
+    mesh_path : str, optional
+        Mesh polygon file (default: ``SHP/SIM_ALL.shp``). When given, each
+        sensor's buffer radius is ``mesh_factor[source] x edge length`` of
+        the mesh cell the sensor lies in, and ``buffer_radius`` is ignored.
+        Set to ``None`` or ``""`` to use ``buffer_radius`` instead. If the
+        default ``SHP/SIM_ALL.shp`` does not exist, ``buffer_radius`` is used
+        (with a note); another path that does not exist is an error.
+    mesh_factor : dict, optional
+        Multiplier of the mesh edge length per source-field value
+        (``來源說`` or ``通報類型``). Default: ``{"淹水感測": 4, "EMIC": 6}``.
+        Sources missing from the dict get a radius of 0 (point geometry).
 
     Returns
     -------
@@ -130,7 +275,34 @@ def confusion_matrix(
     # Create a buffer around observation points (per-source radius supported).
     # Rows whose resolved radius is 0 keep their original point geometry.
     obs_buffer = obs_gdf.copy()
-    if isinstance(buffer_radius, dict):
+    edges = None
+    if mesh_path and not os.path.exists(mesh_path):
+        if os.path.normpath(mesh_path) != os.path.normpath(MESH_PATH):
+            raise FileNotFoundError(f"Mesh file does not exist: {mesh_path}")
+        print(f"Note: no mesh file {mesh_path}; using the fixed buffer radius instead "
+              "(--buffer / --buffer-by-source).")
+        mesh_path = None
+    if mesh_path:
+        factors = MESH_FACTOR if mesh_factor is None else mesh_factor
+        source_field = _resolve_source_field(obs_buffer.columns)
+        if source_field is None:
+            raise ValueError(
+                "Mesh-based buffer requires one of the fields "
+                f"{SOURCE_FIELD_CANDIDATES} in {obs_path}"
+            )
+        edges = mesh_edge_length(obs_buffer, mesh_path)
+        radii = pd.Series(
+            [float(factors.get(src, 0)) * e
+             for src, e in zip(obs_buffer[source_field], edges)],
+            index=obs_buffer.index,
+        ).fillna(0.0)
+        obs_buffer["geometry"] = [
+            geom.buffer(r) if r > 0 else geom
+            for geom, r in zip(obs_buffer.geometry, radii)
+        ]
+        print("Mesh-based buffer radius (factor x mesh edge length): "
+              + ", ".join(f"{k}={v}x" for k, v in factors.items()))
+    elif isinstance(buffer_radius, dict):
         source_field = _resolve_source_field(obs_buffer.columns)
         if source_field is None:
             raise ValueError(
@@ -150,7 +322,9 @@ def confusion_matrix(
     else:
         radii = pd.Series([0.0] * len(obs_buffer), index=obs_buffer.index)
 
-    # Record applied radius and resulting buffer area for each sensor
+    # Record mesh edge length (if used), applied radius and buffer area
+    if edges is not None:
+        obs_buffer["mesh_edge"] = edges.astype(float).values
     obs_buffer["buf_r"] = radii.astype(float).values
     obs_buffer["buf_area"] = obs_buffer.geometry.area
 
@@ -277,14 +451,15 @@ def main():
         description="Calculate flood simulation accuracy and recall using sensor data.",
         epilog="""
 examples:
-  %(prog)s              # Use default shapefiles and parameters (input SHP/SIM_thrd125.shp, SHP/SIM_thrd475.shp, SHP/IOT_SENSOR.shp; buffer 20m; threshold 30cm)
+  %(prog)s              # Use default shapefiles and parameters (input SHP/SIM_thrd125.shp, SHP/SIM_thrd475.shp, SHP/IOT_SENSOR.shp; mesh-based buffer from SHP/SIM_ALL.shp; threshold 30cm)
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp (default arguments)
-  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 50 --thresh-iot 20
-  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --buffer 0 --thresh-iot 10 # Point data, 10 cm threshold
+  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --mesh "" --buffer 50 --thresh-iot 20
+  %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --mesh "" --buffer 0 --thresh-iot 10 # Point data, 10 cm threshold
   %(prog)s --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/IOT_SENSOR.shp --output results.csv
   %(prog)s --obs SHP/IOT_SENSOR.gpkg # --obs also accepts a GeoPackage (*.gpkg) file
   %(prog)s --obs SHP/IOT_SENSOR.geojson # ... or a GeoJSON (*.geojson) file (EPSG:4326, reprojected to EPSG:3826)
-  %(prog)s --buffer-by-source 淹水感測=20 EMIC=30 # Use different buffer radii per "來源說"/"通報類型" source
+  %(prog)s --mesh-factor 淹水感測=4 EMIC=6 # Radius = factor x edge length of the SHP/SIM_ALL.shp cell holding the sensor (default)
+  %(prog)s --mesh "" --buffer-by-source 淹水感測=20 EMIC=30 # Use different buffer radii per "來源說"/"通報類型" source
   %(prog)s --output-buffer SHP/MY_BUFFER.gpkg # Save buffered sensor geometries to a custom GeoJSON, GeoPackage or shapefile
   %(prog)s --output-buffer "" # Do not save buffered sensor geometries
         """,
@@ -310,10 +485,32 @@ examples:
         ),
     )
     parser.add_argument(
+        "--mesh",
+        default=MESH_PATH,
+        help=(
+            "Mesh polygon file used to size the buffers (default: SHP/SIM_ALL.shp, "
+            "e.g. from 'fou2shp --all' or 'fou2mfd -t 0 -o SIM_ALL'). "
+            "Radius = --mesh-factor x edge length of the mesh cell holding the sensor. "
+            "Use '' to disable and use --buffer / --buffer-by-source instead. "
+            "If the default file does not exist, --buffer / --buffer-by-source is used. "
+            "A shapefile mesh is read through SIM_ALL.gpkg next to it (spatial index, "
+            "much faster for a large mesh) when that copy exists and is newer."
+        ),
+    )
+    parser.add_argument(
+        "--mesh-factor",
+        nargs="+",
+        metavar="SOURCE=FACTOR",
+        help=(
+            "Multiplier of the mesh edge length per '來源說'/'通報類型' source "
+            "(default: 淹水感測=4 EMIC=6). Sources not listed get radius 0."
+        ),
+    )
+    parser.add_argument(
         "--buffer",
         type=float,
         default=20,
-        help="Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 20). Ignored when --buffer-by-source is given.",
+        help="Buffer radius around sensor points in meters. Set to 0 to use point data directly (default: 20). Used only with --mesh ''; ignored when --buffer-by-source is given.",
     )
     parser.add_argument(
         "--buffer-by-source",
@@ -378,6 +575,21 @@ examples:
         else:
             buffer_param = args.buffer
 
+        # Mesh-based radius factors
+        mesh_factor = None
+        if args.mesh_factor:
+            mesh_factor = {}
+            for item in args.mesh_factor:
+                if "=" not in item:
+                    print(f"Error: --mesh-factor expects SOURCE=FACTOR, got: {item}")
+                    sys.exit(1)
+                key, value = item.split("=", 1)
+                mesh_factor[key.strip()] = float(value)
+        if (args.mesh and not os.path.exists(args.mesh)
+                and os.path.normpath(args.mesh) != os.path.normpath(MESH_PATH)):
+            print(f"Error: Mesh file does not exist: {args.mesh}")
+            sys.exit(1)
+
         # Run the confusion matrix calculation (output is already handled in the function)
         confusion_matrix(
             low_threshold_sim_path=args.sim_low,
@@ -387,6 +599,8 @@ examples:
             depth_threshold=args.thresh_iot,
             output_csv=args.output,
             output_buffer_area=args.output_buffer,
+            mesh_path=args.mesh or None,
+            mesh_factor=mesh_factor,
         )
     except Exception as e:
         print(f"Error processing sensor evaluation: {str(e)}")

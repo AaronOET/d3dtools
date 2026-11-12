@@ -45,26 +45,34 @@ TOOL_DESCRIPTIONS = {
         is reprojected to EPSG:3826, depth values stored as text are converted to numbers.
         The buffered sensor areas are saved to SHP/IOT_BUFFER.geojson (EPSG:4326) unless
         --output-buffer gives another file (*.geojson, *.gpkg or *.shp) or "" (none).
+        Buffer radius: by default --mesh-factor (淹水感測=4, EMIC=6, per 來源說/通報類型 source)
+        x the edge length of the --mesh cell (SHP/SIM_ALL.shp) holding the sensor (triangle:
+        longest edge, other cells: mean edge). --mesh "" (or no SHP/SIM_ALL.shp) uses the fixed
+        --buffer (20 m) or --buffer-by-source radii instead. For a large mesh, an indexed
+        GeoPackage copy next to the shapefile (SHP/SIM_ALL.gpkg, used when newer) is much faster.
 
         Examples:
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --buffer 50 --thresh-iot 20
             evaluate_sensor2 --sim-low SHP/SIM_thrd125.shp --sim-high SHP/SIM_thrd475.shp --obs SHP/OBS_SENSOR.shp --output results.csv
             evaluate_sensor2 --obs SHP/IOT_SENSOR.geojson --output-buffer SHP/IOT_BUFFER.geojson
+            evaluate_sensor2 --mesh-factor 淹水感測=4 EMIC=6                  (default mesh-based radii)
+            evaluate_sensor2 --mesh "" --buffer 20                          (fixed 20 m radius)
     """,
     'eval_plot':
     """
         Plot every IoT sensor of an evaluate_sensor2 (eval_iot) run as a map: the sensor point,
         its buffer (SHP/IOT_BUFFER.geojson from eval_iot, or --buffer m circles), the simulated
         flood cells and an OpenStreetMap basemap. One PNG per sensor (PLOTS/IOT_<id>.png),
-        150 m x 120 m around the point (--extent).
+        8 x 6 buffer radii around the point (--extent-factor; --extent W H for a fixed size in
+        metres). The basemap zoom follows the map size and --dpi (--zoom auto, max 19).
 
         As in eval_iot, sensors with depth (最大深*) >= --thresh-iot (30 cm) are shown / tested
         on --sim-low (SHP/SIM_thrd125.shp), the others on --sim-high (SHP/SIM_thrd475.shp).
         TP / FN / FP / TN are counted on the buffer layer (--buffer-file / --buffer-layer),
         feature by feature, as eval_iot counts them; the matrix covers the whole layer, also
         with --ids. Each map shows the sensor's TP / FN / FP / TN class, the overall confusion matrix and
-        the depth (m) of the cells under the buffer. The basemap needs contextily
+        the depth (m) of the cells under the buffer (--no-depth-labels to leave it out). The basemap needs contextily
         (pip install contextily); --no-basemap plots without it.
         --obs can be a GeoPackage (--obs-layer for a multi-layer file); its buffers are then
         read from GPKG/IOT_BUFFER.geojson, where eval_iot writes them for a GeoPackage --obs.
@@ -82,6 +90,7 @@ TOOL_DESCRIPTIONS = {
             eval_plot --buffer-file SHP/B50.geojson          (count on another buffer layer)
             eval_plot --buffer-file layers.gpkg --buffer-layer IOT_BUFFER
             eval_plot --no-basemap
+            eval_plot --no-depth-labels
     """,
     'sensor':
     """
@@ -242,12 +251,16 @@ TOOL_DESCRIPTIONS = {
         This tool reads a Delft3D FM fourier/statistics NetCDF file, extracts 2D mesh face
         polygons with depth values, and writes multiple threshold-based shapefiles (e.g.,
         SIM_thrd125, SIM_thrd300, SIM_thrd475) to an output directory. Each holds the faces
-        whose depth is >= its threshold (0.125 / 0.3 / 0.475 m).
+        whose depth is >= its threshold (0.125 / 0.3 / 0.475 m). --all also writes SIM_ALL,
+        every face with its depth (e.g. for eval_iot --mesh). -r removes the faces that
+        intersect mask shapefiles (copies in <folder>_RM).
 
         Examples:
             fou2shp
             fou2shp --input NC/FlowFM_fou.nc -of SHP
             fou2shp --input NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
+            fou2shp NC/FlowFM_fou.nc --all
+            fou2shp NC/FlowFM_fou.nc -r SHP/ROAD.shp
     """,
     'fou2mfd':
     """

@@ -319,10 +319,19 @@ results = evaluate_sensor2.confusion_matrix(
     low_threshold_sim_path='path/to/simulated_flood_low.shp',
     high_threshold_sim_path='path/to/simulated_flood_high.shp',
     obs_path='path/to/sensor_observations.shp',
-    buffer_radius=30,               # Buffer radius around sensor points in meters (default: 30)
+    mesh_path=None,                 # Fixed radius below instead of the mesh-based one
+    buffer_radius=30,               # Buffer radius around sensor points in meters (default: 20)
     depth_threshold=30,             # Water depth threshold in centimeters (default: 30)
     output_csv='sensor_accuracy2.csv'
 )
+# By default (mesh_path='SHP/SIM_ALL.shp') each buffer radius is mesh_factor[source] x the
+# edge length of the mesh cell holding the sensor (triangle: longest edge, other cells: mean
+# edge), with mesh_factor={'淹水感測': 4, 'EMIC': 6} per 來源說/通報類型 source. Without that
+# file, buffer_radius is used. SIM_ALL.shp holds every mesh cell, e.g. `fou2shp --all` or `fou2mfd -t 0 -o SIM_ALL`.
+# A shapefile has no spatial index, so for a large mesh also write an indexed copy next to it;
+# it is used instead while it is newer than the .shp:
+#   python -c "import geopandas as g; g.read_file('SHP/SIM_ALL.shp').to_file('SHP/SIM_ALL.gpkg')"
+# Command line: --mesh, --mesh-factor 淹水感測=4 EMIC=6, --mesh "" for --buffer / --buffer-by-source.
 # obs_path can also be a GeoPackage (*.gpkg) or GeoJSON (*.geojson); EPSG:4326 input is
 # reprojected to EPSG:3826 and depth values stored as text are converted to numbers.
 # output_buffer_area may be a shapefile, *.gpkg or *.geojson (written in EPSG:4326).
@@ -334,7 +343,8 @@ print(f"Recall (Catch Rate): {results['recall']:.2f}%")
 
 ### Plot the IoT sensors of an evaluation
 
-`eval_plot` draws one map per sensor (`PLOTS/IOT_<id>.png`, 150 m x 120 m) with the
+`eval_plot` draws one map per sensor (`PLOTS/IOT_<id>.png`, 8 x 6 buffer radii, or a fixed
+`--extent W H` in metres) with the
 sensor, its buffer (`SHP/IOT_BUFFER.geojson`, written by `eval_iot`), the simulated flood
 cells (`SIM_thrd125` for sensors with depth >= `--thresh-iot`, else `SIM_thrd475`) and an
 OpenStreetMap basemap, labelled with the sensor's TP/FN/FP/TN class and the overall
@@ -351,6 +361,9 @@ confusion matrix. TP/FN/FP/TN are counted on the buffer layer (`--buffer-file` /
 # eval_plot --ids U0197 U0273                # only these sensors
 # eval_plot -of PLOTS --dpi 200 --thresh-iot 10
 # eval_plot --no-basemap
+# eval_plot --no-depth-labels              # no depth numbers on the cells
+# eval_plot --extent-factor 10 8           # map = 10 x 8 buffer radii (default 8 x 6)
+# eval_plot --extent 150 120               # fixed 150 m x 120 m maps
 # eval_plot --obs SHP/IOT_SENSOR.gpkg       # GeoPackage sensors, buffers from GPKG/IOT_BUFFER.geojson
 # eval_plot --obs SHP/IOT_SENSOR.geojson    # GeoJSON sensors
 
@@ -363,11 +376,13 @@ print(result["accuracy"], result["recall"], result["pngs"])
 
 `fou2shp` writes `SIM_thrd125`, `SIM_thrd300` and `SIM_thrd475`, with the faces whose
 max depth is >= 0.125, 0.3 and 0.475 m (a depth of exactly 0.3 m is in `SIM_thrd300`).
+`--all` also writes `SIM_ALL`, every face of the mesh with its depth (e.g. for `eval_iot --mesh`).
 
 ```python
 # Run via command line (recommended)
 # fou2shp NC/FlowFM_fou.nc -of SHP
 # fou2shp NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
+# fou2shp NC/FlowFM_fou.nc --all            # also SHP/SIM_ALL.shp: every face with its depth
 
 # Remove polygons intersecting a mask shapefile; filtered copies go to SHP_RM/
 # fou2shp NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp
@@ -1119,6 +1134,7 @@ getfacez2 --verbose  # Display additional processing information
 # Reconstruct FOU mesh faces as threshold-filtered shapefiles
 fou2shp                                         # Use defaults (NC/FlowFM_fou.nc -> SHP/)
 fou2shp NC/FlowFM_fou.nc -of SHP                # Specify input and output directory
+fou2shp NC/FlowFM_fou.nc --all                  # Also write SHP/SIM_ALL.shp (every face)
 fou2shp NC/FlowFM_fou.nc --var Mesh2d_fourier002_max_depth --output-folder output
 fou2shp NC/FlowFM_fou.nc -r SHP/EXCLUDE.shp                      # Remove polygons intersecting a mask; output -> SHP_RM/
 fou2shp NC/FlowFM_fou.nc -r SHP/*.shp                            # Glob pattern for multiple masks
