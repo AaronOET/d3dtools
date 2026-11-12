@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.40.1",
+    version="0.40.2",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -50,6 +50,7 @@ setup(
             "fou2mfd=d3dtools.fou2mfd:main",  # FOU output to one shapefile for a single flood threshold
             "foustrip1d=d3dtools.foustrip1d:main",  # Copy FOU / map NetCDF output without the 1D network (2D only)
             "ncts2shp=d3dtools.ncts2shp:main",  # Max water depth over a map time series to threshold shapefiles
+            "mrgshp=d3dtools.mrgshp:main",  # Merge SHPNNNN partition folders into one SHP folder without duplicates
             "pliz2shp=d3dtools.pliz2shp:main",  # Tool for converting Delft3D PLIZ files to shapefiles
             "pli2shp=d3dtools.pli2shp:main",  # Tool for converting Delft3D PLI/LDB polyline files to shapefiles
             "pol2shp=d3dtools.pol2shp:main",  # Tool for converting Delft3D POL polygon files to shapefiles

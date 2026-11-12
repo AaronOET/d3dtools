@@ -34,6 +34,7 @@ This package provides several utilities for converting shapefiles to various for
 - **fou2mfd**: Like `fou2shp`, but writes only the shapefile of one flood threshold (`-t`, default 0.3 m), without the -/+ 0.175 m layers
 - **foustrip1d**: Copy Delft3D FM NetCDF output (`*_fou.nc`, `*_map.nc`) without the 1D network and 1D2D links, keeping only the 2D mesh and its results (`<name>_2d.nc`)
 - **ncts2shp**: Like `fou2shp`, but from a map output time series: computes the maximum `Mesh2d_waterdepth` over all time steps and writes the threshold shapefiles (`SIM_thrd125/300/475`, or `-t` thresholds)
+- **mrgshp**: Merge the shapefiles of `SHP0000`, `SHP0001`, ... folders (e.g. one per D-Flow FM partition) into one `SHP` folder, removing duplicated and overlapping polygons (ghost cells shared by partitions)
 - **pliz2shp**: Convert Delft3D/D-Flow FM `.pliz` weir/dike polyline files (with Z) to 3D ESRI Shapefiles
 - **pli2shp**: Convert Delft3D polyline files (`.pli`/`.ldb`) to ESRI Shapefiles
 - **pol2shp**: Convert Delft3D/D-Flow FM `.pol` polygon files to ESRI Shapefiles
@@ -444,6 +445,25 @@ time steps, and writes the faces with depth >= each threshold to `SIM_thrd<mm>.s
 
 from d3dtools import ncts2shp
 ncts2shp.ncts2shp("FlowFM_map.nc", thresholds=[0.125, 0.3, 0.475], out_dir="SHP")
+```
+
+### Merge the shapefiles of partitions
+
+`mrgshp` merges the shapefiles of `SHP0000`, `SHP0001`, ... folders (e.g. `fou2shp` /
+`ncts2shp` output per D-Flow FM partition) into one `SHP` folder: shapefiles with the same
+name are merged, identical polygons (coordinates rounded to `--decimals`, default 1 mm)
+are kept once, and a polygon that overlaps a kept polygon of another folder by more than
+`--overlap` (default 0.5) of the smaller area is dropped. The lower-numbered folder wins;
+each feature gets a `SRC_PART` field with its folder number.
+
+```python
+# mrgshp                                   # ./SHPNNNN -> ./SHP
+# mrgshp D:/run/output -of SHP_MERGED
+# mrgshp --layers SIM_thrd125 SIM_thrd475  # only these layers
+# mrgshp --overlap 0                       # drop on any interior overlap
+
+from d3dtools import mrgshp
+mrgshp.mrgshp(".", out_dir="SHP")
 ```
 
 ### Convert PLIZ files to Shapefiles
@@ -982,6 +1002,7 @@ d3dtools-info getfacez2
 d3dtools-info fou2shp
 d3dtools-info fou2mfd
 d3dtools-info ncts2shp
+d3dtools-info mrgshp
 d3dtools-info foustrip1d
 d3dtools-info pliz2shp
 d3dtools-info pli2shp
@@ -1032,6 +1053,7 @@ getfacez2 --help
 fou2shp --help
 fou2mfd --help
 ncts2shp --help
+mrgshp --help
 foustrip1d --help
 pliz2shp --help
 pli2shp --help
@@ -1151,6 +1173,9 @@ foustrip1d FOU                                  # every *_fou.nc in FOU -> FOU_2
 # Threshold shapefiles from the max water depth over a map output time series
 ncts2shp FlowFM_map.nc                          # -> SHP/SIM_thrd125/300/475.shp
 ncts2shp FlowFM_map.nc -t 0.3 --chunk 100       # -> SHP/SIM_thrd300.shp
+
+# Merge the shapefiles of SHP0000, SHP0001, ... (one per partition) without duplicates
+mrgshp                                          # ./SHPNNNN/*.shp -> ./SHP/*.shp
 
 # Convert a Delft3D/D-Flow FM .pliz file (weir/dike polyline with Z) to a 3D ESRI Shapefile
 pliz2shp -i Dike001.pliz

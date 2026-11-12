@@ -296,6 +296,21 @@ TOOL_DESCRIPTIONS = {
             foustrip1d output --pattern "*_map.nc"
             foustrip1d FOU --check
     """,
+    'mrgshp':
+    """
+        Merge the shapefiles of SHP0000, SHP0001, ... folders (e.g. fou2shp / ncts2shp output
+        per D-Flow FM partition) into one SHP folder (-of for another), layer by layer (same
+        file name). Identical polygons (coordinates rounded to --decimals, default 3 = 1 mm)
+        are kept once, and a polygon that overlaps a kept polygon of another folder by more
+        than --overlap (default 0.5) of the smaller area is dropped (ghost cells). The
+        lower-numbered folder wins; each feature gets a SRC_PART field with its folder number.
+
+        Examples:
+            mrgshp
+            mrgshp D:/run/output -of SHP_MERGED
+            mrgshp --layers SIM_thrd125 SIM_thrd475
+            mrgshp --overlap 0
+    """,
     'ncts2shp':
     """
         Write threshold flood-extent shapefiles from the MAXIMUM water depth over time in a
