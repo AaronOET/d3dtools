@@ -304,13 +304,15 @@ TOOL_DESCRIPTIONS = {
         Mesh2d_waterdepth (auto-detected, or --var) is read in chunks of time steps (--chunk,
         default 50) and its maximum per face is written to SHP/SIM_thrd125 / 300 / 475.shp
         (attribute max_dep, EPSG:3826). -t gives other thresholds (metres), -of another folder,
-        -r removes polygons intersecting mask shapefiles (copies in <folder>_RM).
+        --all also writes SHP/SIM_ALL.shp, every face with its max depth (e.g. for
+        eval_iot --mesh). -r removes polygons intersecting mask shapefiles (copies in <folder>_RM).
         Works with non-ASCII (e.g. Chinese) file / folder names.
 
         Examples:
             ncts2shp
             ncts2shp B01-TPE_TM_EVENT.nc -of SHP
             ncts2shp FlowFM_map.nc -t 0.3
+            ncts2shp FlowFM_map.nc --all
             ncts2shp FlowFM_map.nc --var Mesh2d_waterdepth --chunk 100
             ncts2shp FlowFM_map.nc -r SHP/EXCLUDE.shp
     """,

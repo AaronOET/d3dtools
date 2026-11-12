@@ -431,12 +431,14 @@ foustrip1d.strip1d("FOU/TPE_TM_0000_fou.nc")   # -> FOU_2D/TPE_TM_0000_fou_2d.nc
 `ncts2shp` computes the maximum water depth over all time steps of a map output file
 (e.g. an event simulation without FOU output), reading `Mesh2d_waterdepth` in chunks of
 time steps, and writes the faces with depth >= each threshold to `SIM_thrd<mm>.shp`
-(attribute `max_dep`). Non-ASCII (e.g. Chinese) file and folder names are supported.
+(attribute `max_dep`). `--all` also writes `SIM_ALL.shp`, every face with its max depth
+(e.g. for `eval_iot --mesh`). Non-ASCII (e.g. Chinese) file and folder names are supported.
 
 ```python
 # ncts2shp                                                       # NC/FlowFM_map.nc -> SHP/SIM_thrd125/300/475.shp
 # ncts2shp B01-TPE_TM_EVENT.nc -of SHP
 # ncts2shp FlowFM_map.nc -t 0.3                                  # -> SHP/SIM_thrd300.shp only
+# ncts2shp FlowFM_map.nc --all                                   # also SHP/SIM_ALL.shp: every face
 # ncts2shp FlowFM_map.nc --var Mesh2d_waterdepth --chunk 100
 # ncts2shp FlowFM_map.nc -r SHP/EXCLUDE.shp                      # Filtered copies -> SHP_RM/
 

@@ -11,6 +11,7 @@ Attribute: max depth over time [m] (stored as "max_dep")
 Input : FlowFM_map.nc  (UGRID 2D map output, EPSG:3826 TWD97/TM2-121)
 Output: SIM_thrd125.shp, SIM_thrd300.shp, SIM_thrd475.shp (+.dbf, .shx, .prj)
         Each holds the mesh faces whose max depth is >= threshold.
+        SIM_ALL.shp (optional, --all): every mesh face with its max depth
 """
 
 import argparse
@@ -23,7 +24,7 @@ import warnings
 
 import numpy as np
 
-from .fou2shp import PRJ_WKT, THRESHOLDS, _SHP_DIR, gpd, nc, shapefile
+from .fou2shp import ALL_STEM, PRJ_WKT, THRESHOLDS, _SHP_DIR, gpd, nc, shapefile
 from .fou2mfd import remove_masked, threshold_stem
 
 SCRIPT = "ncts2shp"
@@ -160,20 +161,28 @@ def read_mesh(ds):
 
 
 def write_threshold_shp(shp_out, threshold, faces, node_x, node_y, values):
-    """Write faces whose max depth >= threshold as polygons; return the polygon count."""
+    """
+    Write faces whose max depth >= threshold as polygons; return the polygon count.
+    With threshold=None every face is written; a face without a value (never
+    wet / missing) gets a NULL attribute.
+    """
     w = shapefile.Writer(shp_out, shapefile.POLYGON)
     w.autoBalance = 1
     w.field(FIELD_NAME, "N", size=18, decimal=6)
 
     n_written = 0
-    for i in np.nonzero(np.nan_to_num(values, nan=-np.inf) >= threshold)[0]:
+    if threshold is None:
+        sel = np.arange(len(faces))
+    else:
+        sel = np.nonzero(np.nan_to_num(values, nan=-np.inf) >= threshold)[0]
+    for i in sel:
         node_idx = faces[i]
         if len(node_idx) < 3:
             continue
         ring = [(float(node_x[j]), float(node_y[j])) for j in node_idx]
         ring.append(ring[0])
         w.poly([ring])
-        w.record(float(values[i]))
+        w.record(None if np.isnan(values[i]) else float(values[i]))
         n_written += 1
     w.close()
 
@@ -204,10 +213,11 @@ def max_depth(nc_file=NC_FILE, var=None, chunk=DEFAULT_CHUNK, verbose=True):
 
 
 def ncts2shp(nc_file=NC_FILE, thresholds=None, out_dir=_SHP_DIR, var=None,
-             chunk=DEFAULT_CHUNK, remove=None):
+             chunk=DEFAULT_CHUNK, remove=None, write_all=False):
     """
     Compute the max water depth over time in `nc_file` and write, for every
     threshold (m), the faces with depth >= it to <out_dir>/SIM_thrd<mm>.shp.
+    With `write_all`, every face with its max depth also goes to <out_dir>/SIM_ALL.shp.
     With `remove` (mask shapefiles), filtered copies go to <out_dir>_RM.
     Return the paths written (without .shp).
     """
@@ -233,6 +243,12 @@ def ncts2shp(nc_file=NC_FILE, thresholds=None, out_dir=_SHP_DIR, var=None,
         write_threshold_shp(shp_out, threshold, faces, node_x, node_y, vmax)
         written.append(shp_out)
 
+    if write_all:
+        print(f"Entire mesh  ->  {ALL_STEM}")
+        shp_out = os.path.join(out_dir, ALL_STEM)
+        write_threshold_shp(shp_out, None, faces, node_x, node_y, vmax)
+        written.append(shp_out)
+
     if remove:
         rm_out_dir = out_dir.rstrip("/\\") + "_RM"
         print(f"\nApplying mask removal  ->  {rm_out_dir}/")
@@ -252,6 +268,7 @@ examples:
   %(prog)s B01-TPE_TM_EVENT.nc -of SHP
   %(prog)s FlowFM_map.nc -t 0.3             (-> SHP/SIM_thrd300.shp only)
   %(prog)s FlowFM_map.nc -t 0.1 0.3 0.5
+  %(prog)s FlowFM_map.nc --all             (also SHP/SIM_ALL.shp: every face)
   %(prog)s FlowFM_map.nc --var Mesh2d_waterdepth --chunk 100
   %(prog)s FlowFM_map.nc -r SHP/EXCLUDE.shp (filtered copies -> SHP_RM/)
         """,
@@ -268,6 +285,9 @@ examples:
                         help="Water depth variable (default: auto-detect Mesh2d_waterdepth)")
     parser.add_argument("--chunk", type=int, default=DEFAULT_CHUNK, metavar="N",
                         help="Time steps read per chunk (default: %(default)s)")
+    parser.add_argument("-a", "--all", dest="write_all", action="store_true",
+                        help=f"Also write the entire mesh with its max depth values as "
+                             f"{ALL_STEM}.shp")
     parser.add_argument("-r", "--remove", nargs="+", metavar="MASK.shp",
                         help="Remove output polygons that intersect these mask shapefiles. "
                              "Filtered copies are written to <output-folder>_RM. "
@@ -290,7 +310,8 @@ examples:
         masks.extend(matched)
 
     try:
-        ncts2shp(args.path, args.threshold, args.out_dir, args.var, args.chunk, masks)
+        ncts2shp(args.path, args.threshold, args.out_dir, args.var, args.chunk, masks,
+                 args.write_all)
     except KeyError as e:
         print(f"Error: Variable not found in NetCDF file: {e}")
         sys.exit(1)
