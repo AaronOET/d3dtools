@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.40.3
+
+- **foustrip1d**: the output keeps the name of the input: `FOU_2D/<name>.nc` (was `FOU_2D/<name>_2d.nc`), e.g. `FOU/TPE_TM_0000_fou.nc` -> `FOU_2D/TPE_TM_0000_fou.nc`. `--suffix` now defaults to none; `--suffix _2d` gives the old names. Since the output would then overwrite the input, `-of ""` (next to the inputs) needs a `--suffix`, and an output that would be the input itself (e.g. `foustrip1d FOU_2D`) is still refused.
+
 ## 0.40.2
 
 - Added **mrgshp** (from `prototype/mergeshp/merge_shp.py`): merges the shapefiles of `SHP0000`, `SHP0001`, ... folders (e.g. `fou2shp` / `ncts2shp` output per D-Flow FM partition) into one `SHP` folder (`<root>/SHP`, `-of` for another), layer by layer (same file name; `--layers` for only some). Identical polygons (normalised, coordinates rounded to `--decimals`, default 3 = 1 mm) are kept once, and a polygon that overlaps an already-kept polygon by more than `--overlap` (default 0.5) of the smaller polygon's area is dropped; the lower-numbered folder wins. Each feature gets a `SRC_PART` field with its folder number. Unlike the prototype, only polygons of different folders are tested for overlap (the cells of one mesh do not overlap), which is much faster for a large mesh; invalid polygons are repaired keeping only their polygon parts (so the shapefile can always be written); a layer that is empty in every folder is still written (empty, same fields), and the default root is the current folder. New Python API: `mrgshp()`, `merge_layer()`, `find_inputs()`.

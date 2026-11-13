@@ -282,17 +282,19 @@ TOOL_DESCRIPTIONS = {
         Copy Delft3D FM NetCDF output (*_fou.nc, *_map.nc) without the 1D network and the
         1D2D links, keeping only the 2D mesh and its results (a pure 2D UGRID file, e.g. for a
         QGIS mesh layer). Removed: mesh1d*, network*, links* and composite_mesh; everything
-        else is copied bit-identical, in the same NetCDF format. Output FOU_2D/<name>_2d.nc
-        (FOU_2D in the current folder, created if missing; -of for another folder, -of "" for
-        next to each input, -o for one file). Inputs can be files, folders
+        else is copied bit-identical, in the same NetCDF format. Output FOU_2D/<name>.nc, the
+        same name as the input (FOU_2D in the current folder, created if missing; -of for
+        another folder, -o for one file, --suffix _2d to add _2d to the names; -of "" for
+        next to each input needs a --suffix). Inputs can be files, folders
         (every *_fou.nc, --pattern for others) or glob patterns. --check lists what would be
         removed. Works with non-ASCII (e.g. Chinese) paths.
 
         Examples:
             foustrip1d
-            foustrip1d FOU/TPE_TM_0000_fou.nc            (-> FOU_2D/TPE_TM_0000_fou_2d.nc)
+            foustrip1d FOU/TPE_TM_0000_fou.nc            (-> FOU_2D/TPE_TM_0000_fou.nc)
             foustrip1d FOU                               (every *_fou.nc in FOU -> FOU_2D)
-            foustrip1d FOU -of ""                        (next to the inputs)
+            foustrip1d FOU --suffix _2d                  (-> FOU_2D/*_fou_2d.nc)
+            foustrip1d FOU -of "" --suffix _2d           (next to the inputs)
             foustrip1d output --pattern "*_map.nc"
             foustrip1d FOU --check
     """,

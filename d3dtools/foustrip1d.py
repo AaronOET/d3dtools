@@ -15,8 +15,9 @@ as the input. Only the dimensions still used by a kept variable are created;
 unlimited dimensions stay unlimited.
 
 Input : one or more files, folders (every *_fou.nc in them) or glob patterns
-Output: FOU_2D/<name>_2d.nc (FOU_2D in the current folder; -of DIR for another
-        folder, -of "" for next to each input, -o FILE for a single input)
+Output: FOU_2D/<name>.nc, same name as the input (FOU_2D in the current folder;
+        -of DIR for another folder, -o FILE for a single input, --suffix to add
+        e.g. _2d to the names; -of "" for next to each input needs a --suffix)
 """
 
 import argparse
@@ -29,7 +30,7 @@ import numpy as np
 from .ncutils import open_nc
 
 SCRIPT = "foustrip1d"
-SUFFIX = "_2d"
+SUFFIX = ""  # added to the output names (e.g. "_2d"); none by default
 OUT_DIR = "FOU_2D"  # default output folder (in the current folder)
 FOLDER_PATTERN = "*_fou.nc"
 # variable name prefixes / names of the 1D part (compared case-insensitively)
@@ -45,7 +46,7 @@ def is_1d_var(name):
 
 
 def default_output(src, out_dir=OUT_DIR, suffix=SUFFIX):
-    """<name>_2d.nc in `out_dir` (default FOU_2D), or next to `src` when `out_dir` is empty."""
+    """<name><suffix>.nc in `out_dir` (default FOU_2D), or next to `src` when `out_dir` is empty."""
     stem, ext = os.path.splitext(os.path.basename(src))
     return os.path.join(out_dir or os.path.dirname(src), f"{stem}{suffix}{ext or '.nc'}")
 
@@ -53,8 +54,8 @@ def default_output(src, out_dir=OUT_DIR, suffix=SUFFIX):
 def find_inputs(targets, pattern=FOLDER_PATTERN, suffix=SUFFIX):
     """
     Expand files, folders (every `pattern` file in them) and glob patterns to a
-    sorted list of files. Outputs of an earlier run (*<suffix>.nc) are skipped
-    when found through a folder or glob.
+    sorted list of files. With a `suffix`, outputs of an earlier run
+    (*<suffix>.nc) are skipped when found through a folder or glob.
     """
     files = []
     for t in targets:
@@ -97,7 +98,7 @@ def _copy_data(v, o, chunk_bytes=CHUNK_BYTES):
 
 def strip1d(src, dst=None, overwrite=True, check=False, verbose=True):
     """
-    Copy `src` to `dst` (default FOU_2D/<name>_2d.nc) without the 1D
+    Copy `src` to `dst` (default FOU_2D/<name>.nc) without the 1D
     network, 1D2D links and composite mesh. Return (dst, kept, removed) with
     the lists of variable names. With `check`, nothing is written.
     """
@@ -160,15 +161,16 @@ def main():
         prog=SCRIPT,
         description="Copy Delft3D FM NetCDF output (*_fou.nc, *_map.nc) without the 1D "
                     "network and 1D2D links, keeping only the 2D mesh and its results "
-                    "(output FOU_2D/<name>_2d.nc).",
+                    "(output FOU_2D/<name>.nc, same name as the input).",
         epilog="""
 examples:
   %(prog)s                                       (every *_fou.nc in the current folder -> FOU_2D)
-  %(prog)s FOU\\TPE_TM_0000_fou.nc               (-> FOU_2D\\TPE_TM_0000_fou_2d.nc)
+  %(prog)s FOU\\TPE_TM_0000_fou.nc               (-> FOU_2D\\TPE_TM_0000_fou.nc)
   %(prog)s FOU\\TPE_TM_0000_fou.nc -o 2D.nc      (another output name)
   %(prog)s FOU                                   (every *_fou.nc in FOU -> FOU_2D)
   %(prog)s FOU -of OUT_2D                        (outputs into OUT_2D instead)
-  %(prog)s FOU -of ""                            (outputs next to the inputs: FOU\\*_fou_2d.nc)
+  %(prog)s FOU --suffix _2d                      (-> FOU_2D\\*_fou_2d.nc)
+  %(prog)s FOU -of "" --suffix _2d               (outputs next to the inputs: FOU\\*_fou_2d.nc)
   %(prog)s "FOU/*_fou.nc" output/*_map.nc        (glob patterns)
   %(prog)s FOU --pattern "*_map.nc"              (other files in a folder)
   %(prog)s FOU --check                           (list what would be removed, write nothing)
@@ -176,7 +178,9 @@ examples:
 
 notes:
   - The output folder (default FOU_2D, in the current folder) is created if missing.
-  - Outputs of an earlier run (*_2d.nc) are skipped when found through a folder or glob.
+  - The output has the same name as the input, so it must go to another folder
+    (-of "" needs a --suffix). With a --suffix, outputs of an earlier run
+    (*<suffix>.nc) are skipped when found through a folder or glob.
   - The output is not compressed, so it is about the size of the 2D part of the input.
   - Global attributes are copied as they are; any reference to the removed 1D or
     composite mesh in them is out of date (this does not affect the 2D mesh).
@@ -188,14 +192,14 @@ notes:
                              "(default: every *_fou.nc in the current folder)")
     parser.add_argument("-o", "--output", default=None, metavar="FILE",
                         help="Output file (only with a single input; "
-                             "default: FOU_2D/<name>_2d.nc)")
+                             "default: FOU_2D/<name>.nc)")
     parser.add_argument("-of", "--output-folder", dest="out_dir", default=OUT_DIR, metavar="DIR",
                         help="Folder for the outputs, created if missing (default: %(default)s "
                              "in the current folder; \"\" for next to each input)")
     parser.add_argument("--pattern", default=FOLDER_PATTERN,
                         help="Files taken from a folder input (default: %(default)s)")
     parser.add_argument("--suffix", default=SUFFIX,
-                        help="Added to the output names (default: %(default)s)")
+                        help="Added to the output names, e.g. _2d (default: none)")
     parser.add_argument("--no-overwrite", action="store_true",
                         help="Skip an input whose output already exists")
     parser.add_argument("--check", action="store_true",
@@ -203,7 +207,8 @@ notes:
     args = parser.parse_args()
 
     if not args.suffix and not args.out_dir and not args.output:
-        parser.error("an empty --suffix needs -of or -o (the input would be overwritten)")
+        parser.error('-of "" (next to the inputs) needs a --suffix, e.g. --suffix _2d '
+                     "(the input would be overwritten)")
     files = find_inputs(args.inputs, args.pattern, args.suffix)
     if not files:
         print(f"Error: no input files found ({', '.join(args.inputs)}; "

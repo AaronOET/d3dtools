@@ -32,7 +32,7 @@ This package provides several utilities for converting shapefiles to various for
 - **getfacez2**: Original brute-force implementation of getfacez (no spatial index), kept as a fallback. Same CLI arguments, Python API, and output format as getfacez, including `-if`/`--id-field`
 - **fou2shp**: Reconstruct Delft3D FM 2D mesh face polygons from a FOU (Fourier) NetCDF output file and export threshold-filtered shapefiles; supports `-r`/`--remove` to remove output polygons that intersect mask shapefiles (filtered copies written to `<output-folder>_RM/`)
 - **fou2mfd**: Like `fou2shp`, but writes only the shapefile of one flood threshold (`-t`, default 0.3 m), without the -/+ 0.175 m layers
-- **foustrip1d**: Copy Delft3D FM NetCDF output (`*_fou.nc`, `*_map.nc`) without the 1D network and 1D2D links, keeping only the 2D mesh and its results (`<name>_2d.nc`)
+- **foustrip1d**: Copy Delft3D FM NetCDF output (`*_fou.nc`, `*_map.nc`) without the 1D network and 1D2D links, keeping only the 2D mesh and its results (`FOU_2D/<name>.nc`)
 - **ncts2shp**: Like `fou2shp`, but from a map output time series: computes the maximum `Mesh2d_waterdepth` over all time steps and writes the threshold shapefiles (`SIM_thrd125/300/475`, or `-t` thresholds)
 - **mrgshp**: Merge the shapefiles of `SHP0000`, `SHP0001`, ... folders (e.g. one per D-Flow FM partition) into one `SHP` folder, removing duplicated and overlapping polygons (ghost cells shared by partitions)
 - **pliz2shp**: Convert Delft3D/D-Flow FM `.pliz` weir/dike polyline files (with Z) to 3D ESRI Shapefiles
@@ -412,19 +412,21 @@ fou2mfd.fou2mfd("NC/FlowFM_fou.nc", threshold=0.5, out_dir="SHP")
 `foustrip1d` copies Delft3D FM NetCDF output without the 1D network (`mesh1d*`,
 `network*`), the 1D2D links (`links*`) and `composite_mesh`, so a 1D2D model's output
 opens as a pure 2D UGRID file (e.g. a QGIS mesh layer). The rest is copied bit-identical,
-in the same NetCDF format, to `FOU_2D/<name>_2d.nc` (`FOU_2D` in the current folder,
-created if missing; `-of` for another folder, `-of ""` for next to each input).
+in the same NetCDF format, to `FOU_2D/<name>.nc`, the same name as the input (`FOU_2D` in
+the current folder, created if missing; `-of` for another folder, `--suffix _2d` to add
+`_2d` to the names; `-of ""` for next to each input needs a `--suffix`).
 
 ```python
 # foustrip1d                                     # every *_fou.nc in the current folder -> FOU_2D/
-# foustrip1d FOU/TPE_TM_0000_fou.nc              # -> FOU_2D/TPE_TM_0000_fou_2d.nc
+# foustrip1d FOU/TPE_TM_0000_fou.nc              # -> FOU_2D/TPE_TM_0000_fou.nc
 # foustrip1d FOU                                 # every *_fou.nc in FOU -> FOU_2D/
-# foustrip1d FOU -of ""                          # next to the inputs: FOU/*_fou_2d.nc
+# foustrip1d FOU --suffix _2d                    # -> FOU_2D/*_fou_2d.nc
+# foustrip1d FOU -of "" --suffix _2d             # next to the inputs: FOU/*_fou_2d.nc
 # foustrip1d output --pattern "*_map.nc"         # map files instead
 # foustrip1d FOU --check                         # list what would be removed
 
 from d3dtools import foustrip1d
-foustrip1d.strip1d("FOU/TPE_TM_0000_fou.nc")   # -> FOU_2D/TPE_TM_0000_fou_2d.nc
+foustrip1d.strip1d("FOU/TPE_TM_0000_fou.nc")   # -> FOU_2D/TPE_TM_0000_fou.nc
 ```
 
 ### Threshold shapefiles from the max depth of a map time series
@@ -1168,7 +1170,7 @@ fou2shp NC/FlowFM_fou.nc --remove SHP/ROAD.shp SHP/BUILDING.shp  # Multiple expl
 fou2mfd NC/FlowFM_fou.nc -t 0.5                 # -> SHP/SIM_thrd500.shp
 
 # Copy FOU / map output without the 1D network (2D only)
-foustrip1d FOU                                  # every *_fou.nc in FOU -> FOU_2D/*_fou_2d.nc
+foustrip1d FOU                                  # every *_fou.nc in FOU -> FOU_2D/*_fou.nc
 
 # Threshold shapefiles from the max water depth over a map output time series
 ncts2shp FlowFM_map.nc                          # -> SHP/SIM_thrd125/300/475.shp
