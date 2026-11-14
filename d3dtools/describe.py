@@ -371,15 +371,18 @@ TOOL_DESCRIPTIONS = {
     """,
     'xyz2shp':
     """
-        Convert an XYZ point file (.xyz or .csv) to an ESRI Shapefile.
+        Convert a point file (.xyz, .csv, or SFINCS .obs/.src) to an ESRI Shapefile.
 
-        Reads one .xyz/.csv file or a folder of them and writes a point shapefile per
-        input file (3D x,y,z points by default; use -d 2 for 2D points).
+        Reads one .xyz/.csv/.obs/.src file or a folder of them and writes a point shapefile
+        per input file (3D x,y,z points by default; use -d 2 for 2D points). SFINCS
+        observation (.obs) and source (.src) files ("x y [name]" per line) are written as
+        2D points with a NAME attribute.
 
         Examples:
             xyz2shp -i XYZ_001.xyz
             xyz2shp -i XYZ_001.csv -of output --crs EPSG:4326
             xyz2shp -i XYZ_001.xyz -d 2
+            xyz2shp -i sfincs.obs
             xyz2shp -if XYZ_DIR -of SHP_DIR
     """,
     'rmgrid':

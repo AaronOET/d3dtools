@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.40.4
+
+- **xyz2shp**: also reads SFINCS observation-point (`.obs`) and discharge-source (`.src`) files (`x y ["name"]` per line, whitespace or tab separated; `#`/`!` comment lines skipped) and writes them as 2D point shapefiles with a `NAME` field (the quoted name, else `<stem>_<n>`), named `<stem>_obs.shp` / `<stem>_src.shp` so both can sit in one folder, e.g. `xyz2shp -i sfincs.obs` -> `SHP_XYZ/sfincs_obs.shp`. `-if` picks up `.obs`/`.src` files too. New Python API: `read_sfincs_points()`.
+
 ## 0.40.3
 
 - **foustrip1d**: the output keeps the name of the input: `FOU_2D/<name>.nc` (was `FOU_2D/<name>_2d.nc`), e.g. `FOU/TPE_TM_0000_fou.nc` -> `FOU_2D/TPE_TM_0000_fou.nc`. `--suffix` now defaults to none; `--suffix _2d` gives the old names. Since the output would then overwrite the input, `-of ""` (next to the inputs) needs a `--suffix`, and an output that would be the input itself (e.g. `foustrip1d FOU_2D`) is still refused.

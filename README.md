@@ -38,7 +38,7 @@ This package provides several utilities for converting shapefiles to various for
 - **pliz2shp**: Convert Delft3D/D-Flow FM `.pliz` weir/dike polyline files (with Z) to 3D ESRI Shapefiles
 - **pli2shp**: Convert Delft3D polyline files (`.pli`/`.ldb`) to ESRI Shapefiles
 - **pol2shp**: Convert Delft3D/D-Flow FM `.pol` polygon files to ESRI Shapefiles
-- **xyz2shp**: Convert XYZ point files (`.xyz`/`.csv`) to ESRI Shapefiles
+- **xyz2shp**: Convert XYZ point files (`.xyz`/`.csv`) and SFINCS observation/source point files (`.obs`/`.src`) to ESRI Shapefiles
 - **rmgrid**: Remove (clear) the 2D computational mesh and 1D2D links from a D-Flow FM `.dsproj` project while preserving the 1D network (pipes/branches)
 - **rsgrid**: Restore the 2D computational mesh (including `Mesh2d_face_z` bed levels) into a D-Flow FM `.dsproj` project by cloning it from a source project, while preserving the target's 1D network. The inverse of `rmgrid`. Also restores the 2D spatial fields (infiltration capacity, roughness) that are lost along with the mesh, via `-f`/`--fields`
 - **rmgriddimr**: `rmgrid` for a model exported as a DIMR run folder (`dimr.xml` + `dflowfm/`) instead of a `.dsproj` project
