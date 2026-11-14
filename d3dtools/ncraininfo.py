@@ -21,19 +21,30 @@ With --plot a figure is shown (or saved with -o): the hyetograph (domain mean
 and max per step) and a map of the total rainfall, or of the peak time step
 when the total is the same in every cell.
 
+SFINCS: a file with a `Precipitation` variable (the SFINCS `netamprfile`
+format, e.g. written by HydroMT-SFINCS) is read as mm/hr when it has no units,
+and is checked against what SFINCS expects (variable / dimension names,
+x / y grid, time units, units, missing or negative values). With a sfincs.inp
+(--inp, or one next to the file) it also checks that the file is the
+`netamprfile`, covers tstart .. tstop and the model domain, and has the same
+EPSG code. --sfincs runs the check for any file.
+
 Usage
 -----
     ncraininfo rain.nc
     ncraininfo rain.nc --plot                  (show the figure)
     ncraininfo rain.nc --plot -o rain.png      (save the figure)
+    ncraininfo precip_2d.nc --inp sfincs.inp   (SFINCS check incl. the model)
 """
 
 from __future__ import annotations
 
 import argparse
+import math
 import os
+import re
 import sys
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import numpy as np
 
@@ -45,6 +56,10 @@ BAR_WIDTH = 40
 RATE_SECONDS = (("/s", 1), (" s-1", 1), ("/sec", 1), ("/min", 60), ("min-1", 60),
                 ("/h", 3600), ("hr", 3600), ("hour", 3600), ("h-1", 3600),
                 ("/d", 86400), ("day", 86400), ("d-1", 86400))
+# SFINCS netamprfile: variable read by SFINCS, its dimensions and default unit
+SFINCS_VAR = "Precipitation"
+SFINCS_DIMS = ("time", "y", "x")
+SFINCS_UNITS = "mm/hr"
 
 
 # --------------------------------------------------------------------------- #
@@ -79,8 +94,45 @@ def find_var(ds, name, candidates):
     for cand in candidates:
         if cand in ds.variables:
             return cand
+    lower = {v.lower(): v for v in ds.variables}
+    for cand in candidates:
+        if cand.lower() in lower:
+            return lower[cand.lower()]
     raise KeyError("none of %s in the file (variables: %s); give it with --var / --time-var"
                    % (", ".join(candidates), ", ".join(ds.variables)))
+
+
+def find_crs(ds, rv):
+    """
+    CRS of rainfall variable `rv`: from its grid_mapping variable, else from a
+    variable in its `coordinates` (e.g. rioxarray's spatial_ref), else from a
+    `spatial_ref` / `crs` variable. 'EPSG:<code> (<name>)' where known.
+    """
+    names = [getattr(rv, "grid_mapping", None)]
+    names += (getattr(rv, "coordinates", "") or "").split()
+    names += ["spatial_ref", "crs"]
+    for name in names:
+        if not name or name not in ds.variables:
+            continue
+        gv = ds.variables[name]
+        epsg = getattr(gv, "epsg_code", None)
+        if epsg:
+            return str(epsg)
+        wkt = getattr(gv, "crs_wkt", None) or getattr(gv, "spatial_ref", None)
+        label = (getattr(gv, "projected_crs_name", None)
+                 or getattr(gv, "geographic_crs_name", None)
+                 or getattr(gv, "long_name", None))
+        code = None
+        if wkt:
+            # the last ID / AUTHORITY in the WKT is that of the CRS itself
+            ids = re.findall(r'(?:ID|AUTHORITY)\[\s*"EPSG"\s*,\s*"?(\d+)"?\s*\]', str(wkt))
+            if ids:
+                code = "EPSG:%s" % ids[-1]
+        if code and label:
+            return "%s (%s)" % (code, label)
+        if code or label:
+            return code or label
+    return None
 
 
 # --------------------------------------------------------------------------- #
@@ -96,7 +148,10 @@ def get_info(path, var=None, time_var=None):
     mean, max, wet (per step: domain mean, max, wet-cell fraction),
     total (2D accumulated depth), total_mean, total_min, total_max,
     total_uniform (same in every cell),
-    total_max_xy (None when uniform or without 1D x / y).
+    total_max_xy (None when uniform or without 1D x / y),
+    units_assumed (True when a SFINCS `Precipitation` without units is read as mm/hr),
+    dims (dimensions of the rainfall variable), time_var, coord_vars (names of
+    the 1D x / y variables found, None if missing).
     """
     with open_nc(path) as ds:
         var = find_var(ds, var, ("rainfall", "rain", "precipitation", "precip", "pr"))
@@ -110,15 +165,17 @@ def get_info(path, var=None, time_var=None):
             raise ValueError("'%s' does not have time (%s) as its first dimension"
                              % (var, t.dimensions[0]))
         rain = np.ma.masked_invalid(np.ma.asarray(rv[:], dtype=float))
-        units = getattr(rv, "units", "")
+        units = (getattr(rv, "units", "") or "").strip()
+        units_assumed = not units and var == SFINCS_VAR
+        if units_assumed:
+            units = SFINCS_UNITS        # SFINCS reads Precipitation as mm/hr
         x = ds.variables["x"][:] if "x" in ds.variables and ds.variables["x"].ndim == 1 else None
         y = ds.variables["y"][:] if "y" in ds.variables and ds.variables["y"].ndim == 1 else None
-        crs = None
-        gm = getattr(rv, "grid_mapping", None)
-        if gm and gm in ds.variables:
-            gv = ds.variables[gm]
-            crs = getattr(gv, "epsg_code", None) or getattr(gv, "long_name", None)
+        x = np.asarray(x, dtype=float) if x is not None else None
+        y = np.asarray(y, dtype=float) if y is not None else None
+        crs = find_crs(ds, rv)
         time_units = t.units
+        dims = tuple(rv.dimensions)
 
     deltas = [(b - a).total_seconds() for a, b in zip(times, times[1:])]
     dt = float(np.median(deltas)) if deltas else 0.0
@@ -149,7 +206,8 @@ def get_info(path, var=None, time_var=None):
         "mean": mean, "max": mx, "wet": wet, "total": total,
         "total_mean": float(total.mean()) if total.count() else float("nan"),
         "total_min": tmin, "total_max": tmax, "total_uniform": uniform,
-        "total_max_xy": total_max_xy,
+        "total_max_xy": total_max_xy, "units_assumed": units_assumed,
+        "dims": dims, "time_var": time_var,
     }
 
 
@@ -159,8 +217,10 @@ def format_info(info, bars=True):
     depth_units = units.split("/")[0].split()[0] if info["rate"] else units
     lines = [
         "File       : %s" % info["path"],
-        "Variable   : %s  [%s]%s" % (info["var"], units,
-                                     "  (rate; totals = rate x time step)" if info["rate"] else ""),
+        "Variable   : %s  [%s]%s%s" % (info["var"], units,
+                                       "  (rate; totals = rate x time step)" if info["rate"] else "",
+                                       "  (no units attribute: SFINCS default assumed)"
+                                       if info.get("units_assumed") else ""),
         "Time units : %s" % info["time_units"],
         "Start      : %s" % times[0],
         "End        : %s" % times[-1],
@@ -213,6 +273,206 @@ def format_info(info, bars=True):
     if imax is not None:
         lines.append("  Peak step   : %s  (domain mean %.2f %s)"
                      % (times[imax], info["mean"][imax], units))
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------- #
+# SFINCS
+# --------------------------------------------------------------------------- #
+def is_sfincs(info):
+    """True for a file in the SFINCS netamprfile layout (a `Precipitation` variable)."""
+    return info["var"] == SFINCS_VAR
+
+
+def read_sfincs_inp(path):
+    """Read a sfincs.inp file into a dict (lower-case keys, string values)."""
+    params = {}
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            line = line.split("#")[0].split("!")[0]
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            params[key.strip().lower()] = value.strip()
+    return params
+
+
+def _inp_time(value):
+    """sfincs.inp time 'yyyymmdd HHMMSS' -> datetime (None if unreadable)."""
+    digits = re.sub(r"\D", "", value or "")
+    for fmt, n in (("%Y%m%d%H%M%S", 14), ("%Y%m%d", 8)):
+        if len(digits) >= n:
+            try:
+                return datetime.strptime(digits[:n], fmt)
+            except ValueError:
+                pass
+    return None
+
+
+def _regular(v):
+    """(monotonic, ascending, regular) for a 1D coordinate array."""
+    if v is None or len(v) < 2:
+        return True, True, True
+    d = np.diff(v)
+    mono = bool(np.all(d > 0) or np.all(d < 0))
+    regular = mono and bool(np.allclose(d, d[0], rtol=1e-6, atol=1e-6 * abs(d[0])))
+    return mono, bool(d[0] > 0), regular
+
+
+def check_sfincs(info, inp=None):
+    """
+    Check a rainfall file against the SFINCS netamprfile format: a variable
+    `Precipitation` (time, y, x) in mm/hr with 1D `x`, `y` and a `time` in
+    '<unit> since <date>'. With `inp` (path of a sfincs.inp) also check that it
+    uses this file as netamprfile, that the file covers tstart .. tstop and the
+    model domain, and that the EPSG codes match.
+
+    Returns a list of (level, message), level 'OK', 'NOTE', 'WARN' or 'ERROR'.
+    """
+    out = []
+    ok = lambda m: out.append(("OK", m))          # noqa: E731
+    note = lambda m: out.append(("NOTE", m))      # noqa: E731
+    warn = lambda m: out.append(("WARN", m))      # noqa: E731
+    err = lambda m: out.append(("ERROR", m))      # noqa: E731
+
+    if info["var"] == SFINCS_VAR:
+        ok("variable '%s'" % SFINCS_VAR)
+    else:
+        err("SFINCS reads the variable '%s'; this file has '%s'" % (SFINCS_VAR, info["var"]))
+
+    if info["dims"] == SFINCS_DIMS:
+        ok("dimensions (%s)" % ", ".join(SFINCS_DIMS))
+    else:
+        err("dimensions are (%s); SFINCS expects (%s)"
+            % (", ".join(info["dims"]), ", ".join(SFINCS_DIMS)))
+
+    if info["time_var"] != "time":
+        err("time variable is '%s'; SFINCS reads 'time'" % info["time_var"])
+    m = re.match(r"\s*(\w+)\s+since\s+\S", info["time_units"] or "")
+    if not m:
+        err("time units '%s' are not '<unit> since <date>'" % info["time_units"])
+    elif m.group(1).lower() not in ("seconds", "minutes", "hours", "days"):
+        warn("unusual time unit '%s' (SFINCS files use minutes / seconds since ...)" % m.group(1))
+    else:
+        ok("time units '%s'" % info["time_units"])
+    if len(info["steps"]) > 1:
+        note("irregular time steps (SFINCS interpolates linearly in time)")
+
+    for name, v in (("x", info["x"]), ("y", info["y"])):
+        if v is None:
+            err("no 1D '%s' coordinate variable" % name)
+            continue
+        mono, asc, regular = _regular(v)
+        if not mono:
+            err("'%s' is not monotonic" % name)
+        elif not regular:
+            warn("'%s' spacing is not constant" % name)
+        elif not asc:
+            note("'%s' is descending (as written by HydroMT; fine for SFINCS)" % name)
+    if info["x"] is not None and info["y"] is not None:
+        if len(info["x"]) < 2 or len(info["y"]) < 2:
+            warn("grid of %d x %d cells: SFINCS needs at least 2 x 2 to interpolate"
+                 % (len(info["y"]), len(info["x"])))
+        else:
+            ok("grid %d x %d (y x x)" % (len(info["y"]), len(info["x"])))
+
+    units = (info["units"] or "").lower().replace(" ", "")
+    if info.get("units_assumed"):
+        note("no units attribute: SFINCS reads the values as %s" % SFINCS_UNITS)
+    elif units in ("mm/hr", "mm/h", "mmhr-1", "mmh-1", "mm/hour"):
+        ok("units '%s'" % info["units"])
+    elif info["rate"]:
+        warn("units '%s': SFINCS reads the values as %s regardless of units"
+             % (info["units"], SFINCS_UNITS))
+    else:
+        warn("units '%s' look like a depth per step; SFINCS reads the values as %s"
+             % (info["units"], SFINCS_UNITS))
+
+    rain = info["rain"]
+    masked = int(np.ma.count_masked(rain))
+    if masked:
+        warn("%d missing (NaN / fill) value(s); fill them (e.g. with 0) before use" % masked)
+    if rain.count() and float(rain.min()) < 0:
+        warn("negative rainfall (min %g)" % float(rain.min()))
+    if not masked and not (rain.count() and float(rain.min()) < 0):
+        ok("no missing or negative values")
+
+    if not inp:
+        return out
+
+    # ---- against the model (sfincs.inp)
+    p = read_sfincs_inp(inp)
+    note("model: %s" % os.path.abspath(inp))
+    amp = p.get("netamprfile")
+    base = os.path.basename(info["path"])
+    if not amp:
+        warn("sfincs.inp has no netamprfile: this file is not used"
+             + (" (it uses %s)" % ", ".join(k for k in ("precipfile", "spwfile", "amprfile")
+                                            if k in p) if any(k in p for k in
+                                                              ("precipfile", "spwfile", "amprfile")) else ""))
+    elif os.path.basename(amp).lower() != base.lower():
+        warn("sfincs.inp has netamprfile = %s, not this file (%s)" % (amp, base))
+    else:
+        ok("netamprfile = %s" % amp)
+
+    tref, tstart, tstop = (_inp_time(p.get(k)) for k in ("tref", "tstart", "tstop"))
+    times = info["times"]
+    if tstart and tstop:
+        if times[0] <= tstart and times[-1] >= tstop:
+            ok("covers tstart .. tstop (%s .. %s)" % (tstart, tstop))
+        else:
+            warn("rain %s .. %s does not cover tstart .. tstop %s .. %s"
+                 % (times[0], times[-1], tstart, tstop))
+    else:
+        warn("tstart / tstop not found in sfincs.inp")
+    if tref is None:
+        warn("tref not found in sfincs.inp")
+
+    try:
+        x0, y0 = float(p["x0"]), float(p["y0"])
+        dx, dy = float(p["dx"]), float(p["dy"])
+        mmax, nmax = int(float(p["mmax"])), int(float(p["nmax"]))
+        rot = math.radians(float(p.get("rotation", 0) or 0))
+    except (KeyError, ValueError):
+        note("no regular grid in sfincs.inp (x0, y0, dx, dy, mmax, nmax): domain not checked")
+    else:
+        cx = [x0 + i * dx * math.cos(rot) - j * dy * math.sin(rot)
+              for i in (0, mmax) for j in (0, nmax)]
+        cy = [y0 + i * dx * math.sin(rot) + j * dy * math.cos(rot)
+              for i in (0, mmax) for j in (0, nmax)]
+        if info["x"] is not None and info["y"] is not None and len(info["x"]) > 1 \
+                and len(info["y"]) > 1:
+            hx = abs(float(info["x"][1] - info["x"][0])) / 2
+            hy = abs(float(info["y"][1] - info["y"][0])) / 2
+            gx = (float(info["x"].min()) - hx, float(info["x"].max()) + hx)
+            gy = (float(info["y"].min()) - hy, float(info["y"].max()) + hy)
+            if min(cx) >= gx[0] and max(cx) <= gx[1] and min(cy) >= gy[0] and max(cy) <= gy[1]:
+                ok("covers the model domain (x %.1f .. %.1f, y %.1f .. %.1f)"
+                   % (min(cx), max(cx), min(cy), max(cy)))
+            else:
+                warn("does not cover the model domain (x %.1f .. %.1f, y %.1f .. %.1f); "
+                     "rain grid x %.1f .. %.1f, y %.1f .. %.1f"
+                     % (min(cx), max(cx), min(cy), max(cy), gx[0], gx[1], gy[0], gy[1]))
+
+    epsg = re.sub(r"\D", "", p.get("epsg", ""))
+    file_epsg = re.findall(r"EPSG:(\d+)", info["crs"] or "")
+    if epsg and file_epsg:
+        if file_epsg[0] == epsg:
+            ok("EPSG:%s as the model" % epsg)
+        else:
+            warn("file CRS EPSG:%s differs from the model (epsg = %s): SFINCS does not "
+                 "reproject" % (file_epsg[0], epsg))
+    return out
+
+
+def format_sfincs_check(checks):
+    """Return the text of the SFINCS check from check_sfincs()."""
+    n_err = sum(1 for lvl, _ in checks if lvl == "ERROR")
+    n_warn = sum(1 for lvl, _ in checks if lvl == "WARN")
+    verdict = ("not usable as a SFINCS netamprfile" if n_err else
+               "usable as a SFINCS netamprfile" + (" (see warnings)" if n_warn else ""))
+    lines = ["SFINCS check (netamprfile): %s" % verdict]
+    lines += ["  %-5s  %s" % (lvl, msg) for lvl, msg in checks]
     return "\n".join(lines)
 
 
@@ -309,6 +569,9 @@ examples:
   %(prog)s rain.nc --plot                  (also show a hyetograph and a total-rainfall map)
   %(prog)s rain.nc --plot -o rain.png      (save the figure instead of showing it)
   %(prog)s rain.nc --var precip --time-var t
+  %(prog)s precip_2d.nc                    (SFINCS Precipitation file: also the SFINCS check)
+  %(prog)s precip_2d.nc --inp sfincs.inp   (... also against the model's times / domain / EPSG)
+  %(prog)s rain.nc --sfincs                (SFINCS check of any rainfall file)
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("ncfile", help="NetCDF rainfall file")
@@ -321,7 +584,15 @@ examples:
                     help="save the figure to this file (implies --plot)")
     ap.add_argument("--no-bars", action="store_true",
                     help="leave out the bar chart in the per-step table")
+    ap.add_argument("--sfincs", action="store_true",
+                    help="check the file as a SFINCS netamprfile (automatic for a "
+                         "'Precipitation' variable)")
+    ap.add_argument("--inp", default=None, metavar="SFINCS_INP",
+                    help="sfincs.inp to check the file against (default: sfincs.inp "
+                         "next to the file, if any)")
     args = ap.parse_args(argv)
+    if args.inp and not os.path.isfile(args.inp):
+        ap.error("file not found: %s" % args.inp)
 
     if not os.path.isfile(args.ncfile):
         ap.error("file not found: %s" % args.ncfile)
@@ -332,11 +603,22 @@ examples:
         return 1
     print(format_info(info, bars=not args.no_bars))
 
+    status = 0
+    if args.sfincs or args.inp or is_sfincs(info):
+        inp = args.inp
+        if not inp:
+            cand = os.path.join(os.path.dirname(info["path"]), "sfincs.inp")
+            inp = cand if os.path.isfile(cand) else None
+        checks = check_sfincs(info, inp)
+        print("\n" + format_sfincs_check(checks))
+        if any(lvl == "ERROR" for lvl, _ in checks):
+            status = 1
+
     if args.plot or args.output:
         plot_info(info, out=args.output, show=not args.output)
         if args.output:
             print("\nFigure saved: %s" % args.output)
-    return 0
+    return status
 
 
 if __name__ == "__main__":

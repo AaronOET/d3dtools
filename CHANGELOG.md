@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.40.5
+
+- **ncraininfo**: reads SFINCS rainfall files (`netamprfile`, e.g. HydroMT-SFINCS's `precip_2d.nc`): the variable `Precipitation` is found (variable names now also match case-insensitively), read as mm/hr when it has no `units`, and the CRS is now also taken from a variable named in `coordinates` (rioxarray's `spatial_ref`, from its `crs_wkt`) or a `spatial_ref` / `crs` variable, shown as `EPSG:<code> (<name>)`. Such a file also gets a **SFINCS check**: variable `Precipitation`, dimensions `(time, y, x)`, 1D monotonic and regular `x` / `y`, `time` in `<unit> since <date>`, units mm/hr, no missing / negative values. With `--inp sfincs.inp` (or a `sfincs.inp` next to the file) it also checks the `netamprfile` name, that the rain covers `tstart` .. `tstop` and the model domain (`x0`, `y0`, `dx`, `dy`, `mmax`, `nmax`, `rotation`), and the EPSG code. `--sfincs` runs the check for any file; the exit code is 1 when the check finds an error. New Python API: `check_sfincs()`, `format_sfincs_check()`, `read_sfincs_inp()`, `find_crs()`.
+
 ## 0.40.4
 
 - **xyz2shp**: also reads SFINCS observation-point (`.obs`) and discharge-source (`.src`) files (`x y ["name"]` per line, whitespace or tab separated; `#`/`!` comment lines skipped) and writes them as 2D point shapefiles with a `NAME` field (the quoted name, else `<stem>_<n>`), named `<stem>_obs.shp` / `<stem>_src.shp` so both can sit in one folder, e.g. `xyz2shp -i sfincs.obs` -> `SHP_XYZ/sfincs_obs.shp`. `-if` picks up `.obs`/`.src` files too. New Python API: `read_sfincs_points()`.

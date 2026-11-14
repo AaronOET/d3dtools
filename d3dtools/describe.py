@@ -620,11 +620,18 @@ TOOL_DESCRIPTIONS = {
         multiplied by the time step for the totals. --plot shows a hyetograph and a map of the
         total rainfall (of the peak step when the total is the same everywhere); -o saves it.
 
+        A SFINCS rainfall file (netamprfile: variable 'Precipitation', mm/hr when it has no
+        units) is also checked against the SFINCS format (names, dimensions, x / y grid, time
+        units, missing / negative values); with --inp sfincs.inp (or a sfincs.inp next to the
+        file) also the netamprfile name, tstart .. tstop, model domain and EPSG. --sfincs runs
+        the check for any file. The exit code is 1 when the check finds an error.
+
         Examples:
             ncraininfo rain.nc
             ncraininfo rain.nc --plot
             ncraininfo rain.nc --plot -o rain.png
             ncraininfo rain.nc --var precip --time-var t
+            ncraininfo precip_2d.nc --inp sfincs.inp
     """,
     'otstep':
     """

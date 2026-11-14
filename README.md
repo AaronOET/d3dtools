@@ -755,17 +755,26 @@ Rate units (`mm/hr`, `mm/day`) are multiplied by the time step for the totals. `
 a hyetograph and a map of the total rainfall, or of the peak step when the total is the same
 in every cell (a design storm).
 
+A SFINCS rainfall file (`netamprfile`: a `Precipitation` variable, read as mm/hr when it has no
+units, e.g. HydroMT-SFINCS's `precip_2d.nc`) also gets a **SFINCS check**: variable and
+dimension names `(time, y, x)`, 1D `x` / `y` grid, `time` units, units, missing / negative
+values. With `--inp sfincs.inp` (or a `sfincs.inp` next to the file) it also checks the
+`netamprfile` name, that the rain covers `tstart` .. `tstop` and the model domain, and the
+EPSG code. `--sfincs` runs the check for any file; the exit code is 1 when it finds an error.
+
 ```python
 # ncraininfo rain.nc                                             # Time info, per-step table, totals
 # ncraininfo rain.nc --plot                                      # Also show the figure
 # ncraininfo rain.nc --plot -o rain.png                          # Save the figure
 # ncraininfo rain.nc --var precip --time-var t                   # Other variable names
+# ncraininfo precip_2d.nc --inp sfincs.inp                       # SFINCS check against the model
 
 from d3dtools import ncraininfo
 info = ncraininfo.get_info("rain.nc")
 print(info["times"][0], info["times"][-1], info["dt"], info["total_mean"])
 print(ncraininfo.format_info(info))
 ncraininfo.plot_info(info, out="rain.png", show=False)
+print(ncraininfo.format_sfincs_check(ncraininfo.check_sfincs(info, "sfincs.inp")))
 ```
 
 ### Show or change the his / map output time step
