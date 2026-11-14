@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.40.6
+
+- **ncrain**: new `--sfincs` writes a SFINCS precipitation file (`netamprfile`) instead of a D-Flow FM rainfall file: variable `Precipitation` `(time, y, x)` in mm/hr (the CSV values, as for D-Flow FM) on 1D ascending `x` / `y`, `time` in minutes since midnight of the first time stamp, a `crs` variable (`epsg_code`, `crs_wkt`) taken from `THIESSEN.shp` (not fixed to EPSG:3826), and no 2D lat / lon. Cells outside the thiessen polygons are set to 0, since SFINCS does not accept missing values. Point `netamprfile` in `sfincs.inp` to it; `ncraininfo <file> --inp sfincs.inp` checks it against the model. Python API: `generate(sfincs=True)`, `generate_all(sfincs=True)`. The D-Flow FM output is unchanged.
+
 ## 0.40.5
 
 - **ncraininfo**: reads SFINCS rainfall files (`netamprfile`, e.g. HydroMT-SFINCS's `precip_2d.nc`): the variable `Precipitation` is found (variable names now also match case-insensitively), read as mm/hr when it has no `units`, and the CRS is now also taken from a variable named in `coordinates` (rioxarray's `spatial_ref`, from its `crs_wkt`) or a `spatial_ref` / `crs` variable, shown as `EPSG:<code> (<name>)`. Such a file also gets a **SFINCS check**: variable `Precipitation`, dimensions `(time, y, x)`, 1D monotonic and regular `x` / `y`, `time` in `<unit> since <date>`, units mm/hr, no missing / negative values. With `--inp sfincs.inp` (or a `sfincs.inp` next to the file) it also checks the `netamprfile` name, that the rain covers `tstart` .. `tstop` and the model domain (`x0`, `y0`, `dx`, `dy`, `mmax`, `nmax`, `rotation`), and the EPSG code. `--sfincs` runs the check for any file; the exit code is 1 when the check finds an error. New Python API: `check_sfincs()`, `format_sfincs_check()`, `read_sfincs_inp()`, `find_crs()`.

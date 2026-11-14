@@ -110,7 +110,15 @@ ncrain.generate_all(
     output_nc_folder='custom/NC',
     verbose=True
 )
+
+# SFINCS precipitation files (netamprfile) instead of D-Flow FM rainfall files
+ncrain.generate_all(output_nc_folder='NC_SFINCS', sfincs=True)
 ```
+
+With `sfincs=True` (`ncrain --sfincs`) the file has the variable `Precipitation` `(time, y, x)`
+in mm/hr on 1D `x` / `y`, the CRS of `THIESSEN.shp`, and 0 instead of missing values outside
+the thiessen polygons. Set `netamprfile = <name>.nc` in `sfincs.inp`; check it with
+`ncraininfo <name>.nc --inp sfincs.inp`.
 
 ### Convert boundary shapefiles to PLI
 
@@ -1105,6 +1113,7 @@ ncrain --shp-folder custom/SHP --tab-folder custom/TAB --nc-folder custom/NC --r
 ncrain --verbose            # Display additional processing information
 ncrain --no-clean           # Keep intermediate files
 ncrain --single rainfall.csv  # Process only a specific CSV file
+ncrain --sfincs --nc-folder NC_SFINCS  # Write SFINCS precipitation files (netamprfile) instead
 
 # Process rainfall scenario data
 snorain -i rainfall_scenarios.csv -of custom/TAB

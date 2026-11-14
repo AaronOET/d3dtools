@@ -113,11 +113,16 @@ TOOL_DESCRIPTIONS = {
 
         Note: Currently only works for Taiwan data in EPSG:3826 projection.
 
+        --sfincs writes a SFINCS precipitation file (netamprfile) instead: variable
+        'Precipitation' (time, y, x) in mm/hr on 1D x / y, CRS from THIESSEN.shp, and 0
+        instead of missing values outside the thiessen polygons.
+
         Examples:
             ncrain                      # Process all CSV files in the input folder
             ncrain --single rainfall.csv  # Process only a specific CSV file
             ncrain --verbose            # Display additional processing information
             ncrain --no-clean           # Keep intermediate files
+            ncrain --sfincs --nc-folder NC_SFINCS  # SFINCS precipitation files
     """,
     'snorain':
     """

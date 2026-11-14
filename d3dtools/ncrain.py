@@ -1,5 +1,11 @@
 """
 Generate a NetCDF file from rainfall data and thiessen polygon shapefile.
+
+By default the file is a D-Flow FM rainfall file (variable `rainfall`, with
+2D lat / lon). With sfincs=True (--sfincs) it is a SFINCS `netamprfile`
+instead: variable `Precipitation` (time, y, x) in mm/hr on 1D `x` / `y`,
+cells outside the thiessen polygons set to 0 (SFINCS does not accept
+missing values), and the CRS taken from THIESSEN.shp.
 """
 import os
 import numpy as np
@@ -27,7 +33,8 @@ def generate(input_shp_folder='SHP',
              clean_intermediate=True,
              raster_resolution=320,
              rainfall_file=None,
-             verbose=False):
+             verbose=False,
+             sfincs=False):
     """
         Generate a NetCDF file from rainfall data and thiessen polygon shapefile.
 
@@ -51,6 +58,9 @@ def generate(input_shp_folder='SHP',
             Specific CSV file to process (default: None, which means the first CSV file will be processed)
         verbose : bool
             Whether to print detailed information (default: False)
+        sfincs : bool
+            Write a SFINCS netamprfile (variable 'Precipitation' (time, y, x), mm/hr,
+            no missing values) instead of a D-Flow FM rainfall file (default: False)
 
         Returns:
         --------
@@ -153,6 +163,18 @@ def generate(input_shp_folder='SHP',
     x = x + res / 2
     y = y + res / 2
 
+    # Get timestamps as datetime objects
+    timestamp = [datetime.strptime(i, '%Y-%m-%d %H:%M:%S') for i in timestamps]
+
+    if sfincs:
+        nc_file_path = f'{output_nc_folder}/{rainfall_ts}.nc'
+        _write_sfincs_nc(nc_file_path, x, y, timestamp, intermediate_ras_folder,
+                         thiessen.crs, source=rainfall_file, verbose=verbose)
+        _clean(clean_intermediate, intermediate_ras_folder, intermediate_shp_folder)
+        if verbose:
+            print(f"SFINCS NetCDF file generated at: {nc_file_path}")
+        return nc_file_path
+
     lonList = []
     latList = []
 
@@ -226,8 +248,7 @@ def generate(input_shp_folder='SHP',
     time.units = "minutes since 1970-01-01 00:00:00.0 +0000"
     time.axis = "T"
 
-    # Convert timestamp to minutes since 1970-01-01 08:00:00.0 +0800
-    timestamp = [datetime.strptime(i, '%Y-%m-%d %H:%M:%S') for i in timestamps]
+    # Convert timestamp to minutes since 1970-01-01 00:00:00
     time[:] = [(i - datetime(1970, 1, 1, 0, 0, 0)).total_seconds() / 60
                for i in timestamp]
 
@@ -249,33 +270,111 @@ def generate(input_shp_folder='SHP',
     rainfall.grid_mapping = "crs"
 
     # Write rainfall data to the netcdf file
-    data_arr = np.zeros((len(timestamp), len(latList), len(lonList)))
-
-    for i in range(len(timestamp)):
-        with rio.open(f'{intermediate_ras_folder}/THIESSEN_{i}.tif') as src:
-            data_arr_tmp = src.read(1)
-            # Get raster data without bounding elements
-            data_arr_tmp = data_arr_tmp[1:-1, 1:-1]
-            # flip in y direction
-            data_arr[i, :, :] = np.flipud(data_arr_tmp)
-
-    rainfall[:] = data_arr
+    rainfall[:] = _read_rasters(intermediate_ras_folder, len(timestamp),
+                                len(latList), len(lonList))
 
     # Close the netcdf file
     ncFile.close()
 
     # Remove intermediate files if requested
-    if clean_intermediate:
-        try:
-            shutil.rmtree(intermediate_ras_folder)
-            shutil.rmtree(intermediate_shp_folder)
-        except Exception as e:
-            print(f"Warning: Could not clean up intermediate files: {e}")
+    _clean(clean_intermediate, intermediate_ras_folder, intermediate_shp_folder)
 
     if verbose:
         print(f"NetCDF file generated at: {nc_file_path}")
 
     return nc_file_path
+
+
+def _clean(clean_intermediate, *folders):
+    """Remove the intermediate folders if requested."""
+    if not clean_intermediate:
+        return
+    try:
+        for folder in folders:
+            shutil.rmtree(folder)
+    except Exception as e:
+        print(f"Warning: Could not clean up intermediate files: {e}")
+
+
+def _read_rasters(intermediate_ras_folder, n_times, ny, nx):
+    """Stack THIESSEN_<i>.tif (bounding cells removed, y ascending) to (time, y, x)."""
+    data_arr = np.zeros((n_times, ny, nx))
+    for i in range(n_times):
+        with rio.open(f'{intermediate_ras_folder}/THIESSEN_{i}.tif') as src:
+            # Get raster data without bounding elements
+            data_arr_tmp = src.read(1)[1:-1, 1:-1]
+            # flip in y direction
+            data_arr[i, :, :] = np.flipud(data_arr_tmp)
+    return data_arr
+
+
+def _write_sfincs_nc(nc_file_path, x, y, timestamp, intermediate_ras_folder, crs,
+                     source=None, verbose=False):
+    """
+    Write a SFINCS netamprfile: 'Precipitation' (time, y, x) in mm/hr on 1D
+    ascending x / y, time in minutes since midnight of the first time stamp, a
+    'crs' variable (epsg_code, crs_wkt) from `crs`, and no missing values
+    (cells outside the thiessen polygons are set to 0).
+    """
+    data_arr = _read_rasters(intermediate_ras_folder, len(timestamp), len(y), len(x))
+    missing = ~np.isfinite(data_arr) | (data_arr <= -999)
+    if missing.any():
+        if verbose:
+            print(f"  {int(missing[0].sum())} of {missing[0].size} cells outside the "
+                  "thiessen polygons set to 0 (SFINCS does not accept missing values)")
+        data_arr[missing] = 0.0
+
+    ref = timestamp[0].replace(hour=0, minute=0, second=0, microsecond=0)
+
+    with Dataset(nc_file_path, 'w', format='NETCDF4') as ncFile:
+        ncFile.title = "SFINCS precipitation (netamprfile)"
+        ncFile.history = ("created by d3dtools ncrain --sfincs"
+                          + (f" from {source}" if source else ""))
+        ncFile.createDimension('time', None)
+        ncFile.createDimension('y', len(y))
+        ncFile.createDimension('x', len(x))
+
+        tv = ncFile.createVariable('time', np.float64, ('time', ))
+        tv.standard_name = "time"
+        tv.long_name = "time"
+        tv.units = f"minutes since {ref:%Y-%m-%d %H:%M:%S}"
+        tv.calendar = "proleptic_gregorian"
+        tv.axis = "T"
+        tv[:] = [(t - ref).total_seconds() / 60 for t in timestamp]
+
+        yv = ncFile.createVariable('y', np.float64, ('y', ))
+        yv.standard_name = "projection_y_coordinate"
+        yv.long_name = "Northing"
+        yv.units = "m"
+        yv.axis = "Y"
+        yv[:] = y
+
+        xv = ncFile.createVariable('x', np.float64, ('x', ))
+        xv.standard_name = "projection_x_coordinate"
+        xv.long_name = "Easting"
+        xv.units = "m"
+        xv.axis = "X"
+        xv[:] = x
+
+        cv = ncFile.createVariable('crs', np.int32)
+        cv.long_name = "coordinate reference system"
+        epsg = None
+        if crs is not None:
+            try:
+                epsg = crs.to_epsg()
+            except Exception:
+                epsg = None
+            cv.crs_wkt = crs.to_wkt()
+        if epsg:
+            cv.epsg_code = f"EPSG:{epsg}"
+            cv.epsg = np.int32(epsg)
+        cv.assignValue(0)
+
+        pv = ncFile.createVariable('Precipitation', np.float32, ('time', 'y', 'x'))
+        pv.long_name = "precipitation rate"
+        pv.units = "mm/hr"
+        pv.grid_mapping = "crs"
+        pv[:] = data_arr
 
 
 def generate_all(input_shp_folder='SHP',
@@ -285,7 +384,8 @@ def generate_all(input_shp_folder='SHP',
                  intermediate_shp_folder='SHP_RAIN',
                  clean_intermediate=True,
                  raster_resolution=320,
-                 verbose=False):
+                 verbose=False,
+                 sfincs=False):
     """
       Generate NetCDF files from all rainfall data CSV files in the input folder.
 
@@ -327,7 +427,8 @@ def generate_all(input_shp_folder='SHP',
             clean_intermediate=clean_intermediate,
             raster_resolution=raster_resolution,
             rainfall_file=csv_file,
-            verbose=verbose
+            verbose=verbose,
+            sfincs=sfincs
         )
 
         nc_files.append(nc_file)
@@ -353,6 +454,7 @@ examples:
   %(prog)s --single rainfall.csv     # Process only a specific CSV file
   %(prog)s --verbose                 # Display additional processing information
   %(prog)s --no-clean                # Keep intermediate files
+  %(prog)s --sfincs                  # Write SFINCS precipitation files (netamprfile) instead
   %(prog)s --shp-folder custom/SHP --tab-folder custom/TAB --nc-folder custom/NC
         ''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -375,6 +477,10 @@ examples:
                         help='Display additional information during processing')
     parser.add_argument('--single', dest='single_file',
                         help='Process only a specific CSV file instead of all files')
+    parser.add_argument('--sfincs', action='store_true',
+                        help="Write a SFINCS precipitation file (netamprfile: variable "
+                             "'Precipitation' (time, y, x) in mm/hr, no missing values, CRS "
+                             "from THIESSEN.shp) instead of a D-Flow FM rainfall file")
 
     args = parser.parse_args()
 
@@ -395,7 +501,8 @@ examples:
             clean_intermediate=args.clean_intermediate,
             raster_resolution=args.raster_resolution,
             rainfall_file=args.single_file,
-            verbose=args.verbose
+            verbose=args.verbose,
+            sfincs=args.sfincs
         )
 
         if args.verbose:
@@ -410,7 +517,8 @@ examples:
             intermediate_shp_folder=args.intermediate_shp_folder,
             clean_intermediate=args.clean_intermediate,
             raster_resolution=args.raster_resolution,
-            verbose=args.verbose
+            verbose=args.verbose,
+            sfincs=args.sfincs
         )
 
         if args.verbose:
