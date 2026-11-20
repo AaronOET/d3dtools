@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-expgrid - export the 2D grid (Mesh2d) of a D-Flow FM (Delft3D FM) UGRID net
+expmsh - export the 2D grid (Mesh2d) of a D-Flow FM (Delft3D FM) UGRID net
 file (*_net.nc) to a new, 2D-only net file.
 
 The Mesh2d variables (nodes, edges, faces, ...) and the coordinate-system
 variable are copied as-is, together with the global attributes.  The cell
 bed levels (Mesh2d_face_z) are cleared unless --face-z is given.  Everything
 else is dropped: the 1D network, mesh1d, the 1D2D links and the composite
-mesh.  The input file is never modified.
+mesh.  The input file is never modified.  The output goes to
+./MESH/<netfile>.nc by default (-of for another folder, -o for a file).
 
 The result can be loaded as the grid of another model, opened in RGFGRID /
 the FM Suite, or used with MeshKernel (which has no file I/O of its own).
 
 Usage
 -----
-    expgrid <input-folder | model.mdu | *_net.nc>
-    expgrid FlowFM_net.nc -o grid.nc
-    expgrid FlowFM_net.nc --face-z       (keep the Mesh2d_face_z bed levels)
-    expgrid FlowFM_net.nc --check        (list what is kept / dropped)
+    expmsh <input-folder | model.mdu | *_net.nc>   (-> ./MESH/<netfile>.nc)
+    expmsh FlowFM_net.nc -of D:/meshes
+    expmsh FlowFM_net.nc -o grid.nc
+    expmsh FlowFM_net.nc --face-z        (keep the Mesh2d_face_z bed levels)
+    expmsh FlowFM_net.nc --check         (list what is kept / dropped)
 
 Requires: netCDF4      (pip install netCDF4)
 """
@@ -31,7 +33,8 @@ import sys
 
 from .ncutils import find_mesh2d, open_nc, resolve_netfile
 
-SCRIPT = "expgrid"
+SCRIPT = "expmsh"
+DEFAULT_FOLDER = "MESH"
 
 
 # --------------------------------------------------------------------------- #
@@ -133,7 +136,8 @@ def main(argv=None):
                     "modified.",
         epilog="""
 examples:
-  %(prog)s dflowfm                      (input folder; output ./<netfile>_2d.nc)
+  %(prog)s dflowfm                      (input folder; output ./MESH/<netfile>.nc)
+  %(prog)s dflowfm -of D:/meshes        (output D:/meshes/<netfile>.nc)
   %(prog)s dflowfm/FlowFM.mdu
   %(prog)s FlowFM_net.nc -o grid.nc
   %(prog)s FlowFM_net.nc --face-z       (keep the Mesh2d_face_z bed levels)
@@ -143,8 +147,11 @@ examples:
     ap.add_argument("model",
                     help="model input folder, the .mdu, or the *_net.nc itself")
     ap.add_argument("-o", "--output", default=None,
-                    help="output net file (default ./<netfile>_2d.nc in the "
-                         "current directory)")
+                    help="output net file (overrides -of; default "
+                         "<output-folder>/<netfile>.nc)")
+    ap.add_argument("-of", "--output-folder", default=DEFAULT_FOLDER,
+                    help="folder for the output when -o is not given "
+                         "(default ./MESH, created if missing)")
     ap.add_argument("--mesh", default=None,
                     help="name of the 2D mesh variable (default: detected)")
     ap.add_argument("-z", "--face-z", action="store_true",
@@ -161,7 +168,8 @@ examples:
     except (ValueError, FileNotFoundError) as exc:
         ap.error(str(exc))
     stem = os.path.splitext(os.path.basename(netfile))[0]
-    out = os.path.abspath(args.output or stem + "_2d.nc")
+    out = os.path.abspath(args.output or
+                          os.path.join(args.output_folder, stem + ".nc"))
 
     print("Reading", netfile)
     if args.check:

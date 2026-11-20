@@ -577,7 +577,7 @@ TOOL_DESCRIPTIONS = {
             orthochk FlowFM_net.nc --check
             orthochk FlowFM_net.nc --all
     """,
-    'expgrid':
+    'expmsh':
     """
         Export the 2D grid (Mesh2d) of a D-Flow FM net file to a new 2D-only net file.
 
@@ -586,14 +586,87 @@ TOOL_DESCRIPTIONS = {
         links and the composite mesh. The cell bed levels (Mesh2d_face_z) are cleared
         unless -z/--face-z is given. The input file is never
         modified. Accepts a model input folder, a .mdu or the *_net.nc itself. Output
-        defaults to ./<netfile>_2d.nc in the current directory
-        (FlowFM_net.nc -> FlowFM_net_2d.nc); an existing output needs -f.
+        defaults to ./MESH/<netfile>.nc (FlowFM_net.nc -> MESH/FlowFM_net.nc, same name;
+        -of for another folder, -o for a file); an existing output needs -f.
 
         Examples:
-            expgrid <input-folder | model.mdu | *_net.nc>
-            expgrid FlowFM_net.nc -o grid.nc
-            expgrid FlowFM_net.nc --face-z
-            expgrid FlowFM_net.nc --check
+            expmsh <input-folder | model.mdu | *_net.nc>
+            expmsh FlowFM_net.nc -of D:/meshes
+            expmsh FlowFM_net.nc -o grid.nc
+            expmsh FlowFM_net.nc --face-z
+            expmsh FlowFM_net.nc --check
+    """,
+    'ras2msh':
+    """
+        Create a standalone regular 2D D-Flow FM mesh (UGRID *_net.nc) from a GeoTIFF.
+
+        Cells of --dx x --dy m (dy defaults to dx) are aligned to the raster's top-left
+        corner and kept where at least --min-valid-fraction (0.5) of the cell lies on
+        valid (non-nodata) raster cells. The node bed levels (mesh2d_node_z) are the mean
+        of the adjacent cells, each cell being the mean of its valid raster values (--no-z
+        to leave them out); --xyz also writes the cell-centre levels as an x y z samples
+        file. The CRS comes from the raster (--epsg to set / override, EPSG:3826 if none).
+        Output defaults to ./MESH/<raster>_<size>_net.nc (-of for another folder, -o for
+        a file); an existing output needs -f. Nothing is written into a D-HYDRO project:
+        import the file via Grid > Import or set NetFile in a .mdu.
+
+        Examples:
+            ras2msh dem.tif --dx 150                    (-> ./MESH/dem_150m_net.nc)
+            ras2msh dem.tif --dx 200 --dy 100 --xyz
+            ras2msh dem.tif --dx 100 -of D:/meshes
+            ras2msh dem.tif --dx 100 -o grid_100m_net.nc -f
+            ras2msh dem.tif --dx 100 --check
+    """,
+    'intdata':
+    """
+        Interpolate raster data (GeoTIFF) onto the 2D cells of a D-Flow FM / D-HYDRO (1D2D) model.
+
+        -q picks the quantity: bedlevel (mesh2d_face_z / mesh2d_node_z written into the
+        net file, BedlevType set in the .mdu), waterlevel, roughness, viscosity,
+        diffusivity or infiltration. The latter are written as cell-centre samples
+        (<model input>/<Quantity>.xyz) plus an [Initial] / [Parameter] block with
+        interpolationMethod = averaging and locationType = 2d in the initial-field file
+        (created and linked in the .mdu if missing), so every 2D cell gets its own value
+        and the 1D network is never touched; an existing block of the same quantity is
+        replaced. Roughness also sets UnifFrictType (--friction-type), or goes into an
+        old-format .ext with IFRCTYP (--target ext); infiltration sets Infiltrationmodel = 2.
+        Cell value: --method mean / median / min / max of the pixels in the cell, or
+        bilinear / nearest at the centre; --factor converts units; cells without data
+        keep the model value unless --fill-value. No reprojection is done. Changed files
+        are backed up as <name>_backup_<yyyymmdd>_<HHMMSS>.<ext>. Close the project in
+        D-HYDRO before running.
+
+        Examples:
+            intdata FM_model.dsproj RAS/dem.tif -q bedlevel
+            intdata FM_model.dsproj RAS/friction.tif -q roughness --friction-type manning
+            intdata FM_model.dsproj RAS/friction.tif -q roughness --target ext
+            intdata dflowfm/FlowFM.mdu wl.tif -q waterlevel --method nearest
+            intdata FM_model.dsproj RAS/infil.tif -q infiltration --check
+            intdata MyProject.dsproj dem.tif -q bedlevel -m TNN_JJ   (project with several models)
+    """,
+    'rasmshint':
+    """
+        Interpolate a raster onto a 2D mesh and write it as the 2D grid of a D-Flow FM / D-HYDRO (1D2D) model.
+
+        Reads the 2D mesh of a UGRID net file (e.g. from ras2msh), interpolates the
+        GeoTIFF onto it (faces: --face-method mean / median / min / max of the pixels in
+        the cell, or bilinear / nearest at the centre; nodes: --node-method bilinear /
+        nearest at the node, or faces = mean of the adjacent cells) and writes it, with
+        <mesh>_face_z / <mesh>_node_z, into the model's net file in place of the old 2D
+        mesh (named after the model's 2D mesh, e.g. Mesh2d). Everything 1D is copied
+        unchanged; 1D2D links are re-attached to the new cell holding the old linked
+        cell's centre, links outside the new mesh are dropped (reported). BedlevType is
+        set to 1 (--bedlev-location face) or --node-bedlevtype (node) unless --keep-mdu.
+        Cells / nodes without raster data keep the mesh's existing z, else --fill-value
+        (-999). The net file and .mdu are backed up as <name>_backup_<yyyymmdd>_<HHMMSS>.<ext>.
+        Close the project in D-HYDRO (without saving) before running.
+
+        Examples:
+            rasmshint FM_model.dsproj MESH/dem_150m_net.nc RAS/dem.tif
+            rasmshint dflowfm/FlowFM.mdu m_net.nc dem.tif --face-method median
+            rasmshint FM_model.dsproj m_net.nc dem.tif --bedlev-location node --node-bedlevtype 3
+            rasmshint MyProject.dsproj m_net.nc dem.tif -m TNN_JJ   (project with several models)
+            rasmshint FM_model.dsproj m_net.nc dem.tif --check      (report, write nothing)
     """,
     'alignncrain':
     """

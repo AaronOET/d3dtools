@@ -49,7 +49,10 @@ This package provides several utilities for converting shapefiles to various for
 - **rm1d**: Turn a Delft3D FM 1D2D model into a 2D-only model by removing the entire 1D network - channels, sewers, manholes, and every 1D structure. Same engine as `rm1dch`/`rm1dsw`, with `--target all`
 - **rmlinks**: Remove only the 1D2D links from a Delft3D FM net file, leaving the 1D network, mesh1d, Mesh2d and every other input file untouched. `--type` restricts removal to specific link kinds (lateral, longitudinal, street_inlet, roof_gutter, embedded)
 - **orthochk**: Locate non-orthogonal / problematic 2D cells in a Delft3D FM net file and export them as a polygon shapefile. Computes the RGFGRID / D-Flow FM orthogonality per edge and flags the defects behind "network is not orthogonal" (coincident circumcentres, flow link missing the edge, circumcentre outside the cell, non-convex cells, edges shared by more than 2 cells)
-- **expgrid**: Export the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file, dropping the 1D network, mesh1d, the 1D2D links and the composite mesh. The input file is never modified
+- **expmsh**: Export the 2D grid (Mesh2d) of a Delft3D FM net file to a new 2D-only net file, dropping the 1D network, mesh1d, the 1D2D links and the composite mesh (default `./MESH/<netfile>.nc`). The input file is never modified
+- **intdata**: Interpolate a GeoTIFF onto the 2D cells of a Delft3D FM / D-HYDRO (1D2D) model: bed level into the net file, or initial water level, roughness, viscosity, diffusivity and infiltration as `locationType = 2d` initial fields (the 1D network is never touched)
+- **rasmshint**: Interpolate a GeoTIFF onto a 2D mesh (e.g. from `ras2msh`) and write it, with its bed levels, as the 2D grid of a Delft3D FM / D-HYDRO (1D2D) model's net file; the 1D network is kept and the 1D2D links are re-attached to the new cells
+- **ras2msh**: Create a standalone regular 2D Delft3D FM mesh (UGRID `*_net.nc`) from a GeoTIFF, covering the raster's valid area, with node bed levels from the raster
 - **alignncrain**: Align the simulation period (RefDate, TStart, TStop) and map output interval (MapInterval) of a Delft3D FM `.mdu` with a NetCDF rainfall file, and point the rainfall `[Meteo]` block of the external forcing file to it
 - **ncraininfo**: Show the start time, end time, time step, grid and rainfall distribution (per step and total) of a NetCDF rainfall file, optionally as a hyetograph + rainfall map
 - **otstep**: Show or change the output time step of the his file (`HisInterval`) and map file (`MapInterval`) of a Delft3D FM `.mdu`
@@ -710,21 +713,126 @@ carries `FACE_ID` (0-based), `MAX_ORTHO`, `N_BAD_EDG`, the defect flags `ZERO_LI
 
 ### Export the 2D grid of a net file
 
-`expgrid` copies the Mesh2d part of a Delft3D FM net file (plus the coordinate system and
-global attributes) to a new 2D-only net file (default `./<netfile>_2d.nc`, e.g.
-`FlowFM_net.nc` -> `FlowFM_net_2d.nc`). The 1D network, mesh1d, 1D2D links and composite
+`expmsh` copies the Mesh2d part of a Delft3D FM net file (plus the coordinate system and
+global attributes) to a new 2D-only net file (default `./MESH/<netfile>.nc`, e.g.
+`FlowFM_net.nc` -> `MESH/FlowFM_net.nc`; `-of` for another folder, `-o` for a file). The 1D network, mesh1d, 1D2D links and composite
 mesh are dropped, and so are the cell bed levels (`Mesh2d_face_z`) unless `-z`/`--face-z`
 is given; the input is left untouched.
 
 ```python
-# expgrid <input-folder | model.mdu | *_net.nc>                  # -> ./FlowFM_net_2d.nc
-# expgrid FlowFM_net.nc -o grid.nc -f                             # Explicit output, overwrite
-# expgrid FlowFM_net.nc --face-z                                  # Keep the Mesh2d_face_z bed levels
-# expgrid FlowFM_net.nc --check                                   # List kept / dropped variables
+# expmsh <input-folder | model.mdu | *_net.nc>                   # -> ./MESH/FlowFM_net.nc
+# expmsh FlowFM_net.nc -of D:/meshes                              # -> D:/meshes/FlowFM_net.nc
+# expmsh FlowFM_net.nc -o grid.nc -f                              # Explicit output, overwrite
+# expmsh FlowFM_net.nc --face-z                                   # Keep the Mesh2d_face_z bed levels
+# expmsh FlowFM_net.nc --check                                    # List kept / dropped variables
 
-from d3dtools import expgrid
-res = expgrid.export_grid("FlowFM_net.nc", "FlowFM_net_2d.nc", face_z=False)
+from d3dtools import expmsh
+res = expmsh.export_grid("FlowFM_net.nc", "MESH/FlowFM_net.nc", face_z=False)
 print(res["kept"], res["dropped"])
+```
+
+### Create a regular mesh from a GeoTIFF
+
+`ras2msh` builds a regular 2D mesh of `--dx` x `--dy` m cells (`--dy` defaults to `--dx`),
+aligned to the top-left corner of a GeoTIFF, and writes it as a standalone UGRID net file
+(default `./MESH/<raster>_<size>_net.nc`, e.g. `dem.tif --dx 150` -> `MESH/dem_150m_net.nc`).
+A cell is kept when at least `--min-valid-fraction` (default 0.5) of it lies on valid
+(non-nodata) raster cells. The cell bed level is the mean of the valid raster values in it,
+and the node bed level (`mesh2d_node_z`, `--no-z` to leave it out) the mean of the adjacent
+cells; `--xyz` also writes the cell-centre levels to `<output>_cellz.xyz` (bathymetry
+samples). The CRS is taken from the raster (`--epsg` to set / override; EPSG:3826 if none).
+Nothing is written into a D-HYDRO project: import the file via *Grid > Import* or set
+`NetFile` in a `.mdu`. Reads the raster with rasterio, else GDAL, else tifffile.
+
+```python
+# ras2msh dem.tif --dx 150                                        # -> ./MESH/dem_150m_net.nc
+# ras2msh dem.tif --dx 200 --dy 100 --xyz                         # + ./MESH/dem_200x100m_net_cellz.xyz
+# ras2msh dem.tif --dx 100 -of D:/meshes                          # Other output folder
+# ras2msh dem.tif --dx 100 -o grid_100m_net.nc -f                 # Explicit output, overwrite
+# ras2msh dem.tif --dx 100 --min-valid-fraction 0.25 --epsg 3826  # Keep more edge cells, set CRS
+# ras2msh dem.tif --dx 100 --check                                # Summary only, write nothing
+
+from d3dtools import ras2msh
+res = ras2msh.raster_to_mesh("dem.tif", "MESH/dem_150m_net.nc", dx=150, xyz=True)
+print(res["n_faces"], res["n_nodes"], res["output"])
+```
+
+### Replace a model's 2D grid with a mesh + raster bed levels
+
+`rasmshint` takes a 2D UGRID mesh (e.g. made by `ras2msh`), interpolates a GeoTIFF onto it
+and writes it into the net file of a Delft3D FM / D-HYDRO model (`NetFile` in the .mdu) in
+place of the model's 2D mesh, with `<mesh>_face_z` and `<mesh>_node_z` (named after the
+model's 2D mesh, e.g. `Mesh2d`):
+
+- faces: `--face-method` mean / median / min / max of the pixels in the cell (default mean),
+  or bilinear / nearest at the cell centre;
+- nodes: `--node-method` bilinear (default) / nearest at the node, or `faces` (mean of the
+  adjacent cells);
+- cells / nodes without raster data keep the mesh's existing z, else `--fill-value` (-999);
+- everything 1D (network, mesh1d, ...) is copied unchanged, and the 1D2D links are
+  re-attached to the new cell holding the old linked cell's centre (links outside the new
+  mesh are dropped and reported, together with their ids / types);
+- `BedlevType` is set to 1 (`--bedlev-location face`, default) or `--node-bedlevtype`
+  (`node`, default 3) unless `--keep-mdu`; a `bedlevel` quantity in the ext / initial-field
+  files, which would override the net-file bed level, is reported.
+
+The net file and the .mdu are backed up as `<name>_backup_<yyyymmdd>_<HHMMSS>.<ext>`
+(`clrbak` removes them). Close the project in D-HYDRO (without saving) before running, then
+reopen it - saving an open project overwrites the net file.
+
+```python
+# rasmshint <project.dsproj | input-folder | model.mdu> <mesh_net.nc> <raster.tif>
+# rasmshint FM_model.dsproj MESH/dem_150m_net.nc RAS/dem.tif
+# rasmshint dflowfm/FlowFM.mdu m_net.nc dem.tif --face-method median --node-method faces
+# rasmshint FM_model.dsproj m_net.nc dem.tif --bedlev-location node --node-bedlevtype 3
+# rasmshint MyProject.dsproj m_net.nc dem.tif -m TNN_JJ          # Project with several models
+# rasmshint FM_model.dsproj m_net.nc dem.tif --check             # Report (incl. links), write nothing
+
+from d3dtools import rasmshint
+res = rasmshint.interpolate_mesh("FM_model.dsproj", "MESH/dem_150m_net.nc", "RAS/dem.tif")
+print(res["links"], res["mdu_change"])
+```
+
+### Interpolate raster data onto a model's 2D cells
+
+`intdata` puts the values of a GeoTIFF on every 2D cell of a Delft3D FM / D-HYDRO model,
+for the 2D spatial quantities of the D-HYDRO GUI (`-q`):
+
+| `-q`           | Written as                                                                  |
+|----------------|-----------------------------------------------------------------------------|
+| `bedlevel`     | `mesh2d_face_z` / `mesh2d_node_z` in the net file, `BedlevType` in the .mdu |
+| `waterlevel`   | `[Initial]` `waterlevel`                                                    |
+| `roughness`    | `[Parameter]` `frictioncoefficient` + `UnifFrictType` (or `--target ext`)   |
+| `viscosity`    | `[Parameter]` `horizontaleddyviscositycoefficient`                          |
+| `diffusivity`  | `[Parameter]` `horizontaleddydiffusivitycoefficient`                        |
+| `infiltration` | `[Parameter]` `InfiltrationCapacity` + `[grw] Infiltrationmodel = 2`        |
+
+The cell value is the mean / median / min / max of the pixels inside the cell (`--method`,
+default mean) or bilinear / nearest at the cell centre. Except for bed level, the values
+are written as cell-centre samples (`<model input>/<Quantity>.xyz`) with a block using
+`interpolationMethod = averaging` and `locationType = 2d` in the initial-field file
+(created and linked in the .mdu if missing), so each 2D cell gets exactly its own value
+and the 1D network is untouched; an existing block of the same quantity is replaced.
+Cells without raster data keep the model value unless `--fill-value` is given. Units:
+m (levels), per `--friction-type` (roughness), m2/s, mm/hr; `--factor` converts. The
+raster must be in the model's CRS (no reprojection). Changed files are backed up as
+`<name>_backup_<yyyymmdd>_<HHMMSS>.<ext>` (`clrbak` removes them). Close the project in
+D-HYDRO (without saving) before running, then reopen it.
+
+```python
+# intdata <project.dsproj | input-folder | model.mdu> <raster.tif> -q <quantity>
+# intdata FM_model.dsproj RAS/dem.tif -q bedlevel                 # Face + node bed levels, BedlevType 1
+# intdata FM_model.dsproj RAS/dem.tif -q bedlevel --bedlev-location node --node-bedlevtype 3
+# intdata FM_model.dsproj RAS/n.tif -q roughness --friction-type manning
+# intdata FM_model.dsproj RAS/n.tif -q roughness --target ext     # Old-format .ext with IFRCTYP
+# intdata dflowfm/FlowFM.mdu wl.tif -q waterlevel --method nearest --fill-value 0
+# intdata FM_model.dsproj RAS/infil.tif -q infiltration --check   # Report only, write nothing
+# intdata MyProject.dsproj dem.tif -q bedlevel -m TNN_JJ          # Project with several models
+
+from d3dtools import intdata
+res = intdata.interpolate("FM_model.dsproj", "RAS/friction.tif", "roughness",
+                          method="mean", friction_type="manning", write=True)
+print(res["n_valid"], res["written"], res["mdu_changes"])
 ```
 
 ### Align the simulation period with a rainfall file
@@ -1039,7 +1147,10 @@ d3dtools-info rm1dsw
 d3dtools-info rm1d
 d3dtools-info rmlinks
 d3dtools-info orthochk
-d3dtools-info expgrid
+d3dtools-info expmsh
+d3dtools-info ras2msh
+d3dtools-info intdata
+d3dtools-info rasmshint
 d3dtools-info alignncrain
 d3dtools-info ncraininfo
 d3dtools-info otstep
@@ -1090,7 +1201,10 @@ rm1dsw --help
 rm1d --help
 rmlinks --help
 orthochk --help
-expgrid --help
+expmsh --help
+ras2msh --help
+intdata --help
+rasmshint --help
 alignncrain --help
 ncraininfo --help
 otstep --help
@@ -1288,9 +1402,22 @@ orthochk FlowFM_net.nc -t 0.05 --edges           # Stricter threshold + offendin
 orthochk FlowFM_net.nc --check                   # Summary only, exit 1 if any cell flagged
 
 # Export the 2D grid of a Delft3D FM net file to a 2D-only net file
-expgrid <input-folder | model.mdu | *_net.nc>
-expgrid FlowFM_net.nc --face-z                   # Keep the Mesh2d_face_z bed levels
-expgrid FlowFM_net.nc --check                    # List kept / dropped variables, write nothing
+expmsh <input-folder | model.mdu | *_net.nc>     # -> ./MESH/<netfile>.nc
+expmsh FlowFM_net.nc --face-z                    # Keep the Mesh2d_face_z bed levels
+expmsh FlowFM_net.nc --check                     # List kept / dropped variables, write nothing
+
+# Create a standalone regular 2D mesh (*_net.nc) from a GeoTIFF
+ras2msh dem.tif --dx 150                         # -> ./MESH/dem_150m_net.nc
+ras2msh dem.tif --dx 200 --dy 100 --xyz          # Also the cell-centre bed levels as x y z
+
+# Interpolate a GeoTIFF onto the 2D cells of a model
+intdata FM_model.dsproj RAS/dem.tif -q bedlevel
+intdata FM_model.dsproj RAS/n.tif -q roughness --friction-type manning
+intdata FM_model.dsproj RAS/infil.tif -q infiltration --check   # Report only
+
+# Replace a model's 2D grid with a mesh + raster bed levels (1D kept, 1D2D links re-attached)
+rasmshint FM_model.dsproj MESH/dem_150m_net.nc RAS/dem.tif
+rasmshint FM_model.dsproj MESH/dem_150m_net.nc RAS/dem.tif --check   # Report only
 
 # Align the .mdu simulation period with a NetCDF rainfall file
 alignncrain <input-folder | model.mdu> rain.nc

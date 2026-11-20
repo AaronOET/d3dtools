@@ -34,8 +34,8 @@ def resolve_netfile(target):
     target = os.path.abspath(target)
     mdu = None
     if os.path.isdir(target):
-        mdus = [f for f in sorted(os.listdir(target))
-                if f.lower().endswith(".mdu")]
+        from .mduutils import model_mdus
+        mdus = model_mdus(target)
         if len(mdus) != 1:
             raise ValueError("expected exactly one .mdu in %s, found %d"
                              % (target, len(mdus)))

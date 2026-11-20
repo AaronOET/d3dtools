@@ -8,7 +8,7 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setup(
     name="d3dtools",
-    version="0.40.8",
+    version="0.41.0",
     author="aaronchh",
     author_email="aaronhsu219@gmail.com",  # Please update this with your email
     description=
@@ -65,7 +65,10 @@ setup(
             "rm1d=d3dtools.rm1d:main",  # Turn a D-Flow FM 1D2D model into a 2D-only model
             "rmlinks=d3dtools.rmlinks:main",  # Remove 1D2D links from a D-Flow FM model
             "orthochk=d3dtools.orthochk:main",  # Find non-orthogonal 2D cells in a D-Flow FM net file
-            "expgrid=d3dtools.expgrid:main",  # Export the 2D grid of a D-Flow FM net file to a 2D-only net file
+            "expmsh=d3dtools.expmsh:main",  # Export the 2D grid of a D-Flow FM net file to a 2D-only net file
+            "ras2msh=d3dtools.ras2msh:main",  # Create a standalone regular D-Flow FM net file from a GeoTIFF
+            "intdata=d3dtools.intdata:main",  # Interpolate a GeoTIFF onto the 2D cells of a D-Flow FM model
+            "rasmshint=d3dtools.rasmshint:main",  # Put a new 2D mesh + raster bed levels into a D-Flow FM model
             "alignncrain=d3dtools.alignncrain:main",  # Align the .mdu simulation period with a NetCDF rainfall file
             "ncraininfo=d3dtools.ncraininfo:main",  # Show the time range / step and rainfall distribution of a NetCDF rainfall file
             "otstep=d3dtools.otstep:main",  # Show or change the his / map output time step of a .mdu

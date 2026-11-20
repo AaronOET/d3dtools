@@ -10,6 +10,15 @@ import re
 import shutil
 
 TUNIT_SECONDS = {"D": 86400, "H": 3600, "M": 60, "S": 1}
+# time-stamped backup copies (<name>_backup_<yyyymmdd>_<HHMMSS>[_n].mdu, made by
+# intdata / rasmshint) are not models
+BACKUP_MDU_RE = re.compile(r"_backup_\d{8}_\d{6}(_\d+)?\.mdu$", re.IGNORECASE)
+
+
+def model_mdus(folder):
+    """Return the sorted .mdu names in `folder`, without backup copies."""
+    return [f for f in sorted(os.listdir(folder))
+            if f.lower().endswith(".mdu") and not BACKUP_MDU_RE.search(f)]
 
 
 # --------------------------------------------------------------------------- #
@@ -19,7 +28,7 @@ def resolve_mdu(target):
     """Return the .mdu for a model input folder or a .mdu path."""
     target = os.path.abspath(target)
     if os.path.isdir(target):
-        mdus = [f for f in sorted(os.listdir(target)) if f.lower().endswith(".mdu")]
+        mdus = model_mdus(target)
         if len(mdus) != 1:
             raise ValueError("expected exactly one .mdu in %s, found %d"
                              % (target, len(mdus)))
