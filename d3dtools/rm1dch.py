@@ -8,11 +8,11 @@ kept sewer branch ran into a removed channel, a manhole is added so the sewer
 keeps a proper outfall (see ``--no-outfall-manholes``).
 
 Use ``--target`` to remove something else instead (``sewer`` or ``all``) -
-or use the ``rm1dsw`` / ``mk2d`` commands, which are the same engine with a
+or use the ``rm1dsw`` / ``rm1d`` commands, which are the same engine with a
 different default.
 
 This is the command-line counterpart of ``rm1dsw`` (removes the sewer system
-instead) and ``mk2d`` (removes the entire 1D network for a 2D-only model).
+instead) and ``rm1d`` (removes the entire 1D network for a 2D-only model).
 
 Examples
 --------
@@ -21,7 +21,7 @@ Examples
     rm1dch <input-folder-or-mdu>
     rm1dch <input-folder-or-mdu> --no-outfall-manholes
 
-See ``rm1dch --help`` for the full option list (shared with rm1dsw/mk2d).
+See ``rm1dch --help`` for the full option list (shared with rm1dsw/rm1d).
 """
 
 import sys

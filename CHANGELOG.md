@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.40.7
+
+- Renamed **mk2d** to **rm1d** (module `d3dtools.rm1d`, command `rm1d`), in line with `rm1dch` / `rm1dsw`: it removes the entire 1D network (`--target all`). Options and behaviour are unchanged. The `mk2d` command and `d3dtools.mk2d` module are gone; use `rm1d`.
+
 ## 0.40.6
 
 - **ncrain**: new `--sfincs` writes a SFINCS precipitation file (`netamprfile`) instead of a D-Flow FM rainfall file: variable `Precipitation` `(time, y, x)` in mm/hr (the CSV values, as for D-Flow FM) on 1D ascending `x` / `y`, `time` in minutes since midnight of the first time stamp, a `crs` variable (`epsg_code`, `crs_wkt`) taken from `THIESSEN.shp` (not fixed to EPSG:3826), and no 2D lat / lon. Cells outside the thiessen polygons are set to 0, since SFINCS does not accept missing values. Point `netamprfile` in `sfincs.inp` to it; `ncraininfo <file> --inp sfincs.inp` checks it against the model. Python API: `generate(sfincs=True)`, `generate_all(sfincs=True)`. The D-Flow FM output is unchanged.

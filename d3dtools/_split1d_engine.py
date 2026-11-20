@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Shared engine behind the ``rm1dch``, ``rm1dsw`` and ``mk2d`` console commands.
+Shared engine behind the ``rm1dch``, ``rm1dsw`` and ``rm1d`` console commands.
 
 Split a Delft3D FM (D-HYDRO / FM Suite) 1D2D model by removing one half of the
 1D network and everything anchored on it, leaving the other half and the 2D
@@ -12,11 +12,11 @@ grid completely intact.
     --target sewer     (rm1dsw default)  remove the SEWER system - pipes,
                                   sewer connections and all manholes /
                                   storage nodes - keep the 1D channels
-    --target all       (mk2d default)    remove the ENTIRE 1D network -
+    --target all       (rm1d default)    remove the ENTIRE 1D network -
                                   channels, sewers, manholes and every 1D
                                   structure - and leave a 2D-only model
 
-``rm1dch``, ``rm1dsw`` and ``mk2d`` are thin wrappers around this module that
+``rm1dch``, ``rm1dsw`` and ``rm1d`` are thin wrappers around this module that
 only set the ``--target`` default (and the report/log file name) before
 calling :func:`main`, so all three commands run identical, tested code.
 
@@ -88,7 +88,7 @@ Usage
     rm1dch <input-folder-or-mdu> --dry-run
     rm1dch <input-folder-or-mdu>
     rm1dsw <input-folder-or-mdu> --no-outfall-manholes
-    mk2d <input-folder-or-mdu>
+    rm1d <input-folder-or-mdu>
 
 Requires: numpy, netCDF4      (pip install numpy netCDF4)
 """
@@ -329,7 +329,7 @@ class Mdu(IniFile):
 CHANNEL, SEWER, ALL = "channel", "sewer", "all"
 GUI_TYPE = {0: CHANNEL, 1: SEWER, 2: SEWER}   # Channel / SewerConnection / Pipe
 
-# Overridden by the rm1dch/rm1dsw/mk2d wrappers before calling main(); the
+# Overridden by the rm1dch/rm1dsw/rm1d wrappers before calling main(); the
 # engine itself is direction-agnostic.
 DEFAULT_TARGET = CHANNEL
 

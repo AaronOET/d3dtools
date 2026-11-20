@@ -1,5 +1,5 @@
 """
-mk2d - turn a Delft3D FM (D-HYDRO / FM Suite) 1D2D model into a 2D-only model.
+rm1d - turn a Delft3D FM (D-HYDRO / FM Suite) 1D2D model into a 2D-only model.
 
 Removes the entire 1D network - the open channels AND the sewer system -
 together with every 1D structure (pump, bridge, weir, orifice, culvert, ...),
@@ -16,12 +16,12 @@ engine with a different default.
 
 Examples
 --------
-    mk2d <input-folder-or-mdu> --check
-    mk2d <input-folder-or-mdu> --dry-run
-    mk2d <input-folder-or-mdu>
-    mk2d <input-folder-or-mdu> --keep-1d-mdu-keys
+    rm1d <input-folder-or-mdu> --check
+    rm1d <input-folder-or-mdu> --dry-run
+    rm1d <input-folder-or-mdu>
+    rm1d <input-folder-or-mdu> --keep-1d-mdu-keys
 
-See ``mk2d --help`` for the full option list (shared with rm1dch/rm1dsw).
+See ``rm1d --help`` for the full option list (shared with rm1dch/rm1dsw).
 """
 
 import sys
@@ -30,7 +30,7 @@ from d3dtools import _split1d_engine as _engine
 
 
 def main(argv=None):
-    _engine.SCRIPT = "mk2d"
+    _engine.SCRIPT = "rm1d"
     _engine.DEFAULT_TARGET = _engine.ALL
     _engine.DESCRIPTION = (
         "Turn a Delft3D FM 1D2D model into a 2D-only model by removing the "
@@ -45,7 +45,7 @@ examples:
   %(prog)s dflowfm --keep-1d-mdu-keys     (keep FrictFile / 1dField entries in the .mdu)
   %(prog)s dflowfm --target channel       (same as rm1dch)
   %(prog)s dflowfm --target sewer         (same as rm1dsw)
-  %(prog)s dflowfm --log C:/temp/mk2d.log
+  %(prog)s dflowfm --log C:/temp/rm1d.log
 
 Every rewritten file is first backed up to <name>.bak.  Close the project in
 the FM Suite before running, and reopen it WITHOUT saving.

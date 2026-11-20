@@ -501,7 +501,7 @@ TOOL_DESCRIPTIONS = {
         sewer system (pipes, sewer connections, manholes) and the 2D grid intact. Where
         a kept sewer branch ran into a removed channel, a manhole is added automatically
         so the sewer keeps a proper outfall (--no-outfall-manholes to disable). Every
-        rewritten file is first backed up to <name>.bak. Same engine as rm1dsw/mk2d;
+        rewritten file is first backed up to <name>.bak. Same engine as rm1dsw/rm1d;
         --target switches what is removed.
 
         Examples:
@@ -524,7 +524,7 @@ TOOL_DESCRIPTIONS = {
             rm1dsw <input-folder-or-mdu>
             rm1dsw <input-folder-or-mdu> --target channel
     """,
-    'mk2d':
+    'rm1d':
     """
         Turn a Delft3D FM (D-HYDRO / FM Suite) 1D2D model into a 2D-only model.
 
@@ -535,10 +535,10 @@ TOOL_DESCRIPTIONS = {
         engine as rm1dch/rm1dsw, with --target all.
 
         Examples:
-            mk2d <input-folder-or-mdu> --check
-            mk2d <input-folder-or-mdu> --dry-run
-            mk2d <input-folder-or-mdu>
-            mk2d <input-folder-or-mdu> --keep-1d-mdu-keys
+            rm1d <input-folder-or-mdu> --check
+            rm1d <input-folder-or-mdu> --dry-run
+            rm1d <input-folder-or-mdu>
+            rm1d <input-folder-or-mdu> --keep-1d-mdu-keys
     """,
     'rmlinks':
     """

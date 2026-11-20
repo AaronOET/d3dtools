@@ -7,11 +7,11 @@ storage nodes - and everything anchored on it (structures, cross sections,
 grid intact.
 
 Use ``--target`` to remove something else instead (``channel`` or ``all``) -
-or use the ``rm1dch`` / ``mk2d`` commands, which are the same engine with a
+or use the ``rm1dch`` / ``rm1d`` commands, which are the same engine with a
 different default.
 
 This is the command-line counterpart of ``rm1dch`` (removes the channels
-instead) and ``mk2d`` (removes the entire 1D network for a 2D-only model).
+instead) and ``rm1d`` (removes the entire 1D network for a 2D-only model).
 
 Examples
 --------
@@ -20,7 +20,7 @@ Examples
     rm1dsw <input-folder-or-mdu>
     rm1dsw <input-folder-or-mdu> --target channel
 
-See ``rm1dsw --help`` for the full option list (shared with rm1dch/mk2d).
+See ``rm1dsw --help`` for the full option list (shared with rm1dch/rm1d).
 """
 
 import sys

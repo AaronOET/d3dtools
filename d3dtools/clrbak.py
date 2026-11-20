@@ -5,7 +5,7 @@ clrbak - remove the backup files that the D3D tools leave in a D-Flow FM
 (Delft3D FM) model input folder.
 
 Backups are <file>.bak (alignncrain, otstep, itstep, rmgrid, ...) and
-<file>.bak2, <file>.bak3, ... (rm1dch, rm1dsw, mk2d keep older backups that
+<file>.bak2, <file>.bak3, ... (rm1dch, rm1dsw, rm1d keep older backups that
 way).  Only files whose name ends in .bak or .bak<number> are removed.
 
 The target can be a model input folder, the .mdu in it (its folder is used)
