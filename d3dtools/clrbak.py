@@ -6,7 +6,10 @@ clrbak - remove the backup files that the D3D tools leave in a D-Flow FM
 
 Backups are <file>.bak (alignncrain, otstep, itstep, rmgrid, ...) and
 <file>.bak2, <file>.bak3, ... (rm1dch, rm1dsw, rm1d keep older backups that
-way).  Only files whose name ends in .bak or .bak<number> are removed.
+way), and the time-stamped copies <name>_backup_<yyyymmdd>_<HHMMSS>.<ext>
+(e.g. FlowFM_net_backup_20261120_215602.nc, initialFields_backup_20261120_215708.ini).
+Only files whose name ends in .bak or .bak<number>, or that carry such a
+_backup_<date>_<time> stamp, are removed.
 
 The target can be a model input folder, the .mdu in it (its folder is used)
 or a .dsproj (its <project>.dsproj_data folder is searched recursively).
@@ -26,7 +29,8 @@ import re
 import sys
 
 SCRIPT = "clrbak"
-BACKUP_RE = re.compile(r"\.bak\d*$", re.IGNORECASE)
+# <file>.bak, <file>.bak2, ...  or  <name>_backup_<yyyymmdd>_<HHMMSS>[.<ext>]
+BACKUP_RE = re.compile(r"(\.bak\d*|_backup_\d{8}_\d{6}(\.[^.]+)?)$", re.IGNORECASE)
 
 
 # --------------------------------------------------------------------------- #
@@ -79,7 +83,8 @@ def fmt_size(nbytes):
 # --------------------------------------------------------------------------- #
 def clear_backups(target, recursive=False, write=True):
     """
-    Remove the backup files (*.bak, *.bak2, ...) of a model.
+    Remove the backup files (*.bak, *.bak2, ..., *_backup_<yyyymmdd>_<HHMMSS>.*)
+    of a model.
 
     Parameters
     ----------
@@ -116,8 +121,8 @@ def clear_backups(target, recursive=False, write=True):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog=SCRIPT,
-        description="Remove the backup files (*.bak, *.bak2, ...) from a D-Flow FM "
-                    "model input folder.",
+        description="Remove the backup files (*.bak, *.bak2, ... and "
+                    "*_backup_<yyyymmdd>_<HHMMSS>.*) from a D-Flow FM model input folder.",
         epilog="""
 examples:
   %(prog)s dflowfm                          (input folder)

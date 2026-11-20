@@ -54,7 +54,7 @@ This package provides several utilities for converting shapefiles to various for
 - **ncraininfo**: Show the start time, end time, time step, grid and rainfall distribution (per step and total) of a NetCDF rainfall file, optionally as a hyetograph + rainfall map
 - **otstep**: Show or change the output time step of the his file (`HisInterval`) and map file (`MapInterval`) of a Delft3D FM `.mdu`
 - **itstep**: Show or change the user time step (`DtUser`), initial time step (`DtInit`) and maximum time step (`DtMax`) of a Delft3D FM `.mdu`
-- **clrbak**: Remove the backup files (`*.bak`, `*.bak2`, ...) from a Delft3D FM model input folder
+- **clrbak**: Remove the backup files (`*.bak`, `*.bak2`, ..., `*_backup_<yyyymmdd>_<HHMMSS>.*`) from a Delft3D FM model input folder
 - **setthreads**: Show or change the OpenMP threads and MPI processes of the components in a DIMR config (`dimr_config.xml`), and set `OMP_NUM_THREADS`
 - **clrmpi**: Delete the partitioned (MPI) input and output files (`<model>_NNNN.*`, `<net>_NNNN_net.nc`, `DFM_interpreted_idomain_*`) of the D-Flow FM models in a DIMR run
 - **addvis**: Add (or update) `Viscosity` in the `[physics]` section of every Delft3D FM `.mdu` under a folder
@@ -827,7 +827,9 @@ itstep.set_steps("FlowFM.mdu", user=60, init=1, max=30)
 ### Remove backup files from a model input folder
 
 `clrbak` deletes the backups the tools above leave next to the files they change: every
-file whose name ends in `.bak` or `.bak<number>` (`FlowFM.mdu.bak`, `FlowFM_net.nc.bak2`, ...).
+file whose name ends in `.bak` or `.bak<number>` (`FlowFM.mdu.bak`, `FlowFM_net.nc.bak2`, ...),
+and time-stamped copies `<name>_backup_<yyyymmdd>_<HHMMSS>.<ext>`
+(`FlowFM_net_backup_20261120_215602.nc`, `initialFields_backup_20261120_215708.ini`, ...).
 Give a model input folder, the `.mdu` in it, or a `.dsproj` (its `.dsproj_data` folder is
 searched recursively). Removed files cannot be recovered, and `rmgrid --restore` needs the
 `*_net.nc.bak`, so run with `--check` first to see what goes.

@@ -678,7 +678,9 @@ TOOL_DESCRIPTIONS = {
         Remove the backup files from a D-Flow FM model input folder.
 
         Deletes the files whose name ends in .bak or .bak<number> (*.bak, *.bak2, ...)
-        that the D3D tools leave next to the files they change. The target can be a
+        that the D3D tools leave next to the files they change, and time-stamped copies
+        <name>_backup_<yyyymmdd>_<HHMMSS>.<ext> (e.g. FlowFM_net_backup_20261120_215602.nc,
+        initialFields_backup_20261120_215708.ini). The target can be a
         model input folder, the .mdu in it (its folder is used) or a .dsproj (its
         <project>.dsproj_data folder is searched recursively); -r includes subfolders.
         --check lists the backups and their size without removing them. Note that

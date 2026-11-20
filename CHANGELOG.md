@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.40.8
+
+- **clrbak**: also removes time-stamped backup copies named `<name>_backup_<yyyymmdd>_<HHMMSS>.<ext>`, e.g. `FlowFM_net_backup_20261120_215602.nc`, `FrictionCoefficient_backup_20261120_215708.xyz`, `initialFields_backup_20261120_215727.ini` (the stamp must be exactly 8 + 6 digits, so a file merely containing `_backup_` is kept). `*.bak` / `*.bak<number>` are removed as before.
+
 ## 0.40.7
 
 - Renamed **mk2d** to **rm1d** (module `d3dtools.rm1d`, command `rm1d`), in line with `rm1dch` / `rm1dsw`: it removes the entire 1D network (`--target all`). Options and behaviour are unchanged. The `mk2d` command and `d3dtools.mk2d` module are gone; use `rm1d`.
