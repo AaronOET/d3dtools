@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.41.1
+
+- **fou2mfd** and **fou2shp** now open FOU NetCDF files whose folder or file name contains non-ASCII (e.g. 繁體中文) characters, such as `D:\專案\淹水模擬_fou.nc`; before, netCDF-C stopped them with `OSError: [Errno 22] Invalid argument`. As in `ncts2shp`, such a file is opened through its Windows 8.3 short path or, when that is not available, a temporary ASCII-named hard link next to it (no copy; removed afterwards). The helper is now shared as `ncutils.open_dataset()` (still importable from `d3dtools.ncts2shp`).
+
 ## 0.41.0
 
 - Renamed **expgrid** to **expmsh** (module `d3dtools.expmsh`, command `expmsh`), in line with `ras2msh` / `rasmshint`. The output now goes to `./MESH/<netfile>.nc` by default, keeping the input file name (was `./<netfile>_2d.nc`; the `MESH` folder is created if missing), so it sits next to the meshes `ras2msh` writes; new `-of/--output-folder` picks another folder, `-o` still sets the file. Other options and behaviour are unchanged. The `expgrid` command and `d3dtools.expgrid` module are gone; use `expmsh`.

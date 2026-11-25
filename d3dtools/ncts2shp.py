@@ -15,17 +15,16 @@ Output: SIM_thrd125.shp, SIM_thrd300.shp, SIM_thrd475.shp (+.dbf, .shx, .prj)
 """
 
 import argparse
-import contextlib
 import glob as _glob
 import os
 import sys
-import uuid
 import warnings
 
 import numpy as np
 
 from .fou2shp import ALL_STEM, PRJ_WKT, THRESHOLDS, _SHP_DIR, gpd, nc, shapefile
 from .fou2mfd import remove_masked, threshold_stem
+from .ncutils import open_dataset
 
 SCRIPT = "ncts2shp"
 NC_FILE = os.path.join("NC", "FlowFM_map.nc")
@@ -35,80 +34,6 @@ DEFAULT_CHUNK = 50
 
 # Delft3D FM uses Mesh2d_ or mesh2d_ depending on version
 DEPTH_CANDIDATES = ["Mesh2d_waterdepth", "mesh2d_waterdepth"]
-
-
-def _is_ascii(s):
-    return all(ord(c) < 128 for c in s)
-
-
-def _short_path(path):
-    """Windows 8.3 short path (ASCII) for a file, or None if unavailable."""
-    if os.name != "nt":
-        return None
-    try:
-        import ctypes
-        buf = ctypes.create_unicode_buffer(32768)
-        n = ctypes.windll.kernel32.GetShortPathNameW(path, buf, len(buf))
-        if 0 < n < len(buf) and _is_ascii(buf.value):
-            return buf.value
-    except Exception:
-        pass
-    return None
-
-
-@contextlib.contextmanager
-def open_dataset(path):
-    """
-    Open a NetCDF file whose path may contain non-ASCII characters (e.g. 繁體中文)
-    in the folder or the file name. netCDF-C on Windows often cannot open such
-    paths, so fall back to:
-      1. the Windows 8.3 short path, then
-      2. a temporary ASCII-named hard link (no copy; same disk) opened by a
-         relative name from inside its folder, removed afterwards.
-    """
-    path = os.path.abspath(path)
-    link = None
-    try:
-        ds = nc.Dataset(path, "r")
-    except (OSError, UnicodeError) as first_err:
-        if _is_ascii(path):
-            raise
-        ds = None
-        short = _short_path(path)
-        if short:
-            try:
-                ds = nc.Dataset(short, "r")
-                print(f"(non-ASCII path, opened via short path: {short})")
-            except OSError:
-                ds = None
-
-        if ds is None:
-            folder = os.path.dirname(path)
-            link_name = f"_tmp_nc_{uuid.uuid4().hex[:8]}.nc"
-            link = os.path.join(folder, link_name)
-            try:
-                os.link(path, link)
-            except OSError as e:
-                raise OSError(
-                    f"Cannot open non-ASCII path {path!r} ({first_err}); "
-                    f"hard link failed ({e}). Rename the file/folder to ASCII."
-                ) from e
-            cwd = os.getcwd()
-            try:
-                os.chdir(folder)  # relative ASCII name avoids the non-ASCII folder too
-                ds = nc.Dataset(link_name, "r")
-                print(f"(non-ASCII path, opened via temporary link: {link_name})")
-            except Exception:
-                os.remove(link)
-                raise
-            finally:
-                os.chdir(cwd)
-    try:
-        yield ds
-    finally:
-        ds.close()
-        if link and os.path.exists(link):
-            os.remove(link)
 
 
 def find_var(ds, candidates, suffix=None):

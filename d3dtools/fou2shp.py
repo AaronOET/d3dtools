@@ -17,6 +17,8 @@ import numpy as np
 
 import argparse
 
+from .ncutils import open_dataset
+
 try:
     import netCDF4 as nc
 except ImportError:
@@ -325,19 +327,16 @@ examples:
     os.makedirs(args.out_dir, exist_ok=True)
 
     try:
-        ds = nc.Dataset(args.input, "r")
+        with open_dataset(args.input) as ds:
+            node_x = ds.variables["Mesh2d_node_x"][:]
+            node_y = ds.variables["Mesh2d_node_y"][:]
 
-        node_x = ds.variables["Mesh2d_node_x"][:]
-        node_y = ds.variables["Mesh2d_node_y"][:]
+            fn_var  = ds.variables["Mesh2d_face_nodes"]
+            fn      = np.array(fn_var[:], dtype=np.int32)
+            fn_fill = int(fn_var._FillValue)
 
-        fn_var  = ds.variables["Mesh2d_face_nodes"]
-        fn      = np.array(fn_var[:], dtype=np.int32)
-        fn_fill = int(fn_var._FillValue)
-
-        attr_var = ds.variables[args.var]
-        values   = attr_var[:]
-
-        ds.close()
+            attr_var = ds.variables[args.var]
+            values   = attr_var[:]
 
         print(f"Input  : {args.input}")
         print(f"Field  : '{FIELD_NAME}'  <-  {args.var}")

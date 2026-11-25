@@ -19,7 +19,8 @@ import sys
 import numpy as np
 
 from .fou2shp import (FIELD_NAME, NC_FILE, VAR_NAME, _SHP_DIR, _to_file_polygon,
-                      gpd, nc, pd, write_threshold_shp)
+                      gpd, pd, write_threshold_shp)
+from .ncutils import open_dataset
 
 SCRIPT = "fou2mfd"
 DEFAULT_THRESHOLD = 0.3
@@ -34,7 +35,7 @@ def threshold_stem(threshold):
 
 def read_faces(nc_file, var=VAR_NAME):
     """Return (face_nodes, fill value, node_x, node_y, values) from a FOU NetCDF file."""
-    with nc.Dataset(nc_file, "r") as ds:
+    with open_dataset(nc_file) as ds:
         node_x = ds.variables["Mesh2d_node_x"][:]
         node_y = ds.variables["Mesh2d_node_y"][:]
         fn_var = ds.variables["Mesh2d_face_nodes"]
